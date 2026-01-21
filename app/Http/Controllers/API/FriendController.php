@@ -110,10 +110,10 @@ class FriendController extends Controller
         }
 
         DB::transaction(function () use ($fr, $user) {
-            $fr->delete(); // Delete the request after accepting
+            $fr->update(['status' => 'accepted']);
 
             $requester = $fr->requester;
-            
+
             $requester->friends()->syncWithoutDetaching([$user->id]);
             $user->friends()->syncWithoutDetaching([$requester->id]);
 
