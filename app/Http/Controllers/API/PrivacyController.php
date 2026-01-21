@@ -13,13 +13,11 @@ class PrivacyController extends Controller
             'is_private' => 'boolean',
             'show_last_seen' => 'boolean',
             'show_status' => 'boolean',
-            'allow_messages_from_non_friends' => 'boolean',
-            'show_followers' => 'boolean',
-            'show_following' => 'boolean',
             'email_visibility' => 'in:everyone,friends,nobody',
-            'posts_visibility' => 'in:everyone,followers,friends,nobody',
-            'comments_visibility' => 'in:everyone,followers,friends,nobody',
-            'messages_visibility' => 'in:everyone,followers,friends,nobody',
+            'posts_visibility' => 'in:everyone,friends,nobody',
+            'comments_visibility' => 'in:everyone,friends,nobody',
+            'messages_visibility' => 'in:everyone,friends,nobody',
+            'notifications_enabled' => 'boolean',
         ]);
 
         $user = $request->user();
@@ -37,13 +35,11 @@ class PrivacyController extends Controller
             'is_private' => $user->is_private,
             'show_last_seen' => $user->show_last_seen,
             'show_status' => $user->show_status,
-            'allow_messages_from_non_friends' => $user->allow_messages_from_non_friends,
-            'show_followers' => $user->show_followers,
-            'show_following' => $user->show_following,
             'email_visibility' => $user->email_visibility,
             'posts_visibility' => $user->posts_visibility,
             'comments_visibility' => $user->comments_visibility,
             'messages_visibility' => $user->messages_visibility,
+            'notifications_enabled' => $user->notifications_enabled,
         ]);
     }
 }

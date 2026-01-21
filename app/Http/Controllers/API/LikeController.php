@@ -40,7 +40,7 @@ class LikeController extends Controller
             ]);
 
             // notify post author
-            if ($post->user && $post->user->id !== $user->id) {
+            if ($post->user && $post->user->id !== $user->id && ($post->user->notifications_enabled ?? true)) {
                 $post->user->notify(new NewLikeNotification($post, $user));
                 \Log::info('Like notification sent to user ' . $post->user->id);
             }
@@ -71,7 +71,7 @@ class LikeController extends Controller
             ]);
 
             // notify comment author
-            if ($comment->user && $comment->user->id !== $user->id) {
+            if ($comment->user && $comment->user->id !== $user->id && ($comment->user->notifications_enabled ?? true)) {
                 $comment->user->notify(new NewCommentLikeNotification($comment, $user));
                 \Log::info('Comment like notification sent to user ' . $comment->user->id);
             }

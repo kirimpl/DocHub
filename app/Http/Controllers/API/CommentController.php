@@ -23,14 +23,14 @@ class CommentController extends Controller
         }
 
         $setting = $owner->comments_visibility ?: 'everyone';
+        if ($setting === 'followers') {
+            $setting = 'friends';
+        }
         if ($setting === 'nobody') {
             return false;
         }
         if ($setting === 'friends') {
             return $viewer->friends()->where('users.id', $owner->id)->exists();
-        }
-        if ($setting === 'followers') {
-            return $viewer->following()->where('users.id', $owner->id)->exists();
         }
 
         return true;
@@ -59,7 +59,7 @@ class CommentController extends Controller
         ]);
 
  
-        if ($post->user && $post->user->id !== $request->user()->id) {
+        if ($post->user && $post->user->id !== $request->user()->id && ($post->user->notifications_enabled ?? true)) {
             $post->user->notify(new NewCommentNotification($post, $comment));
         }
 

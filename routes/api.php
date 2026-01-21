@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\FollowController;
 use App\Http\Controllers\API\FeedController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\PostController;
@@ -58,20 +57,6 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('notifications/subscribe', [NotificationController::class, 'subscribe']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
-    // follows
-    Route::post('follow/{id}', [FollowController::class, 'follow'])->whereNumber('id');
-    Route::post('unfollow/{id}', [FollowController::class, 'unfollow'])->whereNumber('id');
-    Route::get('followers/{id?}', [FollowController::class, 'followers'])->whereNumber('id');
-    Route::get('following/{id?}', [FollowController::class, 'following'])->whereNumber('id');
-    Route::get('follow/{id}/status', [FollowController::class, 'isFollowing'])->whereNumber('id');
-
-    // follow requests (for private accounts)
-    Route::post('follow/requests', [FollowController::class, 'sendRequest']);
-    Route::get('follow/requests', [FollowController::class, 'listRequests']);
-    Route::post('follow/requests/{id}/accept', [FollowController::class, 'acceptRequest']);
-    Route::post('follow/requests/{id}/decline', [FollowController::class, 'declineRequest']);
-    Route::post('follow/requests/{id}/cancel', [FollowController::class, 'cancelRequest']);
-
     // feed
     Route::get('feed', [FeedController::class, 'index']);
 

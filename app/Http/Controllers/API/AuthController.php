@@ -139,11 +139,10 @@ class AuthController extends Controller
         }
 
         $isFriend = $me->friends()->where('users.id', $user->id)->exists();
-        $isFollowing = $me->following()->where('users.id', $user->id)->exists();
 
         if ($user->is_private && $me->id !== $user->id) {
-            // Check if friends or following
-            if (!$isFriend && !$isFollowing) {
+            // Check if friends
+            if (!$isFriend) {
                 return response()->json([
                     'user' => [
                         'id' => $user->id,
@@ -158,8 +157,8 @@ class AuthController extends Controller
             }
         }
 
-        $followers = $user->followers()->count();
-        $following = $user->following()->count();
+        $followers = 0;
+        $following = 0;
         $posts = $user->posts()->with('user')->withCount(['likes', 'comments'])->latest()->get();
         if ($me->id !== $user->id) {
             $posts = $posts->filter(function ($post) use ($me) {
@@ -177,12 +176,6 @@ class AuthController extends Controller
 
         $viewerIsSelf = $me->id === $user->id;
         if (!$viewerIsSelf) {
-            if (!$user->show_followers) {
-                $followers = 0;
-            }
-            if (!$user->show_following) {
-                $following = 0;
-            }
             if (!$user->show_status) {
                 $user->status_text = null;
             }

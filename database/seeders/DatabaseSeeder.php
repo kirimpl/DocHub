@@ -42,20 +42,7 @@ class DatabaseSeeder extends Seeder
             }
 
           
-            foreach ($users as $user) {
-                $others = $users->where('id', '!=', $user->id);
-                $count = min($others->count(), rand(1,3));
-                if ($count <= 0) continue;
-                $sample = $others->random($count);
-                foreach ($sample as $other) {
-                    DB::table('follows')->insertOrIgnore([
-                        'follower_id' => $user->id,
-                        'followed_id' => $other->id,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
+            // Followers feature removed.
 
      
             foreach ($users as $user) {

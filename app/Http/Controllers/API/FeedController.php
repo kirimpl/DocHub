@@ -16,19 +16,19 @@ class FeedController extends Controller
         }
         $owner = $post->user;
         $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
+        if ($visibility === 'followers') {
+            $visibility = 'friends';
+        }
         if ($visibility === 'nobody') {
             return false;
         }
         if ($visibility === 'friends') {
             return $viewer->friends()->where('users.id', $post->user_id)->exists();
         }
-        if ($visibility === 'followers') {
-            return $viewer->following()->where('users.id', $post->user_id)->exists();
-        }
         if ($post->is_public) {
             return true;
         }
-        return $viewer->following()->where('users.id', $post->user_id)->exists();
+        return $viewer->friends()->where('users.id', $post->user_id)->exists();
     }
     public function index(Request $request)
     {

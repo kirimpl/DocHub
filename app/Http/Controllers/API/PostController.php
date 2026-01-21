@@ -27,19 +27,19 @@ class PostController extends Controller
         }
         $owner = $post->user;
         $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
+        if ($visibility === 'followers') {
+            $visibility = 'friends';
+        }
         if ($visibility === 'nobody') {
             return false;
         }
         if ($visibility === 'friends') {
             return $viewer->friends()->where('users.id', $post->user_id)->exists();
         }
-        if ($visibility === 'followers') {
-            return $viewer->following()->where('users.id', $post->user_id)->exists();
-        }
         if ($post->is_public) {
             return true;
         }
-        return $viewer->following()->where('users.id', $post->user_id)->exists();
+        return $viewer->friends()->where('users.id', $post->user_id)->exists();
     }
 
     public function index(Request $request)
@@ -52,9 +52,9 @@ class PostController extends Controller
         $blocked = $blockedIds->merge($blockedByIds)->unique()->values()->all();
 
         $posts = cache()->remember($cacheKey, 15, function () use ($user) {
-            $following = $user->following()->pluck('users.id')->toArray();
+            $friends = $user->friends()->pluck('users.id')->toArray();
 
-            return Post::whereIn('user_id', $following)
+            return Post::whereIn('user_id', $friends)
                 ->orWhere('is_public', true)
                 ->with('user')
                 ->with(['likes' => function ($q) use ($user) {
@@ -85,8 +85,10 @@ class PostController extends Controller
         $this->clearPostCaches($request->user()->id);
 
         $user = $request->user();
-        $user->followers->each(function ($follower) use ($post, $user) {
-            $follower->notify(new NewPostNotification($post, $user));
+        $user->friends->each(function ($friend) use ($post, $user) {
+            if ($friend->notifications_enabled ?? true) {
+                $friend->notify(new NewPostNotification($post, $user));
+            }
         });
 
         return response()->json($post, 201);

@@ -30,6 +30,9 @@ class PostPolicy
 
         $owner = $post->user;
         $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
+        if ($visibility === 'followers') {
+            $visibility = 'friends';
+        }
 
         if ($visibility === 'nobody') {
             return false;
@@ -39,15 +42,11 @@ class PostPolicy
             return $user->friends()->where('users.id', $post->user_id)->exists();
         }
 
-        if ($visibility === 'followers') {
-            return $user->following()->where('users.id', $post->user_id)->exists();
-        }
-
         if ($post->is_public) {
             return true;
         }
 
-        return $user->following()->where('users.id', $post->user_id)->exists();
+        return $user->friends()->where('users.id', $post->user_id)->exists();
     }
 
     public function create(User $user, Post $post)
@@ -64,7 +63,7 @@ class PostPolicy
             return true;
         }
 
-        return $user->following()->where('users.id', $post->user_id)->exists();
+        return $user->friends()->where('users.id', $post->user_id)->exists();
     }
 
     public function update(User $user, Post $post)

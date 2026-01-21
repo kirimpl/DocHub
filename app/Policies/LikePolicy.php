@@ -13,6 +13,6 @@ class LikePolicy
   
         if ($post->is_public) return true;
         if ($user->id === $post->user_id) return true;
-        return $user->following()->where('users.id', $post->user_id)->exists();
+        return $user->friends()->where('users.id', $post->user_id)->exists();
     }
 }

@@ -72,7 +72,7 @@ class FriendController extends Controller
         ]);
 
         // notify recipient of friend request
-        if ($recipient) {
+        if ($recipient && ($recipient->notifications_enabled ?? true)) {
             $recipient->notify(new NewFriendRequestNotification($fr));
         }
 
@@ -118,7 +118,7 @@ class FriendController extends Controller
             $user->friends()->syncWithoutDetaching([$requester->id]);
 
             // notify requester
-            if ($requester) {
+            if ($requester && ($requester->notifications_enabled ?? true)) {
                 $requester->notify(new FriendRequestAcceptedNotification($fr));
             }
         });

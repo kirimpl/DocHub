@@ -32,14 +32,12 @@ class User extends Authenticatable
         'last_seen',
         'show_last_seen',
         'show_status',
-        'allow_messages_from_non_friends',
-        'show_followers',
-        'show_following',
         'email_visibility',
         'last_name',
         'posts_visibility',
         'comments_visibility',
         'messages_visibility',
+        'notifications_enabled',
         'pinned_post_id',
     ];
 
@@ -58,9 +56,7 @@ class User extends Authenticatable
             'last_seen' => 'datetime',
             'show_last_seen' => 'boolean',
             'show_status' => 'boolean',
-            'allow_messages_from_non_friends' => 'boolean',
-            'show_followers' => 'boolean',
-            'show_following' => 'boolean',
+            'notifications_enabled' => 'boolean',
         ];
     }
 
@@ -71,19 +67,6 @@ class User extends Authenticatable
     }
 
    
-    public function following(): BelongsToMany
-    {
-        return $this->belongsToMany(self::class, 'follows', 'follower_id', 'followed_id')
-            ->withTimestamps();
-    }
-
-  
-    public function followers(): BelongsToMany
-    {
-        return $this->belongsToMany(self::class, 'follows', 'followed_id', 'follower_id')
-            ->withTimestamps();
-    }
-
    
     public function sentMessages(): HasMany
     {

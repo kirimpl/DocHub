@@ -21,20 +21,6 @@ return new class extends Migration
             });
         }
 
-        if (Schema::hasTable('follows')) {
-            Schema::table('follows', function (Blueprint $table) {
-                $table->index('follower_id');
-                $table->index('followed_id');
-            });
-        }
-
-        if (Schema::hasTable('follow_requests')) {
-            Schema::table('follow_requests', function (Blueprint $table) {
-                $table->index('requester_id');
-                $table->index('recipient_id');
-            });
-        }
-
         if (Schema::hasTable('friend_requests')) {
             Schema::table('friend_requests', function (Blueprint $table) {
                 $table->index('requester_id');
@@ -76,20 +62,6 @@ return new class extends Migration
             Schema::table('messages', function (Blueprint $table) {
                 $table->dropIndex(['recipient_id', 'id']);
                 $table->dropIndex(['sender_id']);
-            });
-        }
-
-        if (Schema::hasTable('follows')) {
-            Schema::table('follows', function (Blueprint $table) {
-                $table->dropIndex(['follower_id']);
-                $table->dropIndex(['followed_id']);
-            });
-        }
-
-        if (Schema::hasTable('follow_requests')) {
-            Schema::table('follow_requests', function (Blueprint $table) {
-                $table->dropIndex(['requester_id']);
-                $table->dropIndex(['recipient_id']);
             });
         }
 

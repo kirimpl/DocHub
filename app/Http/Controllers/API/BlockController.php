@@ -39,8 +39,6 @@ class BlockController extends Controller
 
         $blockedUser = User::find($blockedId);
         if ($blockedUser) {
-            $user->following()->detach($blockedId);
-            $user->followers()->detach($blockedId);
             $user->friends()->detach($blockedId);
             $blockedUser->friends()->detach($user->id);
         }

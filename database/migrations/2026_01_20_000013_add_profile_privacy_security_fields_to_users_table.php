@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('posts_visibility', 20)->default('everyone')->after('show_following');
+            $table->string('posts_visibility', 20)->default('everyone')->after('email_visibility');
             $table->string('comments_visibility', 20)->default('everyone')->after('posts_visibility');
             $table->string('messages_visibility', 20)->default('everyone')->after('comments_visibility');
             $table->string('cover_image')->nullable()->after('avatar');

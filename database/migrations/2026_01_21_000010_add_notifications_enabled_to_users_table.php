@@ -9,20 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('status_text', 140)->nullable()->after('bio');
-            $table->boolean('show_last_seen')->default(true)->after('last_seen');
-            $table->boolean('show_status')->default(true)->after('show_last_seen');
+            $table->boolean('notifications_enabled')->default(true)->after('messages_visibility');
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'status_text',
-                'show_last_seen',
-                'show_status',
-            ]);
+            $table->dropColumn('notifications_enabled');
         });
     }
 };

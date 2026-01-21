@@ -18,14 +18,14 @@ class MessageController extends Controller
         }
 
         $setting = $recipient->messages_visibility ?: 'everyone';
+        if ($setting === 'followers') {
+            $setting = 'friends';
+        }
         if ($setting === 'nobody') {
             return false;
         }
         if ($setting === 'friends') {
             return $sender->friends()->where('users.id', $recipient->id)->exists();
-        }
-        if ($setting === 'followers') {
-            return $sender->following()->where('users.id', $recipient->id)->exists();
         }
 
         return true;
@@ -91,7 +91,7 @@ class MessageController extends Controller
         event(new MessageSent($message));
 
         
-        if ($recipient) {
+        if ($recipient && ($recipient->notifications_enabled ?? true)) {
             $recipient->notify(new NewMessageNotification($message));
             \Log::info('Message notification sent to user ' . $recipient->id);
         }
