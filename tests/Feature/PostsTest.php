@@ -39,9 +39,9 @@ class PostsTest extends TestCase
         $token = $me->createToken('api')->plainTextToken;
 
         
-        DB::table('follows')->insert([
-            'follower_id' => $me->id,
-            'followed_id' => $author->id,
+        DB::table('friends')->insert([
+            'user_id' => $me->id,
+            'friend_id' => $author->id,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

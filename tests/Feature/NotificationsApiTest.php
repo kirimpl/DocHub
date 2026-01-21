@@ -48,8 +48,9 @@ class NotificationsApiTest extends TestCase
         $this->assertDatabaseMissing('notifications', ['id' => $notif->id, 'read_at' => null]);
 
         
+        $actor2 = User::factory()->create();
         $request2 = FriendRequest::create([
-            'requester_id' => $actor->id,
+            'requester_id' => $actor2->id,
             'recipient_id' => $user->id,
             'status' => 'pending',
         ]);
