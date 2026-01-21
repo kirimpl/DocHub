@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
-use App\Notifications\NewFollowNotification;
+use App\Models\FriendRequest;
+use App\Notifications\NewFriendRequestNotification;
 use Illuminate\Support\Facades\DB;
 
 class NotificationsApiTest extends TestCase
@@ -20,18 +21,19 @@ class NotificationsApiTest extends TestCase
         /** @var \App\Models\User $actor */
         $actor = User::factory()->create();
 
-        $token = $actor->createToken('api')->plainTextToken;
+        $request = FriendRequest::create([
+            'requester_id' => $actor->id,
+            'recipient_id' => $user->id,
+            'status' => 'pending',
+        ]);
 
-  
-        $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/follow/'.$user->id)
-            ->assertStatus(200);
+        $user->notify(new NewFriendRequestNotification($request));
 
    
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/notifications')
             ->assertStatus(200)
-            ->assertJsonFragment(['type' => NewFollowNotification::class]);
+            ->assertJsonFragment(['type' => NewFriendRequestNotification::class]);
 
         
         /** @var \stdClass|null $notif */
@@ -46,9 +48,13 @@ class NotificationsApiTest extends TestCase
         $this->assertDatabaseMissing('notifications', ['id' => $notif->id, 'read_at' => null]);
 
         
-        $this->actingAs($actor, 'sanctum')
-            ->postJson('/api/follow/'.$user->id)
-            ->assertStatus(200);
+        $request2 = FriendRequest::create([
+            'requester_id' => $actor->id,
+            'recipient_id' => $user->id,
+            'status' => 'pending',
+        ]);
+
+        $user->notify(new NewFriendRequestNotification($request2));
 
      
         $this->actingAs($user, 'sanctum')
