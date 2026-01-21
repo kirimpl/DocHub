@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>API Test Client</title>
+  <style>
+    body {
+      font-family: Segoe UI, Arial;
+      padding: 18px;
+      background: #f6f7fb;
+      color: #111
+    }
+
+    h2 {
+      margin-top: 18px
+    }
+
+    .box {
+      background: #fff;
+      padding: 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, .05);
+      margin-bottom: 12px
+    }
+
+    input,
+    button,
+    select,
+    textarea {
+      font-size: 14px;
+      padding: 8px;
+      margin: 6px 0;
+      width: 100%;
+      box-sizing: border-box
+    }
+
+    button {
+      width: auto
+    }
+
+    .row {
+      display: flex;
+      gap: 8px
+    }
+
+    .small {
+      width: 140px
+    }
+
+    pre {
+      background: #0b1220;
+      color: #bfe;
+      border-radius: 6px;
+      padding: 8px;
+      overflow: auto
+    }
+
+    /* Badges and small UX styles */
+    .badge { background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px; display: inline-block }
+    .notif-unread { background: #fff8e1 }
+  </style>
+  <!-- Pusher + Laravel Echo (CDN) for local websockets testing -->
+  <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/laravel-echo/dist/echo.iife.js"></script>
+</head>
+
+<body>
+  <h1>Test Client — API</h1>
+
+  <div class="box" id="authBox">
+    <h2>Auth</h2>
+    <label>Имя <input id="name" value="userA"></label>
+    <label>Email <input id="email" value="a@example.com"></label>
+    <label>Пароль <input id="password" value="password" type="password"></label>
+    <div class="row">
+      <button id="btnRegister">Register</button>
+      <button id="btnLogin">Login</button>
+      <button id="btnLogout">Logout</button>
+    </div>
+    <div>Token: <code id="tokenDisplay">(none)</code></div>
+    <div style="margin-top:6px">User: <strong id="currentUser">(not logged in)</strong> <button id="btnResetClient"
+        style="margin-left:8px">Reset Client</button></div>
+  </div>
+
+  <div class="box">
+    <h2>Profile / Privacy</h2>
+    <label><input type="checkbox" id="isPrivate"> Сделать профиль приватным</label>
+    <button id="btnSetPrivacy">Set Privacy</button>
+  </div>
+
+  <div class="box">
+    <h2>Friends</h2>
+    <label>Recipient id <input id="friendRecipient" value="2"></label>
+    <div class="row">
+      <button id="btnSendRequest">Send Friend Request</button>
+      <button id="btnListRequests">My Incoming Requests</button>
+      <button id="btnListFriends">My Friends</button>
+    </div>
+    <div id="friendsArea"></div>
+  </div>
+
+  <div class="box">
+    <h2>Follow</h2>
+    <label>Target id <input id="followTarget" value="2"></label>
+    <div class="row">
+      <button id="btnFollow">Follow</button>
+      <button id="btnUnfollow">Unfollow</button>
+      <button id="btnSendFollowRequest">Send Follow Request</button>
+      <button id="btnListFollowRequests">My Incoming Follow Requests</button>
+      <button id="btnMyFollowers">My Followers</button>
+      <button id="btnMyFollowing">My Following</button>
+    </div>
+    <div id="followCountsHeader" style="margin-bottom:8px;font-weight:600"></div>
+    <div id="followArea"></div>
+  </div>
+
+  <div class="box">
+    <h2>Users</h2>
+    <div class="row">
+      <button id="btnFetchUsers">Fetch Users</button>
+      <button id="btnCreateLocalUser">Create Local User</button>
+    </div>
+    <div id="usersArea"></div>
+    <small>Local users (created via this client) are stored in <code>localStorage</code> and can be
+      impersonated.</small>
+  </div>
+
+  <div class="box">
+    <h2>Messages</h2>
+    <label>Recipient id <input id="msgRecipient" value="2"></label>
+    <label>Body <input id="msgBody" value="Hello from client"></label>
+    <div class="row">
+      <button id="btnSendMsg">Send Message</button>
+      <button id="btnConversation">Get Conversation</button>
+      <button id="btnSubscribe">Subscribe (long-poll)</button>
+    </div>
+    <div id="messagesArea"></div>
+  </div>
+
+  <div class="box">
+    <h2>Posts / Feed</h2>
+    <label>Post body <input id="postBody" value="Hello post"></label>
+    <label>Image <input type="file" id="postImage"></label>
+    <div class="row">
+      <button id="btnUploadMedia">Upload Media</button>
+      <button id="btnCreatePost">Create Post</button>
+      <button id="btnFetchFeed">Fetch Feed</button>
+      <label>Post id <input id="PostRecip" value="2"></label>
+      <button id="btnShowPost">Show Post</button>
+    </div>
+    <div id="feedArea"></div>
+    <div id="postArea"></div>
+
+  <div class="box">
+    <h2>Notifications</h2>
+    <div class="row">
+      <button id="btnFetchNotifications">Fetch Notifications</button>
+      <button id="btnMarkAllNotifications">Mark All Read</button>      <span id="notifBadge" class="badge" style="display:none">0</span>    </div>
+    <div id="notificationsArea"></div>
+  </div>
+
+  <h2>Raw Response</h2>
+  <pre id="raw">—</pre>
+
+  <script>
+    const tokenKey = 'api_token'
+    function setToken(t) { if (t) { localStorage.setItem(tokenKey, t); document.getElementById('tokenDisplay').textContent = t } else { localStorage.removeItem(tokenKey); document.getElementById('tokenDisplay').textContent = '(none)' } fetchCurrentUser().catch(() => { }) }
+    function getToken() { return localStorage.getItem(tokenKey) }
+
+    async function fetchCurrentUser() {
+      const el = document.getElementById('currentUser')
+      if (!getToken()) { el.textContent = '(not logged in)'; window.currentUserId = null; return }
+      const r = await api('/api/me', 'GET')
+      if (r.json && r.json.name) { el.textContent = `${r.json.name} (id:${r.json.id})`; window.currentUserId = r.json.id; initEcho(); } else { el.textContent = '(unknown)'; window.currentUserId = null }
+    }
+
+
+    async function api(path, method = 'GET', body = null) {
+      const headers = { 'Accept': 'application/json' }
+      if (body) headers['Content-Type'] = 'application/json'
+      const token = getToken()
+      if (token) headers['Authorization'] = 'Bearer ' + token
+      const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined })
+      const text = await res.text()
+      try { const json = JSON.parse(text); document.getElementById('raw').textContent = JSON.stringify({ status: res.status, body: json }, null, 2); return { status: res.status, json } } catch (e) { document.getElementById('raw').textContent = text; return { status: res.status, text } }
+    }
+
+    // Auth
+    document.getElementById('btnRegister').onclick = async () => {
+      const name = document.getElementById('name').value
+      const email = document.getElementById('email').value
+      const password = document.getElementById('password').value
+      const r = await api('/api/register', 'POST', { name, email, password })
+      if (r.json && r.json.token) setToken(r.json.token)
+    }
+    document.getElementById('btnLogin').onclick = async () => {
+      const email = document.getElementById('email').value
+      const password = document.getElementById('password').value
+      const r = await api('/api/login', 'POST', { email, password })
+      if (r.json && r.json.token) setToken(r.json.token)
+    }
+    document.getElementById('btnLogout').onclick = async () => { await api('/api/logout', 'POST'); setToken(null) }
+
+    // Privacy
+    document.getElementById('btnSetPrivacy').onclick = async () => {
+      const is_private = document.getElementById('isPrivate').checked
+      await api('/api/privacy', 'POST', { is_private })
+    }
+
+    // Friends
+    document.getElementById('btnSendRequest').onclick = async () => {
+      const recipient_id = parseInt(document.getElementById('friendRecipient').value)
+      const r = await api('/api/friends/request', 'POST', { recipient_id })
+      if (!r) return
+      if (r.status >= 400) {
+        const msg = (r.json && r.json.message) ? r.json.message : (r.text || 'Unknown error')
+        alert('Friend request failed: ' + msg)
+        console.error('Friend request failed', r)
+        document.getElementById('friendsArea').textContent = JSON.stringify(r.json || r.text || r, null, 2)
+      } else {
+        alert('Friend request sent')
+        document.getElementById('friendsArea').textContent = JSON.stringify(r.json || r.text, null, 2)
+      }
+    }
+    document.getElementById('btnListRequests').onclick = async () => {
+      const r = await api('/api/friends/requests', 'GET')
+      const area = document.getElementById('friendsArea')
+      area.innerHTML = ''
+      if (!r || r.status >= 400) { area.textContent = 'Failed to fetch requests'; return }
+      const list = r.json || []
+      if (!list.length) { area.textContent = 'No incoming requests'; return }
+      list.forEach(fr => {
+        const el = document.createElement('div')
+        const reqInfo = fr.requester ? `${fr.requester.name} (id:${fr.requester.id})` : `request id:${fr.id}`
+        el.textContent = reqInfo + ' — status: ' + fr.status
+        const btnAccept = document.createElement('button'); btnAccept.textContent = 'Accept'; btnAccept.onclick = async () => { await acceptFriend(fr.id); document.getElementById('btnListRequests').click(); }
+        const btnDecline = document.createElement('button'); btnDecline.textContent = 'Decline'; btnDecline.onclick = async () => { await declineFriend(fr.id); document.getElementById('btnListRequests').click(); }
+        el.appendChild(btnAccept); el.appendChild(btnDecline); area.appendChild(el)
+      })
+    }
+
+    async function acceptFriend(id) {
+      const r = await api('/api/friends/requests/' + id + '/accept', 'POST')
+      if (r.status >= 400) alert('Accept failed: ' + JSON.stringify(r.json || r.text))
+      else alert('Accepted')
+    }
+    async function declineFriend(id) {
+      const r = await api('/api/friends/requests/' + id + '/decline', 'POST')
+      if (r.status >= 400) alert('Decline failed: ' + JSON.stringify(r.json || r.text))
+      else alert('Declined')
+    }
+    document.getElementById('btnListFriends').onclick = async () => {
+      const r = await api('/api/friends', 'GET')
+      document.getElementById('friendsArea').textContent = JSON.stringify(r.json || r.text, null, 2)
+    }
+
+    // Follow actions
+    document.getElementById('btnFollow').onclick = async () => {
+      const target = parseInt(document.getElementById('followTarget').value)
+      const r = await api('/api/follow/' + target, 'POST')
+      if (r.status >= 400) alert('Follow failed: ' + JSON.stringify(r.json || r.text))
+      else { document.getElementById('followArea').textContent = JSON.stringify(r.json || r.text, null, 2); fetchFollowCounts(); updateNotificationBadge(); }
+    }
+    document.getElementById('btnUnfollow').onclick = async () => {
+      const target = parseInt(document.getElementById('followTarget').value)
+      const r = await api('/api/unfollow/' + target, 'POST')
+      if (r.status >= 400) alert('Unfollow failed: ' + JSON.stringify(r.json || r.text))
+      else { document.getElementById('followArea').textContent = JSON.stringify(r.json || r.text, null, 2); fetchFollowCounts(); }
+    }
+    document.getElementById('btnSendFollowRequest').onclick = async () => {
+      const recipient_id = parseInt(document.getElementById('followTarget').value)
+      const r = await api('/api/follow/requests', 'POST', { recipient_id })
+      if (r.status >= 400) alert('Send follow request failed: ' + JSON.stringify(r.json || r.text))
+      else { document.getElementById('followArea').textContent = JSON.stringify(r.json || r.text, null, 2); updateNotificationBadge(); }
+    }
+    document.getElementById('btnListFollowRequests').onclick = async () => {
+      const r = await api('/api/follow/requests', 'GET')
+      const area = document.getElementById('followArea')
+      area.innerHTML = ''
+      if (!r || r.status >= 400) { area.textContent = 'Failed to fetch follow requests'; return }
+      const list = r.json || []
+      if (!list.length) { area.textContent = 'No incoming follow requests'; return }
+      list.forEach(fr => {
+        const el = document.createElement('div')
+        el.textContent = fr.requester ? `${fr.requester.name} (id:${fr.requester.id})` : `request id:${fr.id}`
+        const btnAccept = document.createElement('button'); btnAccept.textContent = 'Accept'; btnAccept.onclick = async () => { await api('/api/follow/requests/' + fr.id + '/accept', 'POST'); await fetchFollowCounts(); await updateNotificationBadge(); document.getElementById('btnListFollowRequests').click(); }
+        const btnDecline = document.createElement('button'); btnDecline.textContent = 'Decline'; btnDecline.onclick = async () => { await api('/api/follow/requests/' + fr.id + '/decline', 'POST'); document.getElementById('btnListFollowRequests').click(); }
+        el.appendChild(btnAccept); el.appendChild(btnDecline); area.appendChild(el)
+      })
+    }
+    document.getElementById('btnMyFollowers').onclick = async () => {
+      const r = await api('/api/followers', 'GET')
+      document.getElementById('followArea').textContent = JSON.stringify(r.json || r.text, null, 2)
+    }
+    document.getElementById('btnMyFollowing').onclick = async () => {
+      const r = await api('/api/following', 'GET')
+      document.getElementById('followArea').textContent = JSON.stringify(r.json || r.text, null, 2)
+    }
+
+    // fetch and show followers/following counts
+    async function fetchFollowCounts() {
+      const f = await api('/api/followers', 'GET')
+      const g = await api('/api/following', 'GET')
+      const followersCount = (f && f.json && (Array.isArray(f.json.data) ? f.json.data.length : (Array.isArray(f.json) ? f.json.length : 0))) || 0
+      const followingCount = (g && g.json && (Array.isArray(g.json.data) ? g.json.data.length : (Array.isArray(g.json) ? g.json.length : 0))) || 0
+      const hdr = document.getElementById('followCountsHeader')
+      if (hdr) hdr.textContent = `Followers: ${followersCount} — Following: ${followingCount}`
+    }
+
+    // Users list and local users management
+    function getLocalUsers() { try { return JSON.parse(localStorage.getItem('local_users') || '[]') } catch (e) { return [] } }
+    function setLocalUsers(u) { localStorage.setItem('local_users', JSON.stringify(u)) }
+    function renderUsers() {
+      const remote = document.getElementById('usersArea')
+      remote.innerHTML = ''
+      const local = getLocalUsers()
+      if (local.length) {
+        const h = document.createElement('div'); h.innerHTML = '<strong>Local</strong>'
+        remote.appendChild(h)
+        local.forEach(u => {
+          const el = document.createElement('div')
+          el.textContent = `${u.name} (${u.email}) id:${u.id || 'n/a'}`
+          const btnMsg = document.createElement('button'); btnMsg.textContent = 'Write'; btnMsg.onclick = () => { document.getElementById('msgRecipient').value = u.id; }
+          const btnIm = document.createElement('button'); btnIm.textContent = 'Impersonate'; btnIm.onclick = () => { setToken(u.token); alert('Impersonating ' + u.email) }
+          el.appendChild(btnMsg); el.appendChild(btnIm); remote.appendChild(el)
+        })
+      }
+
+      // fetch remote users if any
+      const remBtn = document.createElement('div'); remBtn.style.marginTop = '8px'; remBtn.innerHTML = '<strong>Remote</strong>'
+      remote.appendChild(remBtn)
+      const container = document.createElement('div')
+      remote.appendChild(container)
+      // filled by fetch
+    }
+
+    document.getElementById('btnCreateLocalUser').onclick = async () => {
+      const id = Date.now();
+      const name = 'local' + (getLocalUsers().length + 1)
+      const email = `local${id}@example.com`
+      const password = 'password'
+      const r = await api('/api/register', 'POST', { name, email, password })
+      if (r.json && r.json.token) {
+        const u = { id: r.json.user.id, name: r.json.user.name, email: r.json.user.email, token: r.json.token }
+        const locals = getLocalUsers(); locals.push(u); setLocalUsers(locals); renderUsers();
+      } else alert('Create failed')
+    }
+
+    // Reset client
+    document.getElementById('btnResetClient').onclick = () => {
+      setToken(null)
+      localStorage.removeItem('local_users')
+      renderUsers()
+      alert('Client state cleared')
+    }
+
+    document.getElementById('btnFetchUsers').onclick = async () => {
+      const r = await api('/api/users', 'GET')
+      const container = document.createElement('div')
+      if (r.json && Array.isArray(r.json)) {
+        r.json.forEach(u => {
+          const el = document.createElement('div')
+          el.textContent = `${u.name} (${u.email}) id:${u.id}`
+          const btnMsg = document.createElement('button'); btnMsg.textContent = 'Write'; btnMsg.onclick = () => { document.getElementById('msgRecipient').value = u.id }
+          const btnIm = document.createElement('button'); btnIm.textContent = 'Impersonate'; btnIm.onclick = async () => {
+            // try to login
+            const login = await api('/api/login', 'POST', { email: u.email, password: 'password' })
+            if (login.json && login.json.token) { setToken(login.json.token); alert('Impersonating ' + u.email) } else alert('Имитация не удалась (нет токена)')
+          }
+          el.appendChild(btnMsg); el.appendChild(btnIm); container.appendChild(el)
+        })
+      } else {
+        container.textContent = 'No users or failed to fetch.'
+      }
+      const usersArea = document.getElementById('usersArea')
+      usersArea.appendChild(container)
+    }
+    renderUsers()
+
+    // Messages
+    document.getElementById('btnSendMsg').onclick = async () => {
+      const recipient_id = parseInt(document.getElementById('msgRecipient').value)
+      const body = document.getElementById('msgBody').value
+      const r = await api('/api/messages/send', 'POST', { recipient_id, body })
+      if (r.status === 201) alert('Message sent')
+    }
+    document.getElementById('btnConversation').onclick = async () => {
+      const id = parseInt(document.getElementById('msgRecipient').value)
+      const r = await api('/api/messages/conversation/' + id, 'GET')
+      document.getElementById('messagesArea').textContent = JSON.stringify(r.json || r.text, null, 2)
+    }
+
+    // helper to append messages to messages area (used by long-poll and websockets)
+    function appendMessages(messages) {
+      const msgsArea = document.getElementById('messagesArea')
+      messages.forEach(m => {
+        const el = document.createElement('div')
+        el.style.borderBottom = '1px solid #eee'
+        el.style.padding = '6px 0'
+        const who = m.sender_id ? ('from:'+m.sender_id) : (m.sender ? ('from:'+m.sender.id) : 'unknown')
+        const time = m.created_at ? new Date(m.created_at).toLocaleTimeString() : ''
+        el.textContent = `[${time}] ${who}: ${m.body}`
+        msgsArea.appendChild(el)
+      })
+    }
+
+    let subAbort = null
+    document.getElementById('btnSubscribe').onclick = async () => {
+      if (subAbort) { subAbort.abort(); subAbort = null; alert('Unsubscribed'); return }
+      subAbort = new AbortController()
+      let since = 0
+      document.getElementById('btnSubscribe').textContent = 'Unsubscribe'
+
+
+      try {
+        while (!subAbort.signal.aborted) {
+          const url = '/api/messages/subscribe?since_id=' + since
+          const r = await fetch(url, { headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + getToken() }, signal: subAbort.signal })
+          if (r.status === 200) {
+            const data = await r.json()
+            if (data.messages && data.messages.length) {
+              appendMessages(data.messages)
+              since = data.messages[data.messages.length - 1].id
+            }
+          }
+        }
+      } catch (e) { if (e.name !== 'AbortError') console.error(e) }
+      subAbort = null
+      document.getElementById('btnSubscribe').textContent = 'Subscribe (long-poll)'
+    }
+
+    // Posts / feed
+    let lastUploadedMediaUrl = null
+    document.getElementById('btnUploadMedia').onclick = async () => {
+      const input = document.getElementById('postImage')
+      if (!input || !input.files || !input.files.length) { alert('No file selected'); return }
+      const fd = new FormData(); fd.append('file', input.files[0])
+      const token = getToken()
+      const res = await fetch('/api/media', { method: 'POST', headers: token ? { 'Authorization': 'Bearer '+token } : {}, body: fd })
+      const text = await res.text(); let json = null
+      try { json = JSON.parse(text) } catch(e) { alert('Upload failed'); return }
+      if (res.status >= 400) { alert('Upload failed: ' + (json.message || text)); return }
+      lastUploadedMediaUrl = json.url
+      alert('Uploaded: ' + lastUploadedMediaUrl)
+    }
+
+    document.getElementById('btnCreatePost').onclick = async () => {
+      const body = document.getElementById('postBody').value
+      const payload = { content: body }
+      if (lastUploadedMediaUrl) payload.image = lastUploadedMediaUrl
+      const r = await api('/api/posts', 'POST', payload)
+      if (r.status === 201) { alert('Post created'); lastUploadedMediaUrl = null; document.getElementById('postImage').value = '' }
+    }
+
+    document.getElementById('btnFetchFeed').onclick = async () => {
+      const r = await api('/api/feed', 'GET')
+      const area = document.getElementById('feedArea')
+      area.innerHTML = ''
+      if (!r || r.status >= 400) { area.textContent = 'Failed to fetch feed'; return }
+      const posts = r.json || []
+      if (!posts.length) { area.textContent = 'No posts'; return }
+      posts.forEach(p => {
+        const el = document.createElement('div')
+        el.style.borderBottom = '1px solid #eee'
+        el.style.padding = '8px 0'
+        const header = document.createElement('div'); header.textContent = `${p.user ? p.user.name : 'user'} (id:${p.user_id}) — ${new Date(p.created_at).toLocaleString()}`
+        const body = document.createElement('div'); body.textContent = p.content
+        const actions = document.createElement('div')
+        actions.style.marginTop = '6px'
+        const btnLike = document.createElement('button'); btnLike.textContent = 'Like'; btnLike.onclick = async () => { await likePost(p.id); document.getElementById('btnFetchFeed').click(); }
+        const btnUnlike = document.createElement('button'); btnUnlike.textContent = 'Unlike'; btnUnlike.onclick = async () => { await unlikePost(p.id); document.getElementById('btnFetchFeed').click(); }
+        const btnComment = document.createElement('button'); btnComment.textContent = 'Comment'; btnComment.onclick = async () => { const body = prompt('Comment body'); if (!body) return; await commentOnPost(p.id, body); document.getElementById('btnFetchFeed').click(); }
+        actions.appendChild(btnLike); actions.appendChild(btnUnlike); actions.appendChild(btnComment)
+        el.appendChild(header); el.appendChild(body); el.appendChild(actions); area.appendChild(el)
+      })
+    }
+
+    async function likePost(postId) {
+      const r = await api('/api/posts/' + postId + '/like', 'POST')
+      if (r.status >= 400) alert('Like failed: ' + JSON.stringify(r.json || r.text))
+    }
+
+    async function unlikePost(postId) {
+      const r = await api('/api/posts/' + postId + '/unlike', 'POST')
+      if (r.status >= 400) alert('Unlike failed: ' + JSON.stringify(r.json || r.text))
+    }
+
+    async function commentOnPost(postId, body) {
+      const r = await api('/api/posts/' + postId + '/comments', 'POST', { body })
+      if (r.status >= 400) alert('Comment failed: ' + JSON.stringify(r.json || r.text))
+    }
+    document.getElementById('btnShowPost').onclick = async () => {
+      const id1 = parseInt(document.getElementById('PostRecip').value)
+      const r = await api('/api/posts/' + id1, 'GET')
+      document.getElementById('postArea').textContent = JSON.stringify(r.json || r.text, null, 2)
+    }
+
+    // Notifications helpers
+    async function fetchNotificationsList() {
+      const r = await api('/api/notifications', 'GET')
+      if (!r || r.status >= 400) return []
+      return r.json || []
+    }
+
+    async function updateNotificationBadge() {
+      const list = await fetchNotificationsList()
+      const unread = list.filter(n => !n.read_at).length
+      const badge = document.getElementById('notifBadge')
+      if (unread > 0) { badge.style.display = 'inline-block'; badge.textContent = unread } else { badge.style.display = 'none' }
+    }
+
+    document.getElementById('btnFetchNotifications').onclick = async () => {
+      const list = await fetchNotificationsList()
+      const area = document.getElementById('notificationsArea')
+      area.innerHTML = ''
+      if (!list.length) { area.textContent = 'No notifications'; updateNotificationBadge(); return }
+      list.forEach(n => {
+        const el = document.createElement('div')
+        el.style.borderBottom = '1px solid #eee'; el.style.padding = '8px 0';
+        if (!n.read_at) el.classList.add('notif-unread')
+        const msg = document.createElement('div'); msg.textContent = `${n.type} — ${n.data && n.data.from ? n.data.from : (n.data && n.data.post_id ? 'post:'+n.data.post_id : '')}`
+        const meta = document.createElement('small'); meta.textContent = new Date(n.created_at).toLocaleString(); meta.style.marginLeft = '8px';
+        const btnMark = document.createElement('button'); btnMark.textContent = 'Mark Read'; btnMark.onclick = async () => { await markNotificationRead(n.id); await updateNotificationBadge(); document.getElementById('btnFetchNotifications').click(); }
+        el.appendChild(msg); el.appendChild(meta); el.appendChild(btnMark); area.appendChild(el)
+      })
+      await updateNotificationBadge()
+    }
+
+    async function markNotificationRead(id) {
+      const r = await api('/api/notifications/' + id + '/read', 'POST')
+      if (r.status >= 400) alert('Mark read failed: ' + JSON.stringify(r.json || r.text))
+      else await updateNotificationBadge()
+    }
+
+    document.getElementById('btnMarkAllNotifications').onclick = async () => {
+      const r = await api('/api/notifications/read-all', 'POST')
+      if (r.status >= 400) alert('Mark all failed: ' + JSON.stringify(r.json || r.text))
+      else { await updateNotificationBadge(); document.getElementById('btnFetchNotifications').click(); }
+    }
+
+    // Websockets
+    function initEcho() {
+      if (!getToken() || !window.currentUserId) return;
+      try { if (window.Echo && window.Echo.connector) { window.Echo.disconnect(); } } catch(e) {}
+      const key = window.PUSHER_APP_KEY || 'local'
+      const host = window.PUSHER_HOST || window.location.hostname
+      const port = window.PUSHER_PORT || 6001
+      window.Echo = new Echo({
+        broadcaster: 'pusher',
+        key: key,
+        wsHost: host,
+        wsPort: port,
+        forceTLS: false,
+        encrypted: false,
+        disableStats: true,
+        enabledTransports: ['ws','wss'],
+        auth: { headers: { Authorization: 'Bearer ' + getToken() } }
+      })
+
+      // message events
+      window.Echo.private('messages.' + window.currentUserId)
+        .listen('MessageSent', (e) => { appendMessages([e]); })
+
+      // user notifications 
+      window.Echo.private('App.Models.User.' + window.currentUserId)
+        .notification((n) => {
+          updateNotificationBadge()
+          try {
+            const area = document.getElementById('notificationsArea')
+            if (area) {
+              const el = document.createElement('div')
+              el.style.borderBottom = '1px solid #eee'; el.style.padding = '8px 0'
+              el.textContent = `${n.type} — ${JSON.stringify(n.data || {})}`
+              area.prepend(el)
+            }
+          } catch(e) { }
+        })
+    }
+
+    // refresh badge
+    setInterval(() => { updateNotificationBadge().catch(() => {}) }, 15000)
+    updateNotificationBadge().catch(() => {})
+
+    // initialize
+    if (getToken()) document.getElementById('tokenDisplay').textContent = getToken()
+    fetchCurrentUser().catch(() => { })
+    // initial counts and badges
+    fetchFollowCounts().catch(() => {})
+    updateNotificationBadge().catch(() => {})
+  </script>
+</body>
+
+</html>

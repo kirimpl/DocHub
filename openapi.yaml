@@ -1,0 +1,51 @@
+openapi: 3.0.0
+info:
+  title: Social Network API
+  version: 1.0.0
+paths:
+  /api/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '201': { description: Created }
+  /api/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/posts:
+    get:
+      summary: List feed/posts
+    post:
+      summary: Create post
+  /api/posts/{id}:
+    get:
+      summary: Get post
+    delete:
+      summary: Delete post
+  /api/messages/send:
+    post:
+      summary: Send message (body: recipient_id, body)
+  /api/search:
+    get:
+      summary: Search users and posts (q)
+components: {}

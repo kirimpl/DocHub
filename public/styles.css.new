@@ -1,0 +1,69 @@
+/* Styles for SocialNet - cleaned and extended */
+:root{
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+}
+
+*{box-sizing:border-box}
+body{
+    font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    background: var(--bg);
+    color: var(--text);
+    margin:0;
+}
+
+/* Cards */
+.bg-white{background:var(--card);border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.06);}
+
+/* Header */
+header{background:var(--card);box-shadow:0 2px 8px rgba(2,6,23,0.06);position:sticky;top:0;z-index:40}
+
+/* Buttons and controls */
+button{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;background:#2563eb;color:#fff}
+button:hover{opacity:0.95;transform:translateY(-1px)}
+
+.notification-badge{background:#ef4444;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px}
+
+/* Forms */
+input,textarea,select{border:1px solid #e6e9ee;padding:8px 10px;border-radius:8px}
+input:focus,textarea:focus{outline:none;box-shadow:0 0 0 4px rgba(37,99,235,0.08);border-color:#2563eb}
+
+/* Posts */
+.post-card{transition:transform .16s ease;border-radius:12px}
+.post-card:hover{transform:translateY(-4px)}
+.post-image{max-width:100%;height:auto;border-radius:10px}
+
+/* Comments */
+.comment-item{padding:12px;border-bottom:1px solid rgba(0,0,0,0.04);}
+.comment-item:last-child{border-bottom:none}
+.comment-form{border-top:1px solid rgba(0,0,0,0.04);padding-top:10px}
+
+/* Chat layout */
+.conversations-column{max-height:520px;overflow-y:auto}
+.chat-column{display:flex;flex-direction:column}
+.chat-messages-area{flex:1 1 auto;overflow-y:auto;padding:12px;background:rgba(0,0,0,0.02);border-radius:8px}
+.chat-header{flex:0 0 auto;margin-bottom:8px}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:70}
+.modal.show{display:flex}
+.modal .bg-white{max-width:960px;width:100%;max-height:90vh;overflow:hidden}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45)}
+.modal-close{position:absolute;right:12px;top:12px;background:transparent;border:none;font-size:18px;color:var(--muted);cursor:pointer}
+
+/* Dark theme */
+.dark{--bg:#071023;--card:#081229;--text:#e6eef8;--muted:#9aa7b8;background:var(--bg);color:var(--text)}
+.dark .bg-white{background:var(--card)}
+
+/* Responsive tweaks */
+@media (max-width:900px){
+    .conversations-column{max-height:320px}
+    header nav{display:flex;flex-wrap:wrap;gap:0.5rem}
+}
+
+/* small utilities */
+.text-muted{color:var(--muted)}
+
+/* End of stylesheet */

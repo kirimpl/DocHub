@@ -1,0 +1,138 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use App\Models\Post;
+use App\Models\User;
+use App\Models\UserBlock;
+use App\Notifications\NewPostNotification;
+
+class PostController extends Controller
+{
+    use AuthorizesRequests;
+
+    private function clearPostCaches(int $userId): void
+    {
+        cache()->forget("posts:user:{$userId}");
+        cache()->forget("feed:user:{$userId}");
+    }
+
+    private function canSeePost(User $viewer, Post $post): bool
+    {
+        if ($viewer->id === $post->user_id) {
+            return true;
+        }
+        $owner = $post->user;
+        $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
+        if ($visibility === 'nobody') {
+            return false;
+        }
+        if ($visibility === 'friends') {
+            return $viewer->friends()->where('users.id', $post->user_id)->exists();
+        }
+        if ($visibility === 'followers') {
+            return $viewer->following()->where('users.id', $post->user_id)->exists();
+        }
+        if ($post->is_public) {
+            return true;
+        }
+        return $viewer->following()->where('users.id', $post->user_id)->exists();
+    }
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $cacheKey = "posts:user:{$user->id}";
+
+        $blockedIds = UserBlock::where('blocker_id', $user->id)->pluck('blocked_id');
+        $blockedByIds = UserBlock::where('blocked_id', $user->id)->pluck('blocker_id');
+        $blocked = $blockedIds->merge($blockedByIds)->unique()->values()->all();
+
+        $posts = cache()->remember($cacheKey, 15, function () use ($user) {
+            $following = $user->following()->pluck('users.id')->toArray();
+
+            return Post::whereIn('user_id', $following)
+                ->orWhere('is_public', true)
+                ->with('user')
+                ->with(['likes' => function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                }])
+                ->withCount(['likes', 'comments'])
+                ->latest()
+                ->get();
+        });
+
+        if (!empty($blocked)) {
+            $posts = $posts->filter(fn ($post) => !in_array($post->user_id, $blocked, true))->values();
+        }
+        $posts = $posts->filter(fn ($post) => $this->canSeePost($user, $post))->values();
+
+        return response()->json($posts);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'content' => 'nullable|string',
+            'image' => 'nullable|string',
+            'is_public' => 'boolean',
+        ]);
+
+        $post = Post::create(array_merge($data, ['user_id' => $request->user()->id]));
+        $this->clearPostCaches($request->user()->id);
+
+        $user = $request->user();
+        $user->followers->each(function ($follower) use ($post, $user) {
+            $follower->notify(new NewPostNotification($post, $user));
+        });
+
+        return response()->json($post, 201);
+    }
+
+    public function show($id)
+    {
+        $post = Post::with('user')->findOrFail($id);
+        $this->authorize('view', $post);
+        return response()->json($post);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $post = Post::findOrFail($id);
+        $this->authorize('delete', $post);
+        $post->delete();
+        $this->clearPostCaches($request->user()->id);
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $post = Post::findOrFail($id);
+        $this->authorize('update', $post);
+
+        $data = $request->validate([
+            'content' => 'nullable|string',
+            'image' => 'nullable|string',
+            'is_public' => 'boolean',
+        ]);
+
+        $post->update($data);
+        $this->clearPostCaches($request->user()->id);
+
+        return response()->json($post->load('user'));
+    }
+
+    public function myPosts(Request $request)
+    {
+        $user = $request->user();
+        $posts = Post::where('user_id', $user->id)
+            ->with('user')
+            ->withCount(['likes', 'comments'])
+            ->latest()
+            ->get();
+        return response()->json($posts);
+    }
+}

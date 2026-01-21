@@ -1,0 +1,537 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Network</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo/dist/echo.iife.js"></script>
+    <script src="https://unpkg.com/picmo@latest/dist/umd/index.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl font-bold text-blue-600 cursor-pointer" onclick="showPage('home')">SocialNet</h1>
+                <nav class="flex items-center space-x-4">
+                    <button id="navHome" class="nav-link text-gray-700 hover:text-blue-600" onclick="showPage('home')">Главная</button>
+                    <button id="navProfile" class="nav-link text-gray-700 hover:text-blue-600" onclick="showPage('profile')">Профиль</button>
+                    <button id="navMessages" class="nav-link text-gray-700 hover:text-blue-600 relative" onclick="showPage('messages')">
+                        Сообщения <span id="msgBadge" class="notification-badge hidden ml-1">0</span>
+                    </button>
+                    <button id="navFriends" class="nav-link text-gray-700 hover:text-blue-600" onclick="showPage('friends')">Друзья</button>
+                    <button id="navNotifications" class="nav-link text-gray-700 hover:text-blue-600 relative" onclick="openModal('notificationsModal')">
+                        Уведомления <span id="notifBadge" class="notification-badge hidden ml-1">0</span>
+                    </button>
+                    <button id="btnToggleTheme" class="nav-link text-gray-700 hover:text-blue-600 ml-2" onclick="toggleTheme()">Тема</button>
+                    <button id="btnLogout" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Выйти</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Home Page -->
+        <div id="homePage" class="page grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar -->
+            <aside class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold mb-4">Мой профиль</h2>
+                    <div id="userInfo" class="text-center">
+                        <img id="userAvatar" class="w-20 h-20 bg-gray-300 rounded-full mx-auto mb-4" src="" alt="Avatar">
+                        <p class="font-medium" id="userName">Загрузка...</p>
+                        <p class="text-sm text-gray-500" id="userStatus"></p>
+                        <p class="text-sm text-gray-600" id="userStats">Подписчиков: 0 | Подписок: 0</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Feed -->
+            <main class="lg:col-span-2">
+
+                <!-- Create Post -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4">Создать пост</h3>
+                    <textarea id="postContent" class="w-full p-3 border rounded-lg resize-none" rows="3" placeholder="Что у вас нового?"></textarea>
+                    <input type="file" id="postImage" class="mt-3 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <button id="btnCreatePost" class="mt-3 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Опубликовать</button>
+                </div>
+
+                <!-- Posts Feed -->
+                <div id="feed" class="space-y-6">
+              
+                </div>
+            </main>
+
+            <!-- Right Sidebar -->
+            <aside class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold mb-4">Рекомендации</h2>
+                    <div id="suggestions" class="space-y-3">
+                
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profilePage" class="page hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div id="profileCover" class="profile-cover"></div>
+                <div class="profile-header mb-6">
+                    <div class="profile-header-main">
+                        <img id="profileAvatar" class="w-24 h-24 bg-gray-300 rounded-full" src="" alt="Avatar">
+                        <div>
+                            <h2 class="text-2xl font-bold" id="profileName">Имя пользователя</h2>
+                            <p class="text-gray-600" id="profileEmail">email@example.com</p>
+                            <p class="text-sm text-gray-500 mt-1" id="profileStatus"></p>
+                            <p class="text-sm text-gray-500 mt-2" id="profileStats">
+                                <span id="profileFollowers" class="stats-link">Подписчиков: 0</span> |
+                                <span id="profileFollowing" class="stats-link">Подписок: 0</span> |
+                                <span id="profilePosts">Постов: 0</span> |
+                                <span id="profileLikes">Лайков: 0</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button id="btnProfileSettings" class="btn-settings" type="button" aria-label="Настройки">⚙</button>
+                </div>
+                <div class="profile-actions mb-6">
+                    <button id="btnBlockUser" class="btn-block hidden">Заблокировать</button>
+                </div>
+                <div id="profilePinnedPost" class="hidden mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Закрепленный пост</h3>
+                    <div id="pinnedPostContent" class="bg-gray-100 rounded-lg p-4"></div>
+                </div>
+                <h3 class="text-xl font-semibold mb-4">Мои посты</h3>
+                <div id="userPosts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Page -->
+        <div id="messagesPage" class="page hidden">
+            <div class="bg-white rounded-lg shadow p-6 min-h-96">
+                <h2 class="text-xl font-bold mb-4">Сообщения</h2>
+                <div class="flex flex-col lg:flex-row h-full gap-4">
+                    <div class="conversations-column lg:w-1/3 bg-gray-50 p-4 rounded-lg">
+                        <div class="chat-tabs">
+                            <button id="tabDirectChats" class="chat-tab chat-tab-active">Диалоги</button>
+                            <button id="tabGroupChats" class="chat-tab">Группы</button>
+                        </div>
+                        <div id="conversationsList" class="space-y-2 overflow-y-auto mt-3">
+                            <!-- Conversations list -->
+                        </div>
+                        <div id="groupChatsPanel" class="hidden mt-3">
+                            <button id="btnCreateGroup" class="chat-create-btn" type="button">+ Создать группу</button>
+                            <div id="groupChatsList" class="space-y-2 overflow-y-auto mt-3"></div>
+                        </div>
+                    </div>
+                    <div class="chat-column lg:w-2/3 bg-gray-50 p-4 rounded-lg flex flex-col">
+                        <div class="chat-header mb-4 flex justify-between items-center">
+                            <h4 id="chatTitle" class="font-medium">Выберите диалог</h4>
+                            <div class="chat-menu">
+                                <button id="btnChatMenu" class="chat-menu-btn hidden" type="button" aria-label="Меню чата">⋯</button>
+                                <div id="chatMenu" class="chat-menu-panel hidden">
+                                    <label class="chat-menu-label" for="chatSearchInput">Поиск в чате</label>
+                                    <input id="chatSearchInput" type="text" class="chat-menu-input" placeholder="Введите текст...">
+                                    <div class="chat-search-actions">
+                                    <button id="btnSearchPrev" class="chat-search-btn" type="button">Предыдущее</button>
+                                    <button id="btnSearchNext" class="chat-search-btn" type="button">Следующее</button>
+                                    </div>
+                                    <button id="btnInviteGroup" class="chat-menu-action hidden" type="button">Пригласить участника</button>
+                                    <button id="btnGroupMembers" class="chat-menu-action hidden" type="button">Участники</button>
+                                    <button id="btnDeleteConversation" onclick="deleteConversation()" class="chat-menu-danger">Удалить диалог у меня</button>
+                                    <button id="btnDeleteConversationAll" onclick="deleteConversationForAll()" class="chat-menu-danger">Удалить диалог у всех</button>
+                                    <button id="btnLeaveGroup" onclick="leaveGroupChat()" class="chat-menu-danger hidden">Покинуть группу</button>
+                                    <button id="btnDeleteGroup" onclick="deleteGroupChat()" class="chat-menu-danger hidden">Удалить группу</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="pinnedPanel" class="pinned-panel hidden">
+                            <div class="pinned-bar">
+                                <div id="pinnedSingle" class="pinned-single"></div>
+                                <button id="btnPinnedAll" class="pinned-all-btn" type="button" aria-label="Все закрепленные">≡</button>
+                            </div>
+                        </div>
+                        <div id="stickyAudioBar" class="sticky-audio hidden">
+                            <div class="sticky-audio-inner">
+                                <button id="stickyAudioPlay" class="sticky-audio-play" type="button" aria-label="Play">
+                                    <span class="audio-icon" aria-hidden="true"></span>
+                                </button>
+                                <div class="sticky-audio-body">
+                                    <div id="stickyAudioBarLine" class="sticky-audio-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                                        <div id="stickyAudioProgress" class="audio-line-fill" aria-hidden="true"></div>
+                                    </div>
+                                    <div class="sticky-audio-meta">
+                                        <span id="stickyAudioMetaLeft">0:00</span>
+                                        <span id="stickyAudioMetaRight">0:00</span>
+                                    </div>
+                                </div>
+                                <div class="sticky-audio-actions">
+                                    <button id="stickyAudioSpeed" class="audio-speed" type="button" aria-label="Скорость воспроизведения">1x</button>
+                                    <button id="stickyAudioClose" class="sticky-audio-close" type="button" aria-label="Закрыть">&times;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-messages-area flex-1" id="chatMessages">
+                            <!-- Messages -->
+                        </div>
+                        <div id="messageMenu" class="message-menu hidden absolute bg-white border rounded shadow p-2 z-10">
+                            <button onclick="replyToMessage()" class="message-menu-btn">Ответить</button>
+                            <button onclick="forwardMessage()" class="message-menu-btn">Переслать</button>
+                            <button onclick="reactToMessage()" class="message-menu-btn">Реакция</button>
+                            <button id="btnPinMessage" onclick="togglePinMessage()" class="message-menu-btn">Закрепить</button>
+                            <button onclick="deleteMessage()" class="message-menu-btn is-danger">Удалить</button>
+                        </div>
+                        <div id="reactionPicker" class="reaction-picker hidden absolute z-10">
+                            <button class="reaction-btn" onclick="selectReaction('👍')">👍</button>
+                            <button class="reaction-btn" onclick="selectReaction('❤️')">❤️</button>
+                            <button class="reaction-btn" onclick="selectReaction('🔥')">🔥</button>
+                            <button class="reaction-btn" onclick="selectReaction('😂')">😂</button>
+                            <button class="reaction-btn" onclick="selectReaction('😮')">😮</button>
+                            <button class="reaction-btn" onclick="selectReaction('😢')">😢</button>
+                            <button class="reaction-btn" onclick="selectReaction('😡')">😡</button>
+                        </div>
+                        <div id="replyPreview" class="reply-preview hidden">
+                            <div>
+                                <div class="reply-preview-title">Ответ на сообщение</div>
+                                <div id="replyPreviewText" class="reply-preview-text"></div>
+                            </div>
+                            <button type="button" class="reply-preview-close" onclick="clearReply()">×</button>
+                        </div>
+                        <div id="forwardPreview" class="forward-preview hidden">
+                            <div>
+                                <div class="forward-preview-title" id="forwardPreviewTitle">Переслано от пользователя</div>
+                                <div id="forwardPreviewText" class="forward-preview-text"></div>
+                            </div>
+                            <button type="button" class="forward-preview-close" onclick="clearForward()">×</button>
+                        </div>
+                        <div id="chatInputArea" class="mt-4 chat-input-area">
+                            <button id="btnImageMessage" class="btn-attach" type="button">+</button>
+                            <input id="imageMessageInput" type="file" accept="image/*" class="hidden">
+                            <div class="chat-input-field">
+                                <div id="voiceIndicator" class="voice-indicator hidden">
+                                    <span class="voice-dot"></span>
+                                    <span id="voiceTimer">0:00</span>
+                                </div>
+                                <textarea id="messageInput" class="chat-input-textarea" placeholder="Напишите сообщение..." rows="1"></textarea>
+                                <div class="chat-input-tools">
+                                    <div class="emoji-picker-wrap">
+                                        <button id="btnEmojiPicker" class="chat-tool-btn" type="button" aria-label="Эмодзи">
+                                            <img class="chat-tool-icon" src="/storage/docs/face.svg" alt="">
+                                        </button>
+                                        <div id="emojiPickerPanel" class="emoji-picker-panel hidden">
+                                            <div id="emojiPickerRoot"></div>
+                                        </div>
+                                    </div>
+                                    <button id="btnVoiceMessage" class="chat-tool-btn" type="button" aria-label="Голосовое сообщение">
+                                        <img class="chat-tool-icon" src="/storage/docs/microphone.svg" alt="">
+                                    </button>
+                                </div>
+                            </div>
+                            <button id="btnSendMessage" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Отправить</button>
+                        </div>
+                        <div id="chatError" class="chat-error hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Friends Page -->
+        <div id="friendsPage" class="page hidden">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Друзья</h2>
+                <div class="mb-4">
+                    <input id="searchUsers" type="text" placeholder="Поиск пользователей..." class="w-full p-3 border rounded-lg">
+                    <button id="btnSearchUsers" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Поиск</button>
+                </div>
+                <div class="mb-4">
+                    <nav class="flex space-x-4">
+                        <button id="tabFriends" class="tab-button bg-blue-500 text-white px-4 py-2 rounded">Друзья</button>
+                        <button id="tabIncoming" class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded">Входящие</button>
+                        <button id="tabOutgoing" class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded">Исходящие</button>
+                        <button id="tabAllUsers" class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded">Все пользователи</button>
+                        <button id="tabOnline" class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded">Онлайн</button>
+                        <button id="tabBlocked" class="tab-button bg-gray-200 text-gray-700 px-4 py-2 rounded">Заблокированные</button>
+                    </nav>
+                </div>
+                <div id="friendsContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Friends content -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Page -->
+        <div id="notificationsPage" class="page hidden">
+            <div class="bg-white rounded-lg shadow p-6 notifications-modal">
+                <h2 class="text-xl font-bold mb-4">Уведомления</h2>
+                <div id="notificationsList" class="space-y-3 notifications-list">
+                    <!-- Notifications -->
+                </div>
+                <div class="notifications-actions">
+                    <button id="btnMarkAllRead" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Отметить все как прочитанные</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('authModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('authModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Вход / Регистрация</h2>
+            <div class="space-y-4">
+                <input id="authName" type="text" placeholder="Имя" class="w-full p-3 border rounded">
+                <input id="authEmail" type="email" placeholder="Email" class="w-full p-3 border rounded">
+                <input id="authPassword" type="password" placeholder="Пароль" class="w-full p-3 border rounded">
+                <button id="btnLogin" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600">Войти</button>
+                <button id="btnRegister" class="w-full bg-gray-500 text-white py-3 rounded hover:bg-gray-600">Регистрация</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profileEditModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('profileEditModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('profileEditModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Редактировать профиль</h2>
+            <div class="space-y-4">
+                <input id="editName" type="text" placeholder="Имя" class="w-full p-3 border rounded">
+                <input id="editLastName" type="text" placeholder="Фамилия" class="w-full p-3 border rounded">
+                <input id="editEmail" type="email" placeholder="Email" class="w-full p-3 border rounded">
+                <input id="editStatus" type="text" placeholder="Статус (до 140 символов)" class="w-full p-3 border rounded" maxlength="140">
+                <input id="editAvatar" type="file" accept="image/*" class="w-full p-3 border rounded">
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="removeAvatar" class="rounded">
+                    Удалить аватар
+                </label>
+                <input id="editCover" type="file" accept="image/*" class="w-full p-3 border rounded">
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="removeCover" class="rounded">
+                    Удалить обложку
+                </label>
+                <div>
+                    <input type="checkbox" id="editPrivate" class="rounded">
+                    <label for="editPrivate" class="ml-2">Приватный профиль</label>
+                </div>
+                <button id="btnSaveProfile" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Settings Modal -->
+    <div id="profileSettingsModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('profileSettingsModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 fade-in relative settings-modal">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('profileSettingsModal')">&times;</button>
+            <div class="settings-header">
+                <h2 class="text-xl font-bold">Настройки профиля</h2>
+                <button id="btnOpenProfileEdit" class="btn-action btn-default" type="button">Редактировать профиль</button>
+            </div>
+            <div class="settings-section">
+                <h3 class="settings-title">Приватность и доступ</h3>
+                <div class="privacy-grid">
+                    <label class="privacy-option">
+                        <input type="checkbox" id="profilePrivate" class="rounded">
+                        <span>Приватный профиль</span>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="checkbox" id="profileShowStatus" class="rounded">
+                        <span>Показывать статус</span>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="checkbox" id="profileShowLastSeen" class="rounded">
+                        <span>Показывать онлайн</span>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="checkbox" id="profileShowFollowers" class="rounded">
+                        <span>Показывать подписчиков</span>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="checkbox" id="profileShowFollowing" class="rounded">
+                        <span>Показывать подписки</span>
+                    </label>
+                    <label class="privacy-option privacy-select">
+                        <span>Кто видит посты</span>
+                        <select id="profilePostsVisibility">
+                            <option value="everyone">Все</option>
+                            <option value="followers">Подписчики</option>
+                            <option value="friends">Друзья</option>
+                            <option value="nobody">Никто</option>
+                        </select>
+                    </label>
+                    <label class="privacy-option privacy-select">
+                        <span>Кто может комментировать</span>
+                        <select id="profileCommentsVisibility">
+                            <option value="everyone">Все</option>
+                            <option value="followers">Подписчики</option>
+                            <option value="friends">Друзья</option>
+                            <option value="nobody">Никто</option>
+                        </select>
+                    </label>
+                    <label class="privacy-option privacy-select">
+                        <span>Кто может писать</span>
+                        <select id="profileMessagesVisibility">
+                            <option value="everyone">Все</option>
+                            <option value="followers">Подписчики</option>
+                            <option value="friends">Друзья</option>
+                            <option value="nobody">Никто</option>
+                        </select>
+                    </label>
+                    <label class="privacy-option privacy-select">
+                        <span>Кто видит почту</span>
+                        <select id="profileEmailVisibility">
+                            <option value="everyone">Все</option>
+                            <option value="friends">Друзья</option>
+                            <option value="nobody">Никто</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="settings-actions">
+                    <button id="btnUpdatePrivacy" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Сохранить</button>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3 class="settings-title">Безопасность</h3>
+                <div class="security-grid">
+                    <input id="currentPassword" type="password" placeholder="Текущий пароль" class="p-3 border rounded">
+                    <input id="newPassword" type="password" placeholder="Новый пароль" class="p-3 border rounded">
+                    <input id="confirmPassword" type="password" placeholder="Повторите новый пароль" class="p-3 border rounded">
+                    <button id="btnChangePassword" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Сменить пароль</button>
+                    <button id="btnLogoutAll" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Выйти везде</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('notificationsModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in relative notifications-modal">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('notificationsModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Уведомления</h2>
+            <div id="modalNotificationsList" class="space-y-3 notifications-list">
+                <!-- Notifications -->
+            </div>
+            <div class="notifications-actions">
+                <button id="btnMarkAllReadModal" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Отметить все как прочитанные</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forward Modal -->
+    <div id="forwardModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('forwardModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('forwardModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Кому переслать</h2>
+            <div id="forwardList" class="space-y-2 max-h-80 overflow-y-auto"></div>
+            <div id="forwardEmpty" class="text-sm text-gray-500 hidden">Нет доступных друзей</div>
+        </div>
+    </div>
+
+    <script src="social.js"></script>
+    <!-- Comments Modal -->
+    <div id="commentsModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('commentsModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4 fade-in max-h-96 overflow-hidden flex flex-col relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('commentsModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Комментарии</h2>
+            <div id="commentsList" class="flex-1 overflow-y-auto space-y-2">
+                <!-- Comments -->
+            </div>
+            <div class="comment-form mt-4">
+                <textarea id="commentText" placeholder="Напишите комментарий..." class="w-full p-3 border rounded resize-none" rows="3"></textarea>
+                <button id="btnPostComment" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Post Modal -->
+    <div id="editPostModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('editPostModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4 fade-in relative edit-post-modal">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('editPostModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Редактировать пост</h2>
+            <div class="space-y-4 edit-post-content">
+                <textarea id="editPostContent" class="w-full p-3 border rounded resize-none" rows="4" placeholder="Текст поста"></textarea>
+                <div id="editPostImagePreview" class="hidden edit-post-preview">
+                    <img id="editPostImage" class="post-image edit-post-image" src="" alt="Post image">
+                </div>
+                <input type="file" id="editPostImageFile" accept="image/*" class="w-full p-3 border rounded">
+                <label class="flex items-center gap-2 text-sm text-gray-600">
+                    <input type="checkbox" id="editPostRemoveImage" class="rounded">
+                    Удалить текущее изображение
+                </label>
+                <button id="btnSavePostEdit" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="createGroupModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('createGroupModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4 fade-in relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('createGroupModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Создать групповой чат</h2>
+            <div class="space-y-4">
+                <input id="groupName" type="text" placeholder="Название группы" class="w-full p-3 border rounded">
+                <div id="groupCreateMembersList" class="group-members-list"></div>
+                <button id="btnCreateGroupSubmit" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Followers/Following Modal -->
+    <div id="followersModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('followersModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in max-h-96 overflow-y-auto relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('followersModal')">&times;</button>
+            <h2 id="followersModalTitle" class="text-xl font-bold mb-4">Подписчики</h2>
+            <div id="followersModalList" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- Invite Members Modal -->
+    <div id="inviteGroupModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('inviteGroupModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4 fade-in relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('inviteGroupModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Пригласить участников</h2>
+            <div class="space-y-4">
+                <div id="inviteMembersList" class="group-members-list"></div>
+                <button id="btnInviteGroupSubmit" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600">Пригласить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Members Modal -->
+    <div id="groupMembersModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('groupMembersModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in max-h-96 overflow-y-auto relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('groupMembersModal')">&times;</button>
+            <h2 id="groupMembersTitle" class="text-xl font-bold mb-4">Участники группы</h2>
+            <div id="groupMembersModalList" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- Pinned Messages Modal -->
+    <div id="pinnedModal" class="modal">
+        <div class="modal-backdrop" onclick="closeModal('pinnedModal')"></div>
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 fade-in max-h-96 overflow-y-auto relative">
+            <button class="modal-close absolute top-3 right-3 text-gray-500" onclick="closeModal('pinnedModal')">&times;</button>
+            <h2 class="text-xl font-bold mb-4">Закрепленные сообщения</h2>
+            <div id="pinnedModalList" class="space-y-2"></div>
+        </div>
+    </div>
+</body>
+</html>
+
