@@ -10,9 +10,16 @@ class LikePolicy
 {
     public function like(User $user, Post $post)
     {
-  
-        if ($post->is_public) return true;
-        if ($user->id === $post->user_id) return true;
-        return $user->friends()->where('users.id', $post->user_id)->exists();
+        if ($user->id === $post->user_id) {
+            return true;
+        }
+        if ($post->is_global) {
+            return true;
+        }
+        $viewerOrg = $user->work_place;
+        if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
+            return true;
+        }
+        return false;
     }
 }

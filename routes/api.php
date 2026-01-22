@@ -16,6 +16,9 @@ use App\Http\Controllers\API\ChatGroupController;
 use App\Http\Controllers\API\ChatGroupMessageController;
 use App\Http\Controllers\API\ChatGroupMessageReactionController;
 use App\Http\Controllers\API\BlockController;
+use App\Http\Controllers\API\OrganizationController;
+use App\Http\Controllers\API\DepartmentController;
+use App\Http\Controllers\API\LectureController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -24,6 +27,8 @@ Route::get('ping', function () {
 
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
+Route::get('organizations', [OrganizationController::class, 'index']);
+Route::get('departments', [DepartmentController::class, 'index']);
 
 Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
@@ -99,6 +104,7 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('group-chats', [ChatGroupController::class, 'index']);
     Route::post('group-chats', [ChatGroupController::class, 'store']);
     Route::get('group-chats/{id}', [ChatGroupController::class, 'show'])->whereNumber('id');
+    Route::patch('group-chats/{id}', [ChatGroupController::class, 'update'])->whereNumber('id');
     Route::post('group-chats/{id}/members', [ChatGroupController::class, 'addMembers'])->whereNumber('id');
     Route::delete('group-chats/{id}/members/{memberId}', [ChatGroupController::class, 'removeMember'])->whereNumber('id')->whereNumber('memberId');
     Route::post('group-chats/{id}/leave', [ChatGroupController::class, 'leave'])->whereNumber('id');
@@ -137,4 +143,14 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('blocks', [BlockController::class, 'index']);
     Route::post('blocks', [BlockController::class, 'store']);
     Route::delete('blocks/{id}', [BlockController::class, 'destroy'])->whereNumber('id');
+
+    // lectures
+    Route::get('lectures', [LectureController::class, 'index']);
+    Route::post('lectures', [LectureController::class, 'store']);
+    Route::get('lectures/{id}', [LectureController::class, 'show'])->whereNumber('id');
+    Route::patch('lectures/{id}', [LectureController::class, 'update'])->whereNumber('id');
+    Route::post('lectures/{id}/join', [LectureController::class, 'join'])->whereNumber('id');
+    Route::post('lectures/{id}/leave', [LectureController::class, 'leave'])->whereNumber('id');
+    Route::post('lectures/{id}/end', [LectureController::class, 'end'])->whereNumber('id');
+    Route::post('lectures/{id}/admins', [LectureController::class, 'addAdmins'])->whereNumber('id');
 });

@@ -14,11 +14,23 @@ class ChatGroupMessageController extends Controller
         return $group->members()->where('users.id', $userId)->exists();
     }
 
+    private function isLectureEnded(ChatGroup $group): bool
+    {
+        if ($group->type !== 'lecture' || !$group->lecture) {
+            return false;
+        }
+
+        return $group->lecture->isEnded();
+    }
+
     public function index(Request $request, $groupId)
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($groupId);
-        if (!$this->ensureMember($group, $user->id)) {
+        if ($this->isLectureEnded($group) && !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+        if (!$this->ensureMember($group, $user->id) && !$user->isGlobalAdmin()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
 
@@ -38,7 +50,10 @@ class ChatGroupMessageController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($groupId);
-        if (!$this->ensureMember($group, $user->id)) {
+        if ($this->isLectureEnded($group) && !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+        if (!$this->ensureMember($group, $user->id) && !$user->isGlobalAdmin()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
 
@@ -55,6 +70,9 @@ class ChatGroupMessageController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($groupId);
+        if ($this->isLectureEnded($group)) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
         if (!$this->ensureMember($group, $user->id)) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
@@ -92,12 +110,15 @@ class ChatGroupMessageController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($groupId);
-        if (!$this->ensureMember($group, $user->id)) {
+        if ($this->isLectureEnded($group) && !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+        if (!$this->ensureMember($group, $user->id) && !$user->isGlobalAdmin()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
 
         $message = ChatGroupMessage::where('chat_group_id', $group->id)->findOrFail($messageId);
-        if ($message->sender_id !== $user->id) {
+        if ($message->sender_id !== $user->id && !$group->isAdmin($user)) {
             return response()->json(['message' => 'You can only delete your own messages.'], 403);
         }
 
@@ -109,7 +130,10 @@ class ChatGroupMessageController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($groupId);
-        if (!$this->ensureMember($group, $user->id)) {
+        if ($this->isLectureEnded($group) && !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+        if (!$this->ensureMember($group, $user->id) && !$user->isGlobalAdmin()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
 
@@ -142,7 +166,10 @@ class ChatGroupMessageController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($groupId);
-        if (!$this->ensureMember($group, $user->id)) {
+        if ($this->isLectureEnded($group) && !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+        if (!$this->ensureMember($group, $user->id) && !$user->isGlobalAdmin()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
 

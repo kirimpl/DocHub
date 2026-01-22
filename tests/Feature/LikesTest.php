@@ -17,7 +17,7 @@ class LikesTest extends TestCase
         $author = User::factory()->create();
         $liker = User::factory()->create();
 
-        $post = Post::factory()->create(['user_id' => $author->id, 'is_public' => true]);
+        $post = Post::factory()->create(['user_id' => $author->id, 'is_global' => true]);
 
         $token = $liker->createToken('api')->plainTextToken;
 

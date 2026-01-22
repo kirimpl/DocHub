@@ -16,6 +16,7 @@ class PostFactory extends Factory
             'image' => null,
             'is_public' => $this->faker->boolean(80),
             'is_global'=> $this->faker->boolean(0),
+            'organization_name' => null,
         ];
     }
 }

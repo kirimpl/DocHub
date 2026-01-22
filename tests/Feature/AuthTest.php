@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Organization;
+use App\Models\Department;
 
 class AuthTest extends TestCase
 {
@@ -12,13 +14,18 @@ class AuthTest extends TestCase
 
     public function test_register_and_login()
     {
+        Organization::factory()->create(['name' => 'City Hospital']);
+        Department::factory()->create(['name' => 'Surgeon']);
+
         $response = $this->postJson('/api/register', [
             'name' => 'Alice',
             'email' => 'alice@example.com',
             'password' => 'password',
-            'speciality'=> 'Хирург',
-            'work_experience'=> '12',
-            'work_place'=> '3 городская пол',
+            'speciality'=> 'Surgeon',
+            'work_experience'=> 12,
+            'work_place'=> 'City Hospital',
+            'category' => 'First',
+            'position' => 'Doctor',
 
         ]);
 

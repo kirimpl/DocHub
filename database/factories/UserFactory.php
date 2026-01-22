@@ -29,6 +29,16 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'speciality' => 'General',
+            'work_experience' => 5,
+            'work_place' => 'City Hospital',
+            'category' => null,
+            'position' => null,
+            'organization_role' => 'staff',
+            'department_role' => 'staff',
+            'global_role' => 'user',
+            'secondary_work_place' => null,
+            'secondary_speciality' => null,
         ];
     }
 

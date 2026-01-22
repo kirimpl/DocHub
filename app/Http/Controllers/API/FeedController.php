@@ -14,21 +14,14 @@ class FeedController extends Controller
         if ($viewer->id === $post->user_id) {
             return true;
         }
-        $owner = $post->user;
-        $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
-        if ($visibility === 'followers') {
-            $visibility = 'friends';
-        }
-        if ($visibility === 'nobody') {
-            return false;
-        }
-        if ($visibility === 'friends') {
-            return $viewer->friends()->where('users.id', $post->user_id)->exists();
-        }
-        if ($post->is_public) {
+        if ($post->is_global) {
             return true;
         }
-        return $viewer->friends()->where('users.id', $post->user_id)->exists();
+        $viewerOrg = $viewer->work_place;
+        if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
+            return true;
+        }
+        return false;
     }
     public function index(Request $request)
     {
@@ -41,14 +34,23 @@ class FeedController extends Controller
         $cacheKey = "feed:user:{$user->id}";
 
         $feed = cache()->remember($cacheKey, 15, function () use ($user) {
-            return Post::where('is_public', true)
-                ->with('user')
+            $query = Post::with('user')
                 ->with(['likes' => function ($q) use ($user) {
                     $q->where('user_id', $user->id);
                 }])
                 ->withCount(['likes', 'comments'])
-                ->latest()
-                ->get();
+                ->latest();
+
+            $query->where(function ($q) use ($user) {
+                $q->where('is_global', true)
+                    ->orWhere('user_id', $user->id);
+
+                if ($user->work_place) {
+                    $q->orWhere('organization_name', $user->work_place);
+                }
+            });
+
+            return $query->get();
         });
 
         if (!empty($blocked)) {

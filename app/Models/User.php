@@ -23,8 +23,15 @@ class User extends Authenticatable
         'name',
         'email',
         'work_place',
+        'secondary_work_place',
         'work_experience',
         'speciality',
+        'secondary_speciality',
+        'category',
+        'position',
+        'organization_role',
+        'department_role',
+        'global_role',
         'password',
         'avatar',
         'bio',
@@ -123,5 +130,10 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
             ->withTimestamps();
+    }
+
+    public function isGlobalAdmin(): bool
+    {
+        return $this->global_role === 'admin';
     }
 }

@@ -31,9 +31,15 @@ class PostsTest extends TestCase
 
     public function test_feed_returns_posts()
     {
-        $users = User::factory(3)->create();
+        $users = User::factory(3)->create(['work_place' => 'City Hospital']);
         $author = $users->first();
-        Post::factory()->create(['user_id' => $author->id, 'content' => 'post1', 'is_public' => true, 'is_global'=>false]);
+        Post::factory()->create([
+            'user_id' => $author->id,
+            'content' => 'post1',
+            'is_public' => true,
+            'is_global' => false,
+            'organization_name' => 'City Hospital',
+        ]);
 
         $me = $users->last();
         $token = $me->createToken('api')->plainTextToken;

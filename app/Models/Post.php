@@ -19,6 +19,7 @@ class Post extends Model
         'image',
         'is_public',
         'is_global',
+        'organization_name',
     ];
 
     protected $casts = [

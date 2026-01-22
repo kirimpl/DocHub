@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Post;
+use App\Models\Organization;
+use App\Models\Department;
 
 class AuthController extends Controller
 {
@@ -43,19 +45,54 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'speciality' => 'string|max:255',
-            'work_experience' => 'int|max:450',
-            'work_place' => 'string|max:255'
+            'speciality' => 'required|string|max:255',
+            'work_experience' => 'required|integer|min:0|max:450',
+            'work_place' => 'required|string|max:255',
+            'secondary_work_place' => 'sometimes|nullable|string|max:255',
+            'secondary_speciality' => 'sometimes|nullable|string|max:255',
+            'category' => 'sometimes|nullable|string|max:255',
+            'position' => 'sometimes|nullable|string|max:255',
+            'organization_role' => 'sometimes|nullable|string|max:20',
+            'department_role' => 'sometimes|nullable|string|max:20',
         ]);
+
+        $errors = [];
+        $workPlace = $this->resolveOrganizationName($data['work_place'], $errors, 'work_place');
+        $speciality = $this->resolveDepartmentName($data['speciality'], $errors, 'speciality');
+        $secondaryWorkPlace = null;
+        $secondarySpeciality = null;
+        if (!empty($data['secondary_work_place'])) {
+            $secondaryWorkPlace = $this->resolveOrganizationName($data['secondary_work_place'], $errors, 'secondary_work_place');
+            if (!empty($data['secondary_speciality'])) {
+                $secondarySpeciality = $this->resolveDepartmentName($data['secondary_speciality'], $errors, 'secondary_speciality');
+            } elseif ($speciality) {
+                $secondarySpeciality = $speciality;
+            }
+        }
+        if (!empty($errors)) {
+            return response()->json([
+                'message' => 'Некорректные поля профиля.',
+                'errors' => $errors,
+            ], 422);
+        }
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
-            'speciality' => $data['speciality'],
+            'speciality' => $speciality,
             'work_experience' => $data['work_experience'],
-            'work_place' => $data['work_place'],
+            'work_place' => $workPlace,
+            'secondary_work_place' => $secondaryWorkPlace,
+            'secondary_speciality' => $secondarySpeciality,
+            'category' => $data['category'] ?? null,
+            'position' => $data['position'] ?? null,
+            'organization_role' => $data['organization_role'] ?? 'staff',
+            'department_role' => $data['department_role'] ?? 'staff',
         ]);
+
+        $this->ensureDefaultGroups($user);
+        $this->ensureSecondaryGroups($user);
 
         $token = $user->createToken('api')->plainTextToken;
 
@@ -92,9 +129,60 @@ class AuthController extends Controller
             'cover_image' => 'nullable|image|max:4096',
             'remove_avatar' => 'sometimes|boolean',
             'remove_cover_image' => 'sometimes|boolean',
+            'speciality' => 'sometimes|string|max:255',
+            'work_experience' => 'sometimes|integer|min:0|max:450',
+            'work_place' => 'sometimes|string|max:255',
+            'secondary_work_place' => 'sometimes|nullable|string|max:255',
+            'secondary_speciality' => 'sometimes|nullable|string|max:255',
+            'category' => 'sometimes|nullable|string|max:255',
+            'position' => 'sometimes|nullable|string|max:255',
+            'organization_role' => 'sometimes|nullable|string|max:20',
+            'department_role' => 'sometimes|nullable|string|max:20',
         ]);
 
         $user = $request->user();
+        $errors = [];
+
+        if ($request->has('work_place')) {
+            $data['work_place'] = $this->resolveOrganizationName($data['work_place'], $errors, 'work_place');
+        }
+        if ($request->has('speciality')) {
+            $data['speciality'] = $this->resolveDepartmentName($data['speciality'], $errors, 'speciality');
+        }
+        if ($request->has('secondary_work_place')) {
+            if (empty($data['secondary_work_place'])) {
+                $data['secondary_work_place'] = null;
+                $data['secondary_speciality'] = null;
+            } else {
+                $data['secondary_work_place'] = $this->resolveOrganizationName(
+                    $data['secondary_work_place'],
+                    $errors,
+                    'secondary_work_place'
+                );
+                if ($request->has('secondary_speciality')) {
+                    $data['secondary_speciality'] = $this->resolveDepartmentName(
+                        $data['secondary_speciality'],
+                        $errors,
+                        'secondary_speciality'
+                    );
+                } else {
+                    $data['secondary_speciality'] = $data['speciality'] ?? $user->speciality;
+                }
+            }
+        } elseif ($request->has('secondary_speciality')) {
+            $data['secondary_speciality'] = $this->resolveDepartmentName(
+                $data['secondary_speciality'],
+                $errors,
+                'secondary_speciality'
+            );
+        }
+
+        if (!empty($errors)) {
+            return response()->json([
+                'message' => 'Некорректные поля профиля.',
+                'errors' => $errors,
+            ], 422);
+        }
 
         if ($request->hasFile('avatar')) {
             $path = $request->file('avatar')->store('avatars', 'public');
@@ -119,7 +207,142 @@ class AuthController extends Controller
 
         $user->update($data);
 
+        if ($request->hasAny([
+            'work_place',
+            'speciality',
+            'secondary_work_place',
+            'secondary_speciality',
+            'organization_role',
+            'department_role',
+        ])) {
+            $this->ensureDefaultGroups($user);
+            $this->ensureSecondaryGroups($user);
+        }
+
         return response()->json(['message' => 'Profile updated successfully', 'user' => $user]);
+    }
+
+    private function ensureDefaultGroups(User $user): void
+    {
+        $orgName = $user->work_place;
+        $deptName = $user->speciality;
+
+        if ($orgName) {
+            $orgGroup = \App\Models\ChatGroup::firstOrCreate(
+                [
+                    'type' => 'organization',
+                    'organization_name' => $orgName,
+                    'department_name' => null,
+                ],
+                [
+                    'name' => 'Общая группа: ' . $orgName,
+                    'owner_id' => $user->id,
+                    'is_system' => true,
+                ]
+            );
+
+            $orgRole = in_array($user->organization_role, ['chief', 'deputy'], true) ? 'admin' : 'member';
+            $orgGroup->members()->syncWithoutDetaching([
+                $user->id => ['role' => $orgRole],
+            ]);
+        }
+
+        if ($orgName && $deptName) {
+            $deptGroup = \App\Models\ChatGroup::firstOrCreate(
+                [
+                    'type' => 'department',
+                    'organization_name' => $orgName,
+                    'department_name' => $deptName,
+                ],
+                [
+                    'name' => 'Отделение: ' . $deptName,
+                    'owner_id' => $user->id,
+                    'is_system' => true,
+                ]
+            );
+
+            $deptRole = $user->department_role === 'head' ? 'admin' : 'member';
+            $deptGroup->members()->syncWithoutDetaching([
+                $user->id => ['role' => $deptRole],
+            ]);
+        }
+    }
+
+    private function ensureSecondaryGroups(User $user): void
+    {
+        if (!$user->secondary_work_place) {
+            return;
+        }
+
+        $tempUser = clone $user;
+        $tempUser->work_place = $user->secondary_work_place;
+        $tempUser->speciality = $user->secondary_speciality ?: $user->speciality;
+
+        $this->ensureDefaultGroups($tempUser);
+    }
+
+    private function resolveOrganizationName(string $input, array &$errors, string $field): ?string
+    {
+        $input = trim($input);
+        if ($input === '') {
+            $errors[$field] = ['Поле обязательно.'];
+            return null;
+        }
+
+        $lower = mb_strtolower($input);
+        $exact = Organization::whereRaw('lower(name) = ?', [$lower])->value('name');
+        if ($exact) {
+            return $exact;
+        }
+
+        $suggestions = Organization::where('name', 'like', '%' . $input . '%')
+            ->orderBy('name')
+            ->limit(5)
+            ->pluck('name')
+            ->all();
+
+        if (empty($suggestions)) {
+            $suggestions = Organization::orderBy('name')->limit(5)->pluck('name')->all();
+        }
+
+        $errors[$field] = ['Выберите значение из списка.'];
+        if (!empty($suggestions)) {
+            $errors[$field . '_suggestions'] = $suggestions;
+        }
+
+        return null;
+    }
+
+    private function resolveDepartmentName(string $input, array &$errors, string $field): ?string
+    {
+        $input = trim($input);
+        if ($input === '') {
+            $errors[$field] = ['Поле обязательно.'];
+            return null;
+        }
+
+        $lower = mb_strtolower($input);
+        $exact = Department::whereRaw('lower(name) = ?', [$lower])->value('name');
+        if ($exact) {
+            return $exact;
+        }
+
+        $suggestions = Department::where('name', 'like', '%' . $input . '%')
+            ->orderBy('name')
+            ->limit(5)
+            ->pluck('name')
+            ->all();
+
+        if (empty($suggestions)) {
+            $suggestions = Department::orderBy('name')->limit(5)->pluck('name')->all();
+        }
+
+        $errors[$field] = ['Выберите значение из списка.'];
+        if (!empty($suggestions)) {
+            $errors[$field . '_suggestions'] = $suggestions;
+        }
+
+        return null;
     }
 
     public function profile(Request $request, $id)

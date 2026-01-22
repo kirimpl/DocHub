@@ -17,7 +17,7 @@ class CommentsTest extends TestCase
         $author = User::factory()->create();
         $commenter = User::factory()->create();
 
-        $post = Post::factory()->create(['user_id' => $author->id, 'is_public' => true]);
+        $post = Post::factory()->create(['user_id' => $author->id, 'is_global' => true]);
 
         $token = $commenter->createToken('api')->plainTextToken;
 

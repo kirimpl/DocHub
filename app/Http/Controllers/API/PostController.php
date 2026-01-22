@@ -25,21 +25,14 @@ class PostController extends Controller
         if ($viewer->id === $post->user_id) {
             return true;
         }
-        $owner = $post->user;
-        $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
-        if ($visibility === 'followers') {
-            $visibility = 'friends';
-        }
-        if ($visibility === 'nobody') {
-            return false;
-        }
-        if ($visibility === 'friends') {
-            return $viewer->friends()->where('users.id', $post->user_id)->exists();
-        }
-        if ($post->is_public) {
+        if ($post->is_global) {
             return true;
         }
-        return $viewer->friends()->where('users.id', $post->user_id)->exists();
+        $viewerOrg = $viewer->work_place;
+        if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
+            return true;
+        }
+        return false;
     }
 
     public function index(Request $request)
@@ -52,17 +45,23 @@ class PostController extends Controller
         $blocked = $blockedIds->merge($blockedByIds)->unique()->values()->all();
 
         $posts = cache()->remember($cacheKey, 15, function () use ($user) {
-            $friends = $user->friends()->pluck('users.id')->toArray();
-
-            return Post::whereIn('user_id', $friends)
-                ->orWhere('is_public', true)
-                ->with('user')
+            $query = Post::with('user')
                 ->with(['likes' => function ($q) use ($user) {
                     $q->where('user_id', $user->id);
                 }])
                 ->withCount(['likes', 'comments'])
-                ->latest()
-                ->get();
+                ->latest();
+
+            $query->where(function ($q) use ($user) {
+                $q->where('is_global', true)
+                    ->orWhere('user_id', $user->id);
+
+                if ($user->work_place) {
+                    $q->orWhere('organization_name', $user->work_place);
+                }
+            });
+
+            return $query->get();
         });
 
         if (!empty($blocked)) {
@@ -79,12 +78,22 @@ class PostController extends Controller
             'content' => 'nullable|string',
             'image' => 'nullable|string',
             'is_public' => 'boolean',
+            'is_global' => 'boolean',
         ]);
 
-        $post = Post::create(array_merge($data, ['user_id' => $request->user()->id]));
+        $user = $request->user();
+        $isGlobal = (bool) ($data['is_global'] ?? false);
+        if (!$isGlobal && !$user->work_place) {
+            return response()->json(['message' => 'User organization is required for local posts.'], 422);
+        }
+
+        $post = Post::create(array_merge($data, [
+            'user_id' => $user->id,
+            'is_global' => $isGlobal,
+            'organization_name' => $isGlobal ? null : $user->work_place,
+        ]));
         $this->clearPostCaches($request->user()->id);
 
-        $user = $request->user();
         $user->friends->each(function ($friend) use ($post, $user) {
             if ($friend->notifications_enabled ?? true) {
                 $friend->notify(new NewPostNotification($post, $user));

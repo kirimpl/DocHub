@@ -16,6 +16,16 @@ class ChatGroupController extends Controller
             ->withCount('members')
             ->orderBy('name')
             ->get();
+
+        if ($user->isGlobalAdmin()) {
+            $lectureGroups = ChatGroup::where('type', 'lecture')
+                ->whereHas('lecture', function ($query) {
+                    $query->whereIn('status', ['ended', 'archived']);
+                })
+                ->withCount('members')
+                ->get();
+            $groups = $groups->merge($lectureGroups)->unique('id')->values();
+        }
         return response()->json($groups);
     }
 
@@ -31,6 +41,10 @@ class ChatGroupController extends Controller
         $group = ChatGroup::create([
             'name' => $data['name'],
             'owner_id' => $user->id,
+            'type' => 'custom',
+            'organization_name' => $user->work_place,
+            'department_name' => $user->speciality,
+            'is_system' => false,
         ]);
 
         $memberIds = collect($data['member_ids'] ?? [])
@@ -39,7 +53,13 @@ class ChatGroupController extends Controller
             ->values()
             ->all();
 
-        $group->members()->sync($memberIds);
+        $memberPayload = [];
+        foreach ($memberIds as $memberId) {
+            $memberPayload[$memberId] = [
+                'role' => $memberId === $user->id ? 'admin' : 'member',
+            ];
+        }
+        $group->members()->sync($memberPayload);
 
         $memberNames = \App\Models\User::whereIn('id', $memberIds)
             ->pluck('name')
@@ -60,10 +80,32 @@ class ChatGroupController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::withCount('members')->findOrFail($id);
+        if ($group->type === 'lecture' && $group->lecture && $group->lecture->isEnded()) {
+            if (!$user->isGlobalAdmin()) {
+                return response()->json(['message' => 'Lecture chat is closed.'], 403);
+            }
+            return response()->json($group->load('members:id,name,avatar'));
+        }
         if (!$group->members()->where('users.id', $user->id)->exists()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
         return response()->json($group->load('members:id,name,avatar'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:100',
+        ]);
+
+        $user = $request->user();
+        $group = ChatGroup::findOrFail($id);
+        if (!$group->isAdmin($user)) {
+            return response()->json(['message' => 'Only group admins can edit the group.'], 403);
+        }
+
+        $group->update(['name' => $data['name']]);
+        return response()->json($group);
     }
 
     public function leave(Request $request, $id)
@@ -92,8 +134,8 @@ class ChatGroupController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($id);
-        if ($group->owner_id !== $user->id) {
-            return response()->json(['message' => 'Only owner can delete the group.'], 403);
+        if (!$group->isAdmin($user)) {
+            return response()->json(['message' => 'Only group admins can delete the group.'], 403);
         }
 
         $group->delete();
@@ -104,8 +146,8 @@ class ChatGroupController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($id);
-        if ($group->owner_id !== $user->id) {
-            return response()->json(['message' => 'Only owner can remove members.'], 403);
+        if (!$group->isAdmin($user)) {
+            return response()->json(['message' => 'Only group admins can remove members.'], 403);
         }
         if ($memberId == $user->id) {
             return response()->json(['message' => 'Owner cannot remove themselves.'], 400);
@@ -154,7 +196,11 @@ class ChatGroupController extends Controller
             return response()->json(['message' => 'No valid friends to invite.'], 400);
         }
 
-        $group->members()->syncWithoutDetaching($inviteIds);
+        $invitePayload = [];
+        foreach ($inviteIds as $inviteId) {
+            $invitePayload[$inviteId] = ['role' => 'member'];
+        }
+        $group->members()->syncWithoutDetaching($invitePayload);
 
         $memberNames = \App\Models\User::whereIn('id', $inviteIds)
             ->pluck('name')

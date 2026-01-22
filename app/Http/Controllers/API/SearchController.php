@@ -15,21 +15,14 @@ class SearchController extends Controller
         if ($viewer->id === $post->user_id) {
             return true;
         }
-        $owner = $post->user;
-        $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
-        if ($visibility === 'followers') {
-            $visibility = 'friends';
-        }
-        if ($visibility === 'nobody') {
-            return false;
-        }
-        if ($visibility === 'friends') {
-            return $viewer->friends()->where('users.id', $post->user_id)->exists();
-        }
-        if ($post->is_public) {
+        if ($post->is_global) {
             return true;
         }
-        return $viewer->friends()->where('users.id', $post->user_id)->exists();
+        $viewerOrg = $viewer->work_place;
+        if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
+            return true;
+        }
+        return false;
     }
     public function search(Request $request)
     {

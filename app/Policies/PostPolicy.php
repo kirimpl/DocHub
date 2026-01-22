@@ -28,25 +28,16 @@ class PostPolicy
             return true;
         }
 
-        $owner = $post->user;
-        $visibility = $owner ? ($owner->posts_visibility ?: 'everyone') : 'everyone';
-        if ($visibility === 'followers') {
-            $visibility = 'friends';
-        }
-
-        if ($visibility === 'nobody') {
-            return false;
-        }
-
-        if ($visibility === 'friends') {
-            return $user->friends()->where('users.id', $post->user_id)->exists();
-        }
-
-        if ($post->is_public) {
+        if ($post->is_global) {
             return true;
         }
 
-        return $user->friends()->where('users.id', $post->user_id)->exists();
+        $viewerOrg = $user->work_place;
+        if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
+            return true;
+        }
+
+        return false;
     }
 
     public function create(User $user, Post $post)
@@ -55,15 +46,20 @@ class PostPolicy
             return false;
         }
 
-        if ($post->is_public) {
-            return true;
-        }
-
         if ($user->id === $post->user_id) {
             return true;
         }
 
-        return $user->friends()->where('users.id', $post->user_id)->exists();
+        if ($post->is_global) {
+            return true;
+        }
+
+        $viewerOrg = $user->work_place;
+        if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
+            return true;
+        }
+
+        return false;
     }
 
     public function update(User $user, Post $post)
