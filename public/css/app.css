@@ -1,34 +1,39 @@
-/*leha*/
-:root{
---bg-color: #002c50;  
+/*header*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Geologica:wght@500;800&display=swap');
+
+:root {
+    --bg-color: #D9EEFF;
+    --pr-text-color: #0056A6;
+    --sec-text-color: #75ABDF;
+    --shadow: #003cff0d;
 }
 
 body {
     margin: 0;
     padding: 0;
     background-color: #f5f5f5;
-    font-family: 'Inter', sans-serif; 
+    font-family: 'Inter', sans-serif;
 }
 
 .header-shelf {
     width: 1180px;
     height: 68px;
     margin: 0 auto;
-    background-color: #ffffff;
+    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
     border-bottom-right-radius: 20px;
     border-bottom-left-radius: 20px;
-    border-bottom: 4px solid #dcdcdc; 
+    border-bottom: 4px solid #dcdcdc;
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
     display: flex;
-    align-items: center; 
+    align-items: center;
     justify-content: center;
 }
 
 .header-content {
     width: 100%;
-    padding: 0 30px; 
+    padding: 0 30px;
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between;
     align-items: center;
 }
 
@@ -37,30 +42,48 @@ body {
     margin: 0;
     font-weight: 800;
     font-size: 22px;
-    color: #0056A6;
+    color: var(--pr-text-color);
     font-family: 'Geologica', sans-serif;
 }
 
 
 .search-container {
-    flex-grow: 1; 
-    max-width: 500px; 
-    margin: 0 20px;
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    margin: 0 40px;
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
 }
 
 .search-container input {
     width: 100%;
-    height: 38px;
+    height: 40px;
     border-radius: 10px;
-    border: 1px solid #e0e0e0;
-    background-color: #f9f9f9;
-    padding: 0 15px;
+    border: 1px solid #EDEFF2;
+    background-color: #FFFFFF;
+    padding: 0 40px 0 15px;
+    font-size: 14px;
     outline: none;
-    transition: border-color 0.2s;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-sizing: border-box;
 }
 
 .search-container input:focus {
-    border-color: #007bff;
+    border-color: var(--pr-text-color);
+}
+
+.search-container i {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    color: var(--pr-text-color);
+    pointer-events: none;
 }
 
 
@@ -69,25 +92,37 @@ body {
     gap: 15px;
 }
 
-.icon-btn {
-    background: none;
+.icon-btn1 {
+    background-color: #FFFFFF;
     border: none;
     font-size: 20px;
     cursor: pointer;
     transition: transform 0.1s;
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+    border-radius: 12px;
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+}
+
+.icon-btn2 {
+    background-color: #FFFFFF;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+    border-radius: 12px;
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
 }
 
 .icon-btn:hover {
     transform: scale(1.1);
 }
 
-/*bogdan*/
-:root {
-    --bg-color: #d9eeff;
-    --pr-text-color: #0056a6;
-    --sec-text-color: #75abdf;
-    --shadow: #003cff0d;
-}
+/*main*/
 
 body {
     background-color: var(--bg-color);
@@ -95,44 +130,534 @@ body {
 
 .main {
     display: grid;
-    grid-column: 3;
-    grid-row: 2;
+    grid-template-columns: 280px 1fr 280px;
+    column-gap: 24px;
+    max-width: 1400px;
+    margin: 35px 350px;
+    padding: 0 20px;
 }
 
+/*---Блок профиля---*/
 .profile_card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
     background: linear-gradient(#f8fbff, #eef5ff);
-    width: 280px;
-    height: 259px;
+    width: 235px;
+    height: 240px;
     opacity: 1;
-    top: 103px;
-    left: 370px;
     border-radius: 20px;
     box-shadow: 0px 7px 30px 0px #003cff0d;
+    padding-top: 32px;
+    padding-bottom: 32px;
+    padding-left: 28px;
+    padding-right: 28px;
 }
 
-.avatar {
-    width: 52px;
-    height: 52px;
-    opacity: 1;
-    top: 124px;
-    left: 390px;
-    border-radius: 8px;
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.avatar_image {
-    width: 52px;
-    height: 52px;
-    opacity: 1;
-    top: 124px;
-    left: 390px;
-    border-radius: 8px;
+.avatar-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    object-fit: cover;
 }
-.name_text {
-    font-family: Geologica;
-    font-weight: 500;
-    font-style: Medium;
+
+.profile-name {
+    margin: 0;
     font-size: 18px;
-    line-height: 100%;
-    letter-spacing: 5%;
+    color: var(--pr-text-color);
+    font-weight: 500;
+    style: medium;
+    letter-spacing: 1px;
 }
 
+.profile-role {
+    margin: 5px 0 0 0;
+    color: var(--sec-text-color);
+    font-size: 14px;
+}
+
+.profile-details {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.detail-icon {
+    font-size: 20px;
+    color: var(--pr-text-color);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.detail-text {
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--sec-text-color);
+    flex: 1;
+    word-wrap: break-word;
+}
+
+.detail-text .label {
+    color: var(--pr-text-color);
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+.btn-profile {
+    width: 100%;
+    background-color: #FFFFFF;
+    color: var(--pr-text-color);
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: 0.2s;
+    font-size: 14px;
+}
+
+.btn-profile:hover {
+    background-color: #E3F0FF;
+}
+
+/*---Блок Лекций---*/
+.lectures-card {
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    height: 305px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.lectures-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 55px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 20px;
+    letter-spacing: 1px;
+}
+
+.lectures-title-group h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--pr-text-color);
+    font-weight: 700;
+}
+
+.lectures-title-group p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: var(--sec-text-color);
+}
+
+/* Кнопка-стрелочка справа */
+.btn-more {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: var(--pr-text-color);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: transform 0.3s ease;
+}
+
+.btn-more.rotated {
+    transform: rotate(180deg);
+}
+
+.lectures-card .btn-more {
+    transition: transform 0.3s ease;
+}
+
+.lectures-card.collapsed .btn-more {
+    transform: rotate(180deg);
+}
+
+.lectures-list {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    overflow-x: auto;
+    /* Включает скролл, если картинок много */
+    padding-left: 20px;
+    padding-right: 20px;
+    max-height: 300px;
+    opacity: 1;
+    margin-top: 15px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lectures-card.collapsed .lectures-list {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.lectures-card.collapsed {
+    padding-bottom: 0 !important;
+}
+
+.lecture-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 110px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+/* Картинка лекции */
+.lecture-img {
+    width: 100%;
+    height: 100px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.lecture-item span {
+    font-size: 13px;
+    color: var(--pr-text-color);
+    font-weight: 600;
+    text-align: center;
+}
+
+.archive-box {
+    width: 100%;
+    height: 100px;
+    background-color: #FFFFFF;
+    border: 1px solid #E3F0FF;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pr-text-color);
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+}
+
+.archive-text {
+    color: var(--sec-text-color) !important;
+}
+
+/*---Блок Календаря---*/
+.calendar-card {
+    padding: 24px 20px;
+    text-align: center;
+    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    height: 255px;
+}
+
+.calendar-title {
+    color: var(--pr-text-color);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 24px 0;
+}
+
+.calendar-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Строка дней недели*/
+.weekdays-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 5px;
+}
+
+.weekdays-row span {
+    color: var(--sec-text-color);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Сетка чисел */
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 4px;
+}
+
+.days-grid span {
+    color: var(--pr-text-color);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 28px;
+    width: 28px;
+    margin: 0 auto;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+/* Дни не из этого месяца */
+.days-grid span.prev-month,
+.days-grid span.next-month {
+    color: var(--sec-text-color);
+}
+
+.days-grid span:hover {
+    background-color: #E3F0FF;
+    color: var(--pr-text-color);
+}
+
+.days-grid span.today {
+    background-color: var(--pr-text-color);
+    color: white;
+}
+
+/*---Блок Навигации---*/
+.nav-menu {
+    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px;
+    border-radius: 20px;
+}
+
+/* Ссылка меню */
+.nav-item {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 10px 0;
+    transition: all 0.2s ease;
+    color: var(--sec-text-color);
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.nav-icon {
+    width: 24px;
+    text-align: center;
+    margin-right: 14px;
+    font-size: 18px;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-item.active {
+    color: var(--pr-text-color);
+    font-weight: 700;
+}
+
+.nav-item:hover {
+    color: var(--sec-text-color);
+    transform: translateX(4px);
+}
+
+/* --- Блок новостей --- */
+
+.post-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    border-radius: 20px;
+}
+
+.post-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px;
+    padding-bottom: 0;
+    gap: 2px;
+}
+
+.post-author {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--pr-text-color);
+}
+
+.post-date {
+    font-size: 13px;
+    color: var(--sec-text-color);
+}
+
+.post-text {
+    font-size: 15px;
+    color: var(--pr-text-color);
+    line-height: 1.5;
+    margin: 0 4px 4px 28px;
+    gap: 12px;
+}
+
+.post-gallery {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 30px 20px 30px;
+}
+
+.gallery-item {
+    height: 180px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 16px;
+}
+
+.post-actions {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    margin-left: 30px;
+    justify-content: flex-start;
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--pr-text-color);
+    box-shadow: 0 4px 12px rgba(0, 59, 115, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 59, 115, 0.12);
+}
+
+.like-btn {
+    color: var(--pr-text-color);
+}
+
+/* --- Блок сообщений --- */
+.messages-widget {
+    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    border-radius: 20px;
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.widget-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--pr-text-color);
+    padding: 20px;
+}
+
+.icon-btn-edit {
+    width: 36px;
+    height: 36px;
+    background-color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--pr-text-color);
+    box-shadow: 0 3px 10px rgba(0, 50, 100, 0.05);
+    transition: transform 0.2s;
+}
+
+.icon-btn-edit:hover {
+    transform: scale(1.05);
+}
+
+.message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-left: 16px;
+}
+
+.message-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.message-item:hover {
+    background-color: #FFFFFF;
+}
+
+.msg-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: var(--pr-text-color);
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.msg-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.msg-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--pr-text-color);
+    margin-bottom: 2px;
+}
+
+.msg-preview {
+    margin: 0;
+    font-size: 12px;
+    color: var(--sec-text-color);
+    line-height: 1.2;
+}
