@@ -12,9 +12,19 @@
 </head>
 
 <body>
-    <header class="header">
-        <div>
+<header class="header-shelf">
+        <div class="header-content">
+            <div class="logo">
+                <p>DocHub</p>
+            </div>
 
+            <div class="search-container">
+                <input type="text" placeholder="Поиск документов...">
+            </div>
+
+            <div class="actions">
+                <button class="icon-btn"></button> <button class="icon-btn"></button>
+            </div>
         </div>
     </header>
 
