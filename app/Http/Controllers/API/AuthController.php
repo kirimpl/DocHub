@@ -43,12 +43,18 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
+            'speciality' => 'string|max:255',
+            'work_experience' => 'int|max:450',
+            'work_place' => 'string|max:255'
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
+            'speciality' => $data['speciality'],
+            'work_experience' => $data['work_experience'],
+            'work_place' => $data['work_place'],
         ]);
 
         $token = $user->createToken('api')->plainTextToken;
@@ -58,7 +64,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        
+
         /** @var \Laravel\Sanctum\PersonalAccessToken|null $token */
         $token = $request->user()->currentAccessToken();
         if ($token) {
@@ -194,8 +200,6 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user,
             'posts' => $posts,
-            'followers_count' => $followers,
-            'following_count' => $following,
             'total_likes' => $total_likes,
             'blocked_by_me' => false,
             'pinned_post' => $pinnedPost,
