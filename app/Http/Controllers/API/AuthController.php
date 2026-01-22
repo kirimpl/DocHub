@@ -44,7 +44,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'speciality' => 'required|string|max:255',
-            'work_experience' => 'required|int|max:5',
+            'work_experience' => 'required|int|max:450',
             'work_place' => 'required|string|max:255'
         ]);
 
