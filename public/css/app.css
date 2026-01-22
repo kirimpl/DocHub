@@ -1,0 +1,53 @@
+:root {
+    --bg-color: #d9eeff;
+    --pr-text-color: #0056a6;
+    --sec-text-color: #75abdf;
+    --shadow: #003cff0d;
+}
+
+body {
+    background-color: var(--bg-color);
+}
+
+.main {
+    display: grid;
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.profile_card {
+    background: linear-gradient(#f8fbff, #eef5ff);
+    width: 280px;
+    height: 259px;
+    opacity: 1;
+    top: 103px;
+    left: 370px;
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
+}
+
+.avatar {
+    width: 52px;
+    height: 52px;
+    opacity: 1;
+    top: 124px;
+    left: 390px;
+    border-radius: 8px;
+}
+
+.avatar_image {
+    width: 52px;
+    height: 52px;
+    opacity: 1;
+    top: 124px;
+    left: 390px;
+    border-radius: 8px;
+}
+.name_text {
+    font-family: Geologica;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 18px;
+    line-height: 100%;
+    letter-spacing: 5%;
+}
