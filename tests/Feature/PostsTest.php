@@ -33,7 +33,7 @@ class PostsTest extends TestCase
     {
         $users = User::factory(3)->create();
         $author = $users->first();
-        Post::factory()->create(['user_id' => $author->id, 'content' => 'post1', 'is_public' => true]);
+        Post::factory()->create(['user_id' => $author->id, 'content' => 'post1', 'is_public' => true, 'is_global'=>false]);
 
         $me = $users->last();
         $token = $me->createToken('api')->plainTextToken;

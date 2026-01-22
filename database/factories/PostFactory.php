@@ -15,6 +15,7 @@ class PostFactory extends Factory
             'content' => $this->faker->paragraph(),
             'image' => null,
             'is_public' => $this->faker->boolean(80),
+            'is_global'=> $this->faker->boolean(0),
         ];
     }
 }

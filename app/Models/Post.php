@@ -18,10 +18,12 @@ class Post extends Model
         'content',
         'image',
         'is_public',
+        'is_global',
     ];
 
     protected $casts = [
         'is_public' => 'boolean',
+        'is_global'=> 'boolean',
     ];
 
     public function user(): BelongsTo

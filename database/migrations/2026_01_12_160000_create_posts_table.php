@@ -14,6 +14,7 @@ return new class extends Migration
             $table->text('content')->nullable();
             $table->string('image')->nullable();
             $table->boolean('is_public')->default(true);
+            $table->boolean('is_global')->default(false);
             $table->timestamps();
         });
     }
