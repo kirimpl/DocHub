@@ -13,6 +13,10 @@ use App\Models\Message;
 use App\Models\Interest;
 use App\Models\FriendRequest;
 use App\Models\ChatGroup;
+use App\Models\VoiceRoom;
+use App\Models\VoiceRoomInvitation;
+use App\Models\Event;
+use App\Models\EventInvitation;
 
 class User extends Authenticatable
 {
@@ -118,6 +122,30 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(ChatGroup::class, 'chat_group_members')
             ->withTimestamps();
+    }
+
+    public function voiceRooms(): BelongsToMany
+    {
+        return $this->belongsToMany(VoiceRoom::class, 'voice_room_participants')
+            ->withPivot(['role', 'joined_at', 'left_at'])
+            ->withTimestamps();
+    }
+
+    public function voiceRoomInvitations(): HasMany
+    {
+        return $this->hasMany(VoiceRoomInvitation::class, 'user_id');
+    }
+
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'event_participants')
+            ->withPivot(['role', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function eventInvitations(): HasMany
+    {
+        return $this->hasMany(EventInvitation::class, 'user_id');
     }
 
     public function blockedUsers(): BelongsToMany

@@ -21,11 +21,13 @@ class Post extends Model
         'is_public',
         'is_global',
         'organization_name',
+        'department_tags',
     ];
 
     protected $casts = [
         'is_public' => 'boolean',
         'is_global'=> 'boolean',
+        'department_tags' => 'array',
     ];
 
     public function user(): BelongsTo
@@ -61,12 +63,16 @@ class Post extends Model
         if (!empty($filters['scope'])) {
             match ($filters['scope']) {
                 'global' => $query->where('is_global', true),
-                'local'  => $query->where('organization_name', $user->work_place),
+                'organization', 'local'  => $query->where('organization_name', $user->work_place),
                 'mine'   => $query->where('user_id', $user->id),
                 default  => null,
             };
         }
     
+        if (!empty($filters['organization'])) {
+            $query->where('organization_name', $filters['organization']);
+        }
+
         if (!empty($filters['from'])) {
             $query->whereDate('created_at', '>=', $filters['from']);
         }
