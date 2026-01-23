@@ -8,3 +8,6 @@ Route::get('/', function () {
 Route::get('/messenger', function () {
     return view('messenger');
 });
+Route::get('/messenger-new', function () {
+    return view('messenger_new');
+});
