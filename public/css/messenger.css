@@ -44,15 +44,27 @@ body {
     height: 40px;
 }
 
-.logo p {
+.logo-container {
+    display: flex;
+    align-items: center; 
+    gap: 15px;
     margin: 0;
     font-weight: 800;
     font-size: 22px;
     color: #0056A6;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.5px;     
 }
 
+.back-btn {
+    font-size: 18px;
+    color: #1F2937;     
+    cursor: pointer;     
+    transition: color 0.2s;
+}
 
+.back-btn:hover {
+    color: #0056A6;      
+}
 
 .search-container {
     flex-grow: 1;
