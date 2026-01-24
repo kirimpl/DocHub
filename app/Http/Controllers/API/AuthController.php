@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Post;
 use App\Models\Organization;
 use App\Models\Department;
+use App\Notifications\VerificationRequiredNotification;
 
 class AuthController extends Controller
 {
@@ -89,10 +90,11 @@ class AuthController extends Controller
             'position' => $data['position'] ?? null,
             'organization_role' => $data['organization_role'] ?? 'staff',
             'department_role' => $data['department_role'] ?? 'staff',
+            'verification_status' => 'pending',
         ]);
 
-        $this->ensureDefaultGroups($user);
-        $this->ensureSecondaryGroups($user);
+        $supportUserId = User::where('global_role', 'admin')->value('id');
+        $user->notify(new VerificationRequiredNotification($supportUserId));
 
         $token = $user->createToken('api')->plainTextToken;
 
@@ -207,7 +209,7 @@ class AuthController extends Controller
 
         $user->update($data);
 
-        if ($request->hasAny([
+        if ($user->isVerified() && $request->hasAny([
             'work_place',
             'speciality',
             'secondary_work_place',

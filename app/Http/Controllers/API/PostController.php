@@ -53,14 +53,18 @@ class PostController extends Controller
                 ->withCount(['likes', 'comments'])
                 ->latest();
 
-            $query->where(function ($q) use ($user) {
-                $q->where('is_global', true)
-                    ->orWhere('user_id', $user->id);
+            if (!$user->isVerified()) {
+                $query->where('is_global', true);
+            } else {
+                $query->where(function ($q) use ($user) {
+                    $q->where('is_global', true)
+                        ->orWhere('user_id', $user->id);
 
-                if ($user->work_place) {
-                    $q->orWhere('organization_name', $user->work_place);
-                }
-            });
+                    if ($user->work_place) {
+                        $q->orWhere('organization_name', $user->work_place);
+                    }
+                });
+            }
 
             return $query->get();
         });

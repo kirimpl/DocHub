@@ -21,6 +21,7 @@ use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\LectureController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\VoiceRoomController;
+use App\Http\Controllers\API\VerificationController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -32,7 +33,7 @@ Route::post('register', [AuthController::class, 'register']);
 Route::get('organizations', [OrganizationController::class, 'index']);
 Route::get('departments', [DepartmentController::class, 'index']);
 
-Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
+Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     // users
     Route::get('users', function (Request $request) {
@@ -64,6 +65,15 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('notifications/subscribe', [NotificationController::class, 'subscribe']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
+
+    // verification
+    Route::get('verification/status', [VerificationController::class, 'status']);
+    Route::get('verification/support', [VerificationController::class, 'support']);
+    Route::get('verification/documents', [VerificationController::class, 'documents']);
+    Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
+    Route::get('verification/pending', [VerificationController::class, 'pending']);
+    Route::post('verification/{id}/approve', [VerificationController::class, 'approve'])->whereNumber('id');
+    Route::post('verification/{id}/reject', [VerificationController::class, 'reject'])->whereNumber('id');
     // feed
     Route::get('feed', [FeedController::class, 'index']);
     Route::get('feed/global', [FeedController::class, 'global']);

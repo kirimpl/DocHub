@@ -18,7 +18,7 @@ class NewMessageNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     public function toDatabase($notifiable)

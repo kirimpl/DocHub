@@ -37,6 +37,7 @@ class UserFactory extends Factory
             'organization_role' => 'staff',
             'department_role' => 'staff',
             'global_role' => 'user',
+            'verification_status' => 'verified',
             'secondary_work_place' => null,
             'secondary_speciality' => null,
         ];

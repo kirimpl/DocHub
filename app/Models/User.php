@@ -17,6 +17,7 @@ use App\Models\VoiceRoom;
 use App\Models\VoiceRoomInvitation;
 use App\Models\Event;
 use App\Models\EventInvitation;
+use App\Models\VerificationDocument;
 
 class User extends Authenticatable
 {
@@ -52,6 +53,8 @@ class User extends Authenticatable
         'messages_visibility',
         'notifications_enabled',
         'pinned_post_id',
+        'verification_status',
+        'verified_at',
     ];
 
     protected $hidden = [
@@ -70,6 +73,7 @@ class User extends Authenticatable
             'show_last_seen' => 'boolean',
             'show_status' => 'boolean',
             'notifications_enabled' => 'boolean',
+            'verified_at' => 'datetime',
         ];
     }
 
@@ -148,6 +152,11 @@ class User extends Authenticatable
         return $this->hasMany(EventInvitation::class, 'user_id');
     }
 
+    public function verificationDocuments(): HasMany
+    {
+        return $this->hasMany(VerificationDocument::class, 'user_id');
+    }
+
     public function blockedUsers(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
@@ -163,5 +172,10 @@ class User extends Authenticatable
     public function isGlobalAdmin(): bool
     {
         return $this->global_role === 'admin';
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verification_status === 'verified';
     }
 }
