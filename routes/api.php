@@ -22,6 +22,7 @@ use App\Http\Controllers\API\LectureController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\VoiceRoomController;
 use App\Http\Controllers\API\VerificationController;
+use App\Http\Controllers\API\AiController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -74,6 +75,13 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     Route::get('verification/pending', [VerificationController::class, 'pending']);
     Route::post('verification/{id}/approve', [VerificationController::class, 'approve'])->whereNumber('id');
     Route::post('verification/{id}/reject', [VerificationController::class, 'reject'])->whereNumber('id');
+
+    // AI
+    Route::post('ai/improve', [AiController::class, 'improve']);
+    Route::post('ai/lecture/summary', [AiController::class, 'lectureSummary']);
+    Route::post('ai/key-points', [AiController::class, 'keyPoints']);
+    Route::post('ai/lecture/outline', [AiController::class, 'lectureOutline']);
+    Route::post('ai/lecture/questions', [AiController::class, 'quizQuestions']);
     // feed
     Route::get('feed', [FeedController::class, 'index']);
     Route::get('feed/global', [FeedController::class, 'global']);

@@ -469,6 +469,50 @@ GET  /api/voice-rooms/invites
 
 ---
 
+## AI (Gemini)
+
+### POST /api/ai/improve
+Улучшение текста.
+
+**Body**
+```
+{ "text": "..." }
+```
+
+### POST /api/ai/lecture/summary
+Краткий пересказ лекции по расшифровке.
+
+**Body**
+```
+{ "transcript": "..." }
+```
+
+### POST /api/ai/key-points
+Ключевые пункты текста.
+
+**Body**
+```
+{ "text": "...", "count": 5 }
+```
+
+### POST /api/ai/lecture/outline
+План лекции.
+
+**Body**
+```
+{ "text": "..." }
+```
+
+### POST /api/ai/lecture/questions
+Контрольные вопросы по тексту.
+
+**Body**
+```
+{ "text": "...", "count": 5 }
+```
+
+---
+
 ## Сессии и безопасность
 
 ### POST /api/security/password
@@ -479,4 +523,3 @@ GET  /api/voice-rooms/invites
 
 ### POST /api/security/logout-all
 Выйти из всех сессий.
-
