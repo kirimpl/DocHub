@@ -1,10 +1,10 @@
 /*header*/
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Geologica:wght@500;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Geologica:wght@500;800&display=swap");
 
 :root {
-    --bg-color: #D9EEFF;
-    --pr-text-color: #0056A6;
-    --sec-text-color: #75ABDF;
+    --bg-color: #d9eeff;
+    --pr-text-color: #0056a6;
+    --sec-text-color: #75abdf;
     --shadow: #003cff0d;
 }
 
@@ -12,14 +12,14 @@ body {
     margin: 0;
     padding: 0;
     background-color: #f5f5f5;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
 }
 
 .header-shelf {
     width: 1180px;
     height: 68px;
     margin: 0 auto;
-    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
     border-bottom-right-radius: 20px;
     border-bottom-left-radius: 20px;
     border-bottom: 4px solid #dcdcdc;
@@ -37,15 +37,13 @@ body {
     align-items: center;
 }
 
-
 .logo p {
     margin: 0;
     font-weight: 800;
     font-size: 22px;
     color: var(--pr-text-color);
-    font-family: 'Geologica', sans-serif;
+    font-family: "Geologica", sans-serif;
 }
-
 
 .search-container {
     flex-grow: 1;
@@ -64,8 +62,8 @@ body {
     width: 100%;
     height: 40px;
     border-radius: 10px;
-    border: 1px solid #EDEFF2;
-    background-color: #FFFFFF;
+    border: 1px solid #edeff2;
+    background-color: #ffffff;
     padding: 0 40px 0 15px;
     font-size: 14px;
     outline: none;
@@ -86,14 +84,18 @@ body {
     pointer-events: none;
 }
 
-
 .actions {
     display: flex;
     gap: 15px;
 }
 
+.notification-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
 .icon-btn1 {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     border: none;
     font-size: 20px;
     cursor: pointer;
@@ -102,11 +104,231 @@ body {
     height: 40px;
     opacity: 1;
     border-radius: 12px;
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
+}
+
+.badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    color: white;
+    font-size: 10px;
+    border-radius: 50%;
+    padding: 2px 5px;
+}
+
+.notification-popup {
+    position: absolute;
+    top: 120%;
+    right: 0%;
+    width: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3 ease;
+}
+
+.notification-popup.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.popup-header {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.popup-list {
+    max-height: auto;
+    overflow-y: auto;
+}
+
+.notify-item {
+    display: flex;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f5f5f5;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notify-item:hover {
+    background: #f9f9f9;
+}
+
+.notify-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.notify-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.notify-content {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.notify-time {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+}
+
+.settings-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-left: 15px;
+}
+
+.icon-btn-settings:hover {
+    transform: rotate(45deg);
+}
+
+.settings-popup {
+    position: absolute;
+    top: 130%;
+    right: 0;
+    width: 220px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 8px 0;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.settings-popup.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.settings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.settings-link {
+    display: block;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.settings-link:hover {
+    background: #f5f5f5;
+}
+
+.settings-link .icon {
+    margin-right: 10px;
+}
+
+.text-danger {
+    color: #d9534f;
+}
+.text-danger:hover {
+    background: #fff5f5;
+}
+
+.divider {
+    height: 1px;
+    background: #eee;
+    margin: 5px 0;
+}
+
+/* --- Стили для переключателя (Toggle) --- */
+.settings-toggle-item {
+    padding: 8px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    cursor: default;
+}
+
+.settings-toggle-item .icon {
+    margin-right: 10px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+/* Состояние "Включено" */
+input:checked + .slider {
+    background-color: #2196f3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(14px);
 }
 
 .icon-btn2 {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     border: none;
     font-size: 20px;
     cursor: pointer;
@@ -115,7 +337,7 @@ body {
     height: 40px;
     opacity: 1;
     border-radius: 12px;
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
 }
 
 .icon-btn:hover {
@@ -235,7 +457,7 @@ body {
 
 .btn-profile {
     width: 100%;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     color: var(--pr-text-color);
     border: none;
     padding: 12px;
@@ -248,7 +470,7 @@ body {
 }
 
 .btn-profile:hover {
-    background-color: #E3F0FF;
+    background-color: #e3f0ff;
 }
 
 /* --- ФИЛЬТРЫ ЛЕНТЫ (НОВОЕ) --- */
@@ -264,7 +486,7 @@ body {
     border: none;
     font-size: 15px;
     font-weight: 600;
-    color: #7B96B2;
+    color: #7b96b2;
     padding: 8px 16px;
     cursor: pointer;
     border-radius: 20px;
@@ -273,7 +495,7 @@ body {
 }
 
 .filter-tab.active {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     color: var(--pr-text-color);
     box-shadow: 0 2px 8px rgba(0, 59, 115, 0.1);
 }
@@ -285,16 +507,15 @@ body {
 
 /*--- Блок Лекций ---*/
 .lectures-card {
-    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
     border-radius: 20px;
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
     height: 305px;
     overflow: hidden;
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
 }
 
-/* Состояние: СВЕРНУТО */
 .lectures-card.collapsed {
     height: 90px;
     min-height: 0 !important;
@@ -308,7 +529,6 @@ body {
     margin: 25px 25px 0 25px;
 }
 
-/* Заголовки */
 .lectures-title-group h3 {
     margin: 0;
     font-size: 18px;
@@ -322,7 +542,6 @@ body {
     color: var(--sec-text-color);
 }
 
-/* Кнопка-стрелка */
 .btn-more {
     background: transparent;
     border: none;
@@ -334,7 +553,6 @@ body {
     transition: transform 0.4s ease;
 }
 
-/* Поворот стрелки при классе collapsed у РОДИТЕЛЯ */
 .lectures-card.collapsed .btn-more {
     transform: rotate(180deg);
 }
@@ -350,13 +568,11 @@ body {
     transition: opacity 0.3s ease-in-out;
 }
 
-/* Скрытое состояние (наследуется от родителя .collapsed) */
 .lectures-card.collapsed .lectures-list {
     opacity: 0;
     pointer-events: none;
 }
 
-/* Элементы внутри списка (без изменений) */
 .lecture-item {
     display: flex;
     flex-direction: column;
@@ -386,8 +602,8 @@ body {
 .archive-box {
     width: 100%;
     height: 100px;
-    background-color: #FFFFFF;
-    border: 1px solid #E3F0FF;
+    background-color: #ffffff;
+    border: 1px solid #e3f0ff;
     border-radius: 16px;
     display: flex;
     align-items: center;
@@ -396,7 +612,7 @@ body {
     font-weight: 700;
     font-size: 14px;
     margin-bottom: 8px;
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
 }
 
 .archive-text {
@@ -407,9 +623,9 @@ body {
 .calendar-card {
     padding: 24px 20px;
     text-align: center;
-    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
     border-radius: 20px;
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
     height: 255px;
 }
 
@@ -433,7 +649,7 @@ body {
 .nav-arrow {
     background: transparent;
     border: none;
-    color: #5BA4FC;
+    color: #5ba4fc;
     cursor: pointer;
     padding: 5px;
     display: flex;
@@ -444,8 +660,8 @@ body {
 }
 
 .nav-arrow:hover {
-    background-color: #E3F0FF;
-    color: #003B73;
+    background-color: #e3f0ff;
+    color: #003b73;
 }
 
 .calendar-wrapper {
@@ -462,7 +678,7 @@ body {
 }
 
 .weekdays-row span {
-    color: #7B96B2;
+    color: #7b96b2;
     font-size: 13px;
     font-weight: 500;
 }
@@ -482,7 +698,7 @@ body {
     width: 30px;
     margin: 0 auto;
     font-size: 14px;
-    color: #003B73;
+    color: #003b73;
     cursor: pointer;
     border-radius: 50%;
     position: relative;
@@ -490,13 +706,13 @@ body {
 }
 
 .days-grid span:hover {
-    background-color: #E3F0FF;
+    background-color: #e3f0ff;
     color: #0056b3;
 }
 
 .days-grid span.prev-month,
 .days-grid span.next-month {
-    color: #BCCDE0;
+    color: #bccde0;
 }
 
 .days-grid span.today {
@@ -510,25 +726,25 @@ body {
 }
 
 .days-grid span.has-event::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 3px;
     left: 50%;
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background-color: #FF4D4D;
+    background-color: #ff4d4d;
     border-radius: 50%;
 }
 
 .days-grid span.today.has-event::after {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
 }
 
 /*---Блок Навигации---*/
 .nav-menu {
-    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    box-shadow: 0px 7px 30px 0px #003cff0d;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -573,8 +789,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    box-shadow: 0px 7px 30px 0px #003cff0d;
     border-radius: 20px;
     margin-bottom: 15px;
 }
@@ -636,7 +852,7 @@ body {
     padding: 0 12px;
     gap: 8px;
     height: 40px;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     border-radius: 16px;
     border: none;
     display: flex;
@@ -646,7 +862,6 @@ body {
     font-size: 14px;
     font-weight: 600;
     color: var(--pr-text-color);
-    /* По умолчанию синий */
     box-shadow: 0 4px 12px rgba(0, 59, 115, 0.08);
     transition: all 0.2s;
 }
@@ -661,8 +876,8 @@ body {
 }
 
 .like-btn.active {
-    color: #FF4D4D;
-    background-color: #FFF0F0;
+    color: #ff4d4d;
+    background-color: #fff0f0;
     box-shadow: 0 4px 12px rgba(255, 77, 77, 0.2);
 }
 
@@ -672,7 +887,7 @@ body {
 
 .comments-section {
     padding: 0 20px 20px 20px;
-    border-top: 1px solid #E3F0FF;
+    border-top: 1px solid #e3f0ff;
     margin-top: -10px;
     padding-top: 15px;
     animation: slideDown 0.3s ease;
@@ -693,7 +908,7 @@ body {
 .comment-row {
     font-size: 13px;
     margin-bottom: 8px;
-    color: #003B73;
+    color: #003b73;
 }
 
 .comment-author {
@@ -709,27 +924,27 @@ body {
 
 .comment-input {
     flex: 1;
-    border: 1px solid #E3F0FF;
-    background: #F8FBFF;
+    border: 1px solid #e3f0ff;
+    background: #f8fbff;
     border-radius: 10px;
     padding: 8px 12px;
     font-size: 13px;
     outline: none;
-    color: #003B73;
+    color: #003b73;
 }
 
 .send-comment-btn {
     background: none;
     border: none;
-    color: #0056A6;
+    color: #0056a6;
     cursor: pointer;
     font-size: 16px;
 }
 
 /* --- Блок сообщений --- */
 .messages-widget {
-    background: linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%);
-    box-shadow: 0px 7px 30px 0px #003CFF0D;
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    box-shadow: 0px 7px 30px 0px #003cff0d;
     border-radius: 20px;
 }
 
@@ -752,7 +967,7 @@ body {
 .icon-btn-edit {
     width: 36px;
     height: 36px;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -788,7 +1003,7 @@ body {
 }
 
 .message-item:hover {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
 }
 
 .msg-avatar {
@@ -843,7 +1058,7 @@ body {
 }
 
 .modal-window {
-    background: #FFFFFF;
+    background: #ffffff;
     width: 340px;
     padding: 24px;
     border-radius: 20px;
@@ -887,7 +1102,7 @@ body {
 .modal-input {
     width: 100%;
     height: 44px;
-    border: 1px solid #E3F0FF;
+    border: 1px solid #e3f0ff;
     border-radius: 12px;
     padding: 0 15px;
     font-size: 14px;
@@ -899,7 +1114,7 @@ body {
 
 .modal-input:focus {
     border-color: var(--pr-text-color);
-    background-color: #F8FBFF;
+    background-color: #f8fbff;
 }
 
 .modal-actions {
@@ -918,12 +1133,12 @@ body {
 }
 
 .btn-secondary {
-    background: #F0F7FF;
+    background: #f0f7ff;
     color: var(--sec-text-color);
 }
 
 .btn-secondary:hover {
-    background: #E3F0FF;
+    background: #e3f0ff;
     color: var(--pr-text-color);
 }
 
