@@ -26,15 +26,20 @@ class VerificationTest extends TestCase
             'speciality' => 'Surgery',
             'work_experience' => 5,
             'work_place' => 'City Hospital',
+            'last_name' => 'Smith',
+            'sex' => 'man',
+            'phone_number' => '+77001234567',
+            'birth_date' => '2000-01-01',
+            'education' => 'KZMU',
         ])->assertStatus(201);
 
         $token = $register->json('token');
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
             ->getJson('/api/feed')
             ->assertStatus(403);
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->withHeader('Authorization', 'Bearer ' . $token)
             ->getJson('/api/feed/global')
             ->assertStatus(200);
     }
@@ -75,7 +80,7 @@ class VerificationTest extends TestCase
         ]);
 
         Sanctum::actingAs($admin);
-        $this->postJson('/api/verification/'.$pending->id.'/approve')
+        $this->postJson('/api/verification/' . $pending->id . '/approve')
             ->assertStatus(200);
 
         $this->assertDatabaseHas('users', [

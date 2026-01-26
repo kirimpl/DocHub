@@ -45,6 +45,11 @@ class RegistrationDirectoryValidationTest extends TestCase
             'work_place' => 'City Hospital',
             'secondary_work_place' => 'Central Clinic',
             'secondary_speciality' => 'Surgery',
+            'last_name' => 'Smith',
+            'sex' => 'man',
+            'phone_number' => '+77001234567',
+            'birth_date' => '2000-01-01',
+            'education' => 'KZMU',
         ]);
 
         $response->assertStatus(201);

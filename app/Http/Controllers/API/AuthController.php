@@ -44,9 +44,14 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'speciality' => 'required|string|max:255',
+            'sex' => 'required|string|max:20',
+            'phone_number' => 'required|string|max:20|regex:/^\+?[0-9]{7,20}$/',
+            'birth_date' => 'required|date|before:today',
+            'education' => 'required|string|max:255',
             'work_experience' => 'required|integer|min:0|max:450',
             'work_place' => 'required|string|max:255',
             'secondary_work_place' => 'sometimes|nullable|string|max:255',
@@ -79,9 +84,14 @@ class AuthController extends Controller
 
         $user = User::create([
             'name' => $data['name'],
+            'last_name' => $data['last_name'] ?? null,
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
             'speciality' => $speciality,
+            'sex' => $data['sex'],
+            'phone_number' => $data['phone_number'],
+            'birth_date' => $data['birth_date'],
+            'education' => $data['education'],
             'work_experience' => $data['work_experience'],
             'work_place' => $workPlace,
             'secondary_work_place' => $secondaryWorkPlace,
@@ -209,14 +219,16 @@ class AuthController extends Controller
 
         $user->update($data);
 
-        if ($user->isVerified() && $request->hasAny([
-            'work_place',
-            'speciality',
-            'secondary_work_place',
-            'secondary_speciality',
-            'organization_role',
-            'department_role',
-        ])) {
+        if (
+            $user->isVerified() && $request->hasAny([
+                'work_place',
+                'speciality',
+                'secondary_work_place',
+                'secondary_speciality',
+                'organization_role',
+                'department_role',
+            ])
+        ) {
             $this->ensureDefaultGroups($user);
             $this->ensureSecondaryGroups($user);
         }
