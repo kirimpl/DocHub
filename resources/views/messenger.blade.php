@@ -2,39 +2,20 @@
 
 @section('content')
     <link rel="stylesheet" href="{{ asset('css/messenger.css') }}">
-    
+
     <div class="messenger-container">
 
         <aside class="messenger-sidebar">
 
             <div class="card group-section">
                 <h3 class="section-title">Группы</h3>
-                <div class="list-container">
-                    <div class="list-item">
-                        <div class="avatar-sq">Вр</div>
-                        <div class="item-info">
-                            <span class="name">Врачи</span>
-                            <span class="desc">Обсуждение кейсов</span>
-                        </div>
-                    </div>
-                </div>
-                <button class="btn-create">Создать группу</button>
+                <div class="list-container"></div>
+                <button class="btn-create" id="btnCreateGroup">Создать группу</button>
             </div>
 
             <div class="card message-section">
                 <h3 class="section-title">Сообщения</h3>
-                <div class="list-container scrollable" id="chatsListContainer">
-                    <div class="list-item">
-                        <div class="avatar-sq">ИИ</div>
-                        <div class="item-info">
-                            <span class="name">Иван Иванов</span>
-                            <span class="desc">Привет, как дела?</span>
-                        </div>
-                        <div class="item-meta">
-                            <span class="time">19:00</span>
-                        </div>
-                    </div>
-                </div>
+                <div class="list-container scrollable" id="chatsListContainer"></div>
                 <button class="btn-create trigger-modal">
                     <i class="fa-solid fa-plus"></i> Создать чат
                 </button>
@@ -53,20 +34,47 @@
 
             <div id="chatView" class="chat-window hidden">
                 <div class="chat-header">
-                    <div class="avatar-sq" id="chatHeaderAvatar" style="border-radius: 50%;">AA</div>
-                    <div class="header-info">
-                        <h3 id="chatHeaderName">Имя</h3>
-                        <span id="chatHeaderRole">Должность</span>
+                    <div class="header-left">
+                        <div class="avatar-sq" id="chatHeaderAvatar" style="border-radius: 50%;">AA</div>
+                        <div class="header-info">
+                            <h3 class="name-with-icon">
+                                <span id="chatHeaderName">Имя</span>
+                                <i class="fa-solid fa-chevron-down"
+                                    style="font-size: 12px; margin-left: 8px; color: #0056B3; cursor: pointer;"></i>
+                            </h3>
+                            <span id="chatHeaderStatus" class="status-text">В сети</span>
+                        </div>
+                    </div>
+
+                    <div class="header-controls">
+                        <button class="icon-btn" title="Аудиозвонок"><i class="fa-solid fa-phone"></i></button>
+                        <button class="icon-btn" title="Видеозвонок"><i class="fa-solid fa-video"></i></button>
+
+                        <div class="relative-container" style="position: relative;">
+                            <button class="icon-btn" id="chatMenuBtn" title="Меню чата">
+                                <i class="fa-solid fa-ellipsis"></i>
+                            </button>
+
+                            <div class="chat-dropdown hidden" id="chatDropdown">
+                                <div class="dropdown-item" id="menuSearchBtn">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Поиск
+                                </div>
+                                <div class="dropdown-item" id="menuClearBtn">
+                                    <i class="fa-solid fa-eraser"></i> Очистить чат
+                                </div>
+                                <div class="dropdown-item danger" id="menuDeleteBtn">
+                                    <i class="fa-solid fa-trash"></i> Удалить чат
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
+                <div id="searchBar" class="chat-search-bar hidden">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Поиск по переписке...">
+                    <i class="fa-solid fa-xmark close-icon" id="closeSearchBtn" title="Закрыть поиск"></i>
+                </div>
                 <div class="chat-messages">
-                    <div class="message-bubble received">
-                        Здравствуйте! Вы уже посмотрели отчет?
-                    </div>
-                    <div class="message-bubble sent">
-                        Добрый день. Да, прямо сейчас изучаю результаты.
-                    </div>
                 </div>
 
                 <div class="chat-input-area">
@@ -104,6 +112,30 @@
                     </select>
                 </div>
                 <div class="contacts-list" id="contactsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="createGroupModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Новая группа</h3>
+                <span class="close-modal" id="closeGroupModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-search">
+                    <label style="display:block; margin-bottom:5px; color:#75ABDF; font-size:12px;">Название</label>
+                    <input type="text" id="groupNameInput" placeholder="Например: Врачи ГКБ №1"
+                        style="box-sizing: border-box;">
+                </div>
+                <div class="modal-search">
+                    <label style="display:block; margin-bottom:5px; color:#75ABDF; font-size:12px;">Описание</label>
+                    <input type="text" id="groupDescInput" placeholder="Цель группы..." style="box-sizing: border-box;">
+                </div>
+                <button class="btn-primary" id="submitCreateGroup"
+                    style="width:100%; background:#0056B3; color:white; border:none; margin-top:10px;">
+                    Создать
+                </button>
             </div>
         </div>
     </div>
