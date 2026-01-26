@@ -15,8 +15,7 @@
                 <div class="profile-details">
                     <div class="detail-item">
                         <div class="detail-icon">
-                            <svg width="22" height="18" viewBox="0 0 22 18" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
+                            <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M20 16H22V18H0V16H2V1C2 0.734784 2.10536 0.48043 2.29289 0.292893C2.48043 0.105357 2.73478 0 3 0H13C13.2652 0 13.5196 0.105357 13.7071 0.292893C13.8946 0.48043 14 0.734784 14 1V16H16V6H19C19.2652 6 19.5196 6.10536 19.7071 6.29289C19.8946 6.48043 20 6.73478 20 7V16ZM6 8V10H10V8H6ZM6 4V6H10V4H6Z"
                                     fill="#0056A6" />
@@ -27,8 +26,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-icon">
-                            <svg width="16" height="21" viewBox="0 0 16 21" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="21" viewBox="0 0 16 21" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M16 0H0V2L5.81 6.36C4.04674 6.94143 2.58648 8.19917 1.75016 9.8568C0.913849 11.5144 0.769916 13.4363 1.35 15.2C1.63699 16.0737 2.09342 16.8822 2.69318 17.5794C3.29294 18.2765 4.02426 18.8486 4.84531 19.2628C5.66635 19.677 6.56101 19.9253 7.47811 19.9935C8.39521 20.0616 9.31674 19.9483 10.19 19.66C11.5905 19.1997 12.8099 18.309 13.6744 17.1149C14.5388 15.9207 15.0043 14.4842 15.0043 13.01C15.0043 11.5358 14.5388 10.0993 13.6744 8.90514C12.8099 7.71103 11.5905 6.82031 10.19 6.36L16 2V0ZM10.94 17.5L8 15.78L5.06 17.5L5.84 14.17L3.25 11.93L6.66 11.64L8 8.5L9.34 11.64L12.75 11.93L10.16 14.17L10.94 17.5Z"
                                     fill="#0056A6" />
@@ -154,16 +152,14 @@
             <div class="card calendar-card" id="calendar">
                 <div class="calendar-header-nav">
                     <button id="prevBtn" class="nav-arrow">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
                     </button>
                     <h3 id="monthYearLabel" class="calendar-title">Январь 2026</h3>
                     <button id="nextBtn" class="nav-arrow">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
@@ -265,8 +261,7 @@
 
             <div class="post-actions">
                 <button class="action-btn like-btn">
-                    <svg width="20" height="18" viewBox="0 0 20 18" fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
+                    <svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M0 5.85223C0 10.7152 4.02 13.3062 6.962 15.6262C8 16.4442 9 17.2152 10 17.2152C11 17.2152 12 16.4452 13.038 15.6252C15.981 13.3072 20 10.7152 20 5.85323C20 0.991225 14.5 -2.45977 10 2.21623C5.5 -2.45977 0 0.989226 0 5.85223Z"
                             fill="currentColor" />
@@ -275,8 +270,7 @@
                 </button>
 
                 <button class="action-btn comment-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        xmlns="http://www.w3.org/2000/svg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M4 18H6V22.081L11.101 18H16C17.103 18 18 17.103 18 16V8C18 6.897 17.103 6 16 6H4C2.897 6 2 6.897 2 8V16C2 17.103 2.897 18 4 18Z"
                             fill="currentColor" />
