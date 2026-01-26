@@ -21,7 +21,7 @@ class FriendRequestAcceptedNotification extends Notification implements ShouldQu
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     public function toDatabase($notifiable)

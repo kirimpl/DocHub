@@ -18,7 +18,10 @@ class PostsTest extends TestCase
         $token = $user->createToken('api')->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/posts', ['content' => 'Hello world']);
+            ->postJson('/api/posts', [
+                'content' => 'Hello world',
+                'department_tags' => ['General'],
+            ]);
 
         $response->assertStatus(201)->assertJsonFragment(['content' => 'Hello world']);
 

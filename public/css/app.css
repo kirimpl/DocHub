@@ -37,12 +37,13 @@ body {
     align-items: center;
 }
 
-.logo p {
+.logo a {
     margin: 0;
     font-weight: 800;
     font-size: 22px;
     color: var(--pr-text-color);
     font-family: "Geologica", sans-serif;
+    text-decoration: none;
 }
 
 .search-container {

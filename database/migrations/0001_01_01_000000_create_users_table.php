@@ -15,13 +15,17 @@ return new class extends Migration
             $table->id();
 
             $table->string('name');
+            $table->string('sex', 20)->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('work_experience')->nullable();
+            $table->integer('work_experience')->nullable();
             $table->string('work_place')->nullable();
             $table->string('speciality')->nullable();
-
+            $table->string('username')->nullable();
+            $table->string('phone_number')->unique()->nullable();
+            $table->date('birth_date')->nullable();
+            $table->string('education')->nullable();
             $table->string('avatar')->nullable();
             $table->text('bio')->nullable();
             $table->boolean('is_private')->default(false);

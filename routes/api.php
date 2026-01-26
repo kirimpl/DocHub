@@ -19,6 +19,10 @@ use App\Http\Controllers\API\BlockController;
 use App\Http\Controllers\API\OrganizationController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\LectureController;
+use App\Http\Controllers\API\EventController;
+use App\Http\Controllers\API\VoiceRoomController;
+use App\Http\Controllers\API\VerificationController;
+use App\Http\Controllers\API\AiController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -30,7 +34,7 @@ Route::post('register', [AuthController::class, 'register']);
 Route::get('organizations', [OrganizationController::class, 'index']);
 Route::get('departments', [DepartmentController::class, 'index']);
 
-Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
+Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     // users
     Route::get('users', function (Request $request) {
@@ -62,8 +66,26 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('notifications/subscribe', [NotificationController::class, 'subscribe']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
+
+    // verification
+    Route::get('verification/status', [VerificationController::class, 'status']);
+    Route::get('verification/support', [VerificationController::class, 'support']);
+    Route::get('verification/documents', [VerificationController::class, 'documents']);
+    Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
+    Route::get('verification/pending', [VerificationController::class, 'pending']);
+    Route::post('verification/{id}/approve', [VerificationController::class, 'approve'])->whereNumber('id');
+    Route::post('verification/{id}/reject', [VerificationController::class, 'reject'])->whereNumber('id');
+
+    // AI
+    Route::post('ai/improve', [AiController::class, 'improve']);
+    Route::post('ai/lecture/summary', [AiController::class, 'lectureSummary']);
+    Route::post('ai/key-points', [AiController::class, 'keyPoints']);
+    Route::post('ai/lecture/outline', [AiController::class, 'lectureOutline']);
+    Route::post('ai/lecture/questions', [AiController::class, 'quizQuestions']);
     // feed
     Route::get('feed', [FeedController::class, 'index']);
+    Route::get('feed/global', [FeedController::class, 'global']);
+    Route::get('feed/organization', [FeedController::class, 'organization']);
 
     // posts
     Route::get('posts', [PostController::class, 'index']);
@@ -153,4 +175,31 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::post('lectures/{id}/leave', [LectureController::class, 'leave'])->whereNumber('id');
     Route::post('lectures/{id}/end', [LectureController::class, 'end'])->whereNumber('id');
     Route::post('lectures/{id}/admins', [LectureController::class, 'addAdmins'])->whereNumber('id');
+
+    // events
+    Route::get('events', [EventController::class, 'index']);
+    Route::get('events/calendar', [EventController::class, 'calendar']);
+    Route::get('events/invites', [EventController::class, 'myInvites']);
+    Route::post('events', [EventController::class, 'store']);
+    Route::get('events/{id}', [EventController::class, 'show'])->whereNumber('id');
+    Route::patch('events/{id}', [EventController::class, 'update'])->whereNumber('id');
+    Route::delete('events/{id}', [EventController::class, 'destroy'])->whereNumber('id');
+    Route::post('events/{id}/join', [EventController::class, 'join'])->whereNumber('id');
+    Route::post('events/{id}/leave', [EventController::class, 'leave'])->whereNumber('id');
+    Route::post('events/{id}/invite', [EventController::class, 'invite'])->whereNumber('id');
+    Route::post('events/{id}/invites/{inviteId}/accept', [EventController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
+    Route::post('events/{id}/invites/{inviteId}/decline', [EventController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
+
+    // voice rooms
+    Route::get('voice-rooms', [VoiceRoomController::class, 'index']);
+    Route::post('voice-rooms', [VoiceRoomController::class, 'store']);
+    Route::get('voice-rooms/invites', [VoiceRoomController::class, 'myInvites']);
+    Route::get('voice-rooms/{id}', [VoiceRoomController::class, 'show'])->whereNumber('id');
+    Route::patch('voice-rooms/{id}', [VoiceRoomController::class, 'update'])->whereNumber('id');
+    Route::delete('voice-rooms/{id}', [VoiceRoomController::class, 'destroy'])->whereNumber('id');
+    Route::post('voice-rooms/{id}/join', [VoiceRoomController::class, 'join'])->whereNumber('id');
+    Route::post('voice-rooms/{id}/leave', [VoiceRoomController::class, 'leave'])->whereNumber('id');
+    Route::post('voice-rooms/{id}/invite', [VoiceRoomController::class, 'invite'])->whereNumber('id');
+    Route::post('voice-rooms/{id}/invites/{inviteId}/accept', [VoiceRoomController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
+    Route::post('voice-rooms/{id}/invites/{inviteId}/decline', [VoiceRoomController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
 });

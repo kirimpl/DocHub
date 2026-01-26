@@ -9,7 +9,8 @@
     --light-blue-bg: #F0F7FF;
     --border-color: #EDEFF2;
     --border-radius: 20px;
-    --shadow: 0px 7px 30px 0px #003cff0d;
+    --shadow: 0px 7px 20px 0px #003CFF0D;
+
 }
 
 /* Блокируем скролл всей страницы */
@@ -17,7 +18,7 @@ body {
     overflow: hidden;
     margin: 0;
     font-family: 'Inter', sans-serif;
-    background-color: #F5F7FA;
+    background-color: var(--bg-color);
 }
 
 .hidden {
@@ -53,7 +54,7 @@ body {
 /* === ПРАВАЯ КОЛОНКА (ЧАТ) === */
 .messenger-chat-area {
     flex-grow: 1;
-    background: var(--card-bg);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
     /* Полупрозрачный фон */
     border-radius: 20px;
     box-shadow: var(--shadow);
@@ -68,7 +69,7 @@ body {
 
 /* === СТИЛИ КАРТОЧЕК (Группы и Список чатов) === */
 .card {
-    background: var(--card-bg);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
     /* Полупрозрачный фон */
     border-radius: 20px;
     padding: 24px;

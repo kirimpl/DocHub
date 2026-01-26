@@ -16,7 +16,7 @@
     <header class="header-shelf">
         <div class="header-content">
             <div class="logo">
-                <p>DocHub</p>
+                <a href = "/news">DocHub</a>
             </div>
 
             <div class="search-container">
@@ -84,7 +84,7 @@
                             <li class="divider"></li>
 
                             <li>
-                                <a href="#" class="settings-link text-danger">
+                                <a href="/" class="settings-link text-danger">
                                     <span class="icon">🚪</span> Выйти
                                 </a>
                             </li>

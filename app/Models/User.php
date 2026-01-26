@@ -13,6 +13,11 @@ use App\Models\Message;
 use App\Models\Interest;
 use App\Models\FriendRequest;
 use App\Models\ChatGroup;
+use App\Models\VoiceRoom;
+use App\Models\VoiceRoomInvitation;
+use App\Models\Event;
+use App\Models\EventInvitation;
+use App\Models\VerificationDocument;
 
 class User extends Authenticatable
 {
@@ -21,6 +26,11 @@ class User extends Authenticatable
    
     protected $fillable = [
         'name',
+        'sex',
+        'username',
+        'phone_number',
+        'birth_date',
+        'education',
         'email',
         'work_place',
         'secondary_work_place',
@@ -48,6 +58,8 @@ class User extends Authenticatable
         'messages_visibility',
         'notifications_enabled',
         'pinned_post_id',
+        'verification_status',
+        'verified_at',
     ];
 
     protected $hidden = [
@@ -66,6 +78,7 @@ class User extends Authenticatable
             'show_last_seen' => 'boolean',
             'show_status' => 'boolean',
             'notifications_enabled' => 'boolean',
+            'verified_at' => 'datetime',
         ];
     }
 
@@ -120,6 +133,35 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function voiceRooms(): BelongsToMany
+    {
+        return $this->belongsToMany(VoiceRoom::class, 'voice_room_participants')
+            ->withPivot(['role', 'joined_at', 'left_at'])
+            ->withTimestamps();
+    }
+
+    public function voiceRoomInvitations(): HasMany
+    {
+        return $this->hasMany(VoiceRoomInvitation::class, 'user_id');
+    }
+
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'event_participants')
+            ->withPivot(['role', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function eventInvitations(): HasMany
+    {
+        return $this->hasMany(EventInvitation::class, 'user_id');
+    }
+
+    public function verificationDocuments(): HasMany
+    {
+        return $this->hasMany(VerificationDocument::class, 'user_id');
+    }
+
     public function blockedUsers(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
@@ -135,5 +177,10 @@ class User extends Authenticatable
     public function isGlobalAdmin(): bool
     {
         return $this->global_role === 'admin';
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verification_status === 'verified';
     }
 }

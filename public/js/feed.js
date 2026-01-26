@@ -1,3 +1,42 @@
+// main.js (или в начале скрипта главной страницы)
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Проверяем наличие токена
+    const token = localStorage.getItem('auth_token');
+
+    // 2. Если токена нет — сразу перенаправляем на вход
+    if (!token) {
+        window.location.href = '/';
+        return;
+    }
+    console.log("Пользователь авторизован, грузим контент...");
+});
+
+// main.js
+
+// Функция выхода
+function logout() {
+    // 1. Удаляем токен и данные юзера
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+
+    // 2. (Опционально) Отправляем запрос на бэк, чтобы он тоже убил сессию
+    // fetch('/api/logout', ...); 
+
+    // 3. Перенаправляем на страницу входа
+    window.location.href = '/';
+}
+
+// Находим кнопку выхода (добавь ей id="logoutBtn" в HTML или ищи по классу)
+const logoutBtn = document.querySelector('.icon-btn-logout') || document.querySelector('.text-danger');
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        logout();
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const toggleBtn = document.querySelector(".btn-more");
     const card = document.querySelector(".lectures-card");
@@ -167,6 +206,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+    // --- КОНФИГУРАЦИЯ API ---
+    const API_URL = 'http://localhost:8000/api'; // Проверь порт!
+    const token = localStorage.getItem('auth_token');
+
+    // Если нет токена — календарь не заработает (или можно редиректить)
+    if (!token) console.warn("Нет токена авторизации!");
+
+    // --- ЭЛЕМЕНТЫ UI ---
     const daysContainer = document.getElementById("daysGrid");
     const monthYearLabel = document.getElementById("monthYearLabel");
     const prevBtn = document.getElementById("prevBtn");
@@ -180,15 +227,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const cancelBtn = document.getElementById("cancelBtn");
     const closeXBtn = document.querySelector(".close-modal-btn");
 
+    // --- СОСТОЯНИЕ ---
     let currentDate = new Date();
     let activeMonth = currentDate.getMonth();
     let activeYear = currentDate.getFullYear();
     let selectedDateStr = null;
 
-    // MOCK DATA: Список событий (Пока храним в памяти)
-    let events = ["2026-01-25", "2026-02-14"];
+    // ИЗМЕНЕНИЕ 1: Изначально массив пуст, данные придут с сервера
+    let events = [];
 
-    // === ЛОГИКА КАЛЕНДАРЯ ===
+    // === БЭКЕНД: ЗАГРУЗКА СОБЫТИЙ ===
+    async function loadEventsFromBackend() {
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${API_URL}/events`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const serverData = await response.json();
+                events = serverData.map(event => {
+                    // Берем только первые 10 символов (YYYY-MM-DD)
+                    return event.start.substring(0, 10);
+                });
+
+                console.log("События обновлены:", events);
+                renderCalendar(activeYear, activeMonth); // Перерисовываем сетку
+            }
+        } catch (error) {
+            console.error("Ошибка загрузки событий:", error);
+        }
+    }
+
+    // === ЛОГИКА КАЛЕНДАРЯ (Твой код) ===
     function renderCalendar(year, month) {
         daysContainer.innerHTML = "";
         const monthName = new Date(year, month).toLocaleString("ru-RU", {
@@ -215,10 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 1; i <= daysInMonth; i++) {
             const span = document.createElement("span");
             span.textContent = i;
-            const dateStr = `${year}-${String(month + 1).padStart(
-                2,
-                "0"
-            )}-${String(i).padStart(2, "0")}`;
+            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
 
             if (
                 i === today.getDate() &&
@@ -228,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 span.classList.add("today");
             }
 
+            // Проверка: есть ли эта дата в массиве, полученном с сервера
             if (events.includes(dateStr)) {
                 span.classList.add("has-event");
             }
@@ -265,32 +338,65 @@ document.addEventListener("DOMContentLoaded", () => {
         selectedDateStr = null;
     }
 
-    function saveEvent() {
-        if (selectedDateStr && eventInput.value.trim() !== "") {
-            if (!events.includes(selectedDateStr)) {
-                events.push(selectedDateStr);
+    async function saveEvent() {
+
+        const title = eventInput.value.trim();
+
+        if (selectedDateStr && title !== "") {
+            const originalBtnText = saveBtn.textContent;
+            saveBtn.textContent = "Сохранение...";
+            saveBtn.disabled = true;
+
+            try {
+                const payload = {
+                    title: title,
+                    start: selectedDateStr + " 09:00:00",
+                    end: selectedDateStr + " 10:00:00",
+                    description: "Создано через календарь",
+                    is_global: false
+                };
+
+                const response = await fetch(`${API_URL}/events`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    console.log(`Сохранено: ${title} на дату ${selectedDateStr}`);
+                    closeModal();
+                    await loadEventsFromBackend();
+                } else {
+                    alert("Ошибка сохранения на сервере");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("Ошибка соединения");
+                // Для ДЕМО (если сервер упал): все равно добавляем точку локально
+                if (!events.includes(selectedDateStr)) events.push(selectedDateStr);
+                renderCalendar(activeYear, activeMonth);
+                closeModal();
+
+            } finally {
+                saveBtn.textContent = originalBtnText;
+                saveBtn.disabled = false;
             }
-
-            console.log(
-                `Сохранено: ${eventInput.value} на дату ${selectedDateStr}`
-            );
-
-            // Перерисовываем календарь, чтобы появилась красная точка
-            renderCalendar(activeYear, activeMonth);
-            closeModal();
         }
     }
 
+    // Event Listeners
     saveBtn.addEventListener("click", saveEvent);
     cancelBtn.addEventListener("click", closeModal);
     closeXBtn.addEventListener("click", closeModal);
 
-    // Закрытие при клике на затемненный фон
     modal.addEventListener("click", (e) => {
         if (e.target === modal) closeModal();
     });
 
-    // Листание месяцев
     prevBtn.addEventListener("click", () => {
         activeMonth--;
         if (activeMonth < 0) {
@@ -310,6 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     renderCalendar(activeYear, activeMonth);
+    loadEventsFromBackend();
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -329,8 +436,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Дополнительно: Если клик внутри попапа, он не должен закрываться
-    // (это уже решено проверкой !popup.contains, но иногда полезно явно остановить всплытие)
     popup.addEventListener("click", (e) => {
         e.stopPropagation();
     });

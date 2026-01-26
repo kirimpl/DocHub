@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'update.last.seen' => \App\Http\Middleware\UpdateLastSeen::class,
+            'verified.doctor' => \App\Http\Middleware\EnsureVerifiedDoctor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

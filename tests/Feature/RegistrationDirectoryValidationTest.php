@@ -30,7 +30,7 @@ class RegistrationDirectoryValidationTest extends TestCase
             ->assertJsonStructure(['message', 'errors']);
     }
 
-    public function test_register_creates_groups_for_primary_and_secondary_work()
+    public function test_register_requires_verification_and_skips_groups()
     {
         Organization::factory()->create(['name' => 'City Hospital']);
         Organization::factory()->create(['name' => 'Central Clinic']);
@@ -45,33 +45,18 @@ class RegistrationDirectoryValidationTest extends TestCase
             'work_place' => 'City Hospital',
             'secondary_work_place' => 'Central Clinic',
             'secondary_speciality' => 'Surgery',
+            'last_name' => 'Smith',
+            'sex' => 'man',
+            'phone_number' => '+77001234567',
+            'birth_date' => '2000-01-01',
+            'education' => 'KZMU',
         ]);
 
         $response->assertStatus(201);
         $user = User::where('email', 'bob@example.com')->firstOrFail();
 
-        $this->assertDatabaseHas('chat_groups', [
-            'type' => 'organization',
-            'organization_name' => 'City Hospital',
-            'department_name' => null,
-        ]);
-        $this->assertDatabaseHas('chat_groups', [
-            'type' => 'department',
-            'organization_name' => 'City Hospital',
-            'department_name' => 'Surgery',
-        ]);
-        $this->assertDatabaseHas('chat_groups', [
-            'type' => 'organization',
-            'organization_name' => 'Central Clinic',
-            'department_name' => null,
-        ]);
-        $this->assertDatabaseHas('chat_groups', [
-            'type' => 'department',
-            'organization_name' => 'Central Clinic',
-            'department_name' => 'Surgery',
-        ]);
-
-        $this->assertDatabaseHas('chat_group_members', [
+        $this->assertSame('pending', $user->verification_status);
+        $this->assertDatabaseMissing('chat_group_members', [
             'user_id' => $user->id,
         ]);
     }

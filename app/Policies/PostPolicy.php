@@ -32,6 +32,10 @@ class PostPolicy
             return true;
         }
 
+        if (!$user->isVerified()) {
+            return false;
+        }
+
         $viewerOrg = $user->work_place;
         if ($viewerOrg && $post->organization_name && $viewerOrg === $post->organization_name) {
             return true;
@@ -52,6 +56,10 @@ class PostPolicy
 
         if ($post->is_global) {
             return true;
+        }
+
+        if (!$user->isVerified()) {
+            return false;
         }
 
         $viewerOrg = $user->work_place;
