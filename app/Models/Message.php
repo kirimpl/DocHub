@@ -17,6 +17,8 @@ class Message extends Model
         'body',
         'audio_url',
         'image_url',
+        'shared_post_id',
+        'shared_user_id',
         'reply_to_message_id',
         'read_at',
         'deleted_by',
@@ -43,6 +45,16 @@ class Message extends Model
     public function replyTo(): BelongsTo
     {
         return $this->belongsTo(Message::class, 'reply_to_message_id');
+    }
+
+    public function sharedPost(): BelongsTo
+    {
+        return $this->belongsTo(Post::class, 'shared_post_id');
+    }
+
+    public function sharedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'shared_user_id');
     }
 
     public function reactions()

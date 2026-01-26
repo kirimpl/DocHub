@@ -12,6 +12,11 @@ use App\Models\User;
 use App\Models\Post;
 use App\Models\Organization;
 use App\Models\Department;
+use App\Models\Message;
+use App\Models\ChatGroup;
+use App\Models\ChatGroupMessage;
+use App\Events\MessageSent;
+use App\Notifications\NewMessageNotification;
 use App\Notifications\VerificationRequiredNotification;
 
 class AuthController extends Controller
@@ -77,7 +82,7 @@ class AuthController extends Controller
         }
         if (!empty($errors)) {
             return response()->json([
-                'message' => 'Некорректные поля профиля.',
+                'message' => '???????????????????????? ???????? ??????????????.',
                 'errors' => $errors,
             ], 422);
         }
@@ -191,7 +196,7 @@ class AuthController extends Controller
 
         if (!empty($errors)) {
             return response()->json([
-                'message' => 'Некорректные поля профиля.',
+                'message' => '???????????????????????? ???????? ??????????????.',
                 'errors' => $errors,
             ], 422);
         }
@@ -249,7 +254,7 @@ class AuthController extends Controller
                     'department_name' => null,
                 ],
                 [
-                    'name' => 'Общая группа: ' . $orgName,
+                    'name' => '?????????? ????????????: ' . $orgName,
                     'owner_id' => $user->id,
                     'is_system' => true,
                 ]
@@ -269,7 +274,7 @@ class AuthController extends Controller
                     'department_name' => $deptName,
                 ],
                 [
-                    'name' => 'Отделение: ' . $deptName,
+                    'name' => '??????????????????: ' . $deptName,
                     'owner_id' => $user->id,
                     'is_system' => true,
                 ]
@@ -299,7 +304,7 @@ class AuthController extends Controller
     {
         $input = trim($input);
         if ($input === '') {
-            $errors[$field] = ['Поле обязательно.'];
+            $errors[$field] = ['???????? ??????????????????????.'];
             return null;
         }
 
@@ -319,7 +324,7 @@ class AuthController extends Controller
             $suggestions = Organization::orderBy('name')->limit(5)->pluck('name')->all();
         }
 
-        $errors[$field] = ['Выберите значение из списка.'];
+        $errors[$field] = ['???????????????? ???????????????? ???? ????????????.'];
         if (!empty($suggestions)) {
             $errors[$field . '_suggestions'] = $suggestions;
         }
@@ -331,7 +336,7 @@ class AuthController extends Controller
     {
         $input = trim($input);
         if ($input === '') {
-            $errors[$field] = ['Поле обязательно.'];
+            $errors[$field] = ['???????? ??????????????????????.'];
             return null;
         }
 
@@ -351,7 +356,7 @@ class AuthController extends Controller
             $suggestions = Department::orderBy('name')->limit(5)->pluck('name')->all();
         }
 
-        $errors[$field] = ['Выберите значение из списка.'];
+        $errors[$field] = ['???????????????? ???????????????? ???? ????????????.'];
         if (!empty($suggestions)) {
             $errors[$field . '_suggestions'] = $suggestions;
         }
@@ -378,7 +383,7 @@ class AuthController extends Controller
 
         $isBlockedByOther = $me->blockedBy()->where('users.id', $user->id)->exists();
         if ($isBlockedByOther) {
-            return response()->json(['message' => 'Вы заблокированы этим пользователем.'], 403);
+            return response()->json(['message' => '???? ?????????????????????????? ???????? ??????????????????????????.'], 403);
         }
 
         $isFriend = $me->friends()->where('users.id', $user->id)->exists();
@@ -391,7 +396,7 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'is_private' => true,
-                        'message' => 'Приватный профиль'
+                        'message' => '?????????????????? ??????????????'
                     ],
                     'posts' => [],
                     'followers_count' => 0,
@@ -441,6 +446,123 @@ class AuthController extends Controller
             'blocked_by_me' => false,
             'pinned_post' => $pinnedPost,
         ]);
+    }
+
+    public function shareProfile(Request $request, $id)
+    {
+        $targetUser = User::findOrFail($id);
+        $sender = $request->user();
+
+        $blockedBySender = $sender->blockedUsers()->where('users.id', $targetUser->id)->exists();
+        $blockedByTarget = $sender->blockedBy()->where('users.id', $targetUser->id)->exists();
+        if ($blockedBySender || $blockedByTarget) {
+            return response()->json(['message' => 'Sharing is blocked.'], 403);
+        }
+
+        $isFriend = $sender->friends()->where('users.id', $targetUser->id)->exists();
+        if ($targetUser->is_private && $sender->id !== $targetUser->id && !$isFriend) {
+            return response()->json(['message' => 'Recipient is private. You must be friends to share this profile.'], 403);
+        }
+
+        $data = $request->validate([
+            'target_type' => 'required|string|in:user,group',
+            'target_id' => 'required|integer',
+            'body' => 'nullable|string',
+        ]);
+
+        if ($data['target_type'] === 'user') {
+            $recipient = User::find($data['target_id']);
+            if (!$recipient) {
+                return response()->json(['message' => 'Recipient not found.'], 404);
+            }
+
+            $senderBlocked = $sender->blockedUsers()->where('users.id', $recipient->id)->exists();
+            $recipientBlocked = $sender->blockedBy()->where('users.id', $recipient->id)->exists();
+            if ($senderBlocked || $recipientBlocked) {
+                return response()->json(['message' => 'Messaging is blocked.'], 403);
+            }
+
+            if ($recipient->is_private) {
+                $senderIsFriend = $sender->friends()->wherePivot('friend_id', $recipient->id)->exists();
+                $recipientIsFriend = $recipient->friends()->wherePivot('friend_id', $sender->id)->exists();
+                if (!($senderIsFriend && $recipientIsFriend)) {
+                    return response()->json(['message' => 'Recipient is private. You must be mutual friends to send messages.'], 403);
+                }
+            }
+
+            if (!$this->canMessage($sender, $recipient)) {
+                return response()->json(['message' => 'Recipient does not accept messages from you.'], 403);
+            }
+
+            $message = Message::create([
+                'sender_id' => $sender->id,
+                'recipient_id' => $recipient->id,
+                'body' => $data['body'] ?? '',
+                'shared_user_id' => $targetUser->id,
+            ]);
+
+            event(new MessageSent($message));
+
+            if ($recipient->notifications_enabled ?? true) {
+                $recipient->notify(new NewMessageNotification($message));
+            }
+
+            return response()->json($message->load(['sender', 'replyTo.sender', 'reactions.user', 'sharedUser']), 201);
+        }
+
+        $group = ChatGroup::find($data['target_id']);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found.'], 404);
+        }
+
+        if ($this->isLectureChatClosed($group, $sender)) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+
+        $isMember = $group->members()->where('users.id', $sender->id)->exists();
+        if (!$isMember && !$sender->isGlobalAdmin()) {
+            return response()->json(['message' => 'Not a member of this group.'], 403);
+        }
+
+        $message = ChatGroupMessage::create([
+            'chat_group_id' => $group->id,
+            'sender_id' => $sender->id,
+            'body' => $data['body'] ?? '',
+            'reply_to_message_id' => null,
+            'is_system' => false,
+            'shared_user_id' => $targetUser->id,
+        ]);
+
+        return response()->json($message->load(['sender', 'replyTo.sender', 'reactions.user', 'sharedUser']), 201);
+    }
+
+    private function canMessage(User $sender, User $recipient): bool
+    {
+        if ($sender->id === $recipient->id) {
+            return true;
+        }
+
+        $setting = $recipient->messages_visibility ?: 'everyone';
+        if ($setting === 'followers') {
+            $setting = 'friends';
+        }
+        if ($setting === 'nobody') {
+            return false;
+        }
+        if ($setting === 'friends') {
+            return $sender->friends()->where('users.id', $recipient->id)->exists();
+        }
+
+        return true;
+    }
+
+    private function isLectureChatClosed(ChatGroup $group, User $user): bool
+    {
+        if ($group->type !== 'lecture' || !$group->lecture) {
+            return false;
+        }
+
+        return $group->lecture->isEnded() && !$user->isGlobalAdmin();
     }
 
     public function pinPost(Request $request)

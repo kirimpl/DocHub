@@ -8,7 +8,12 @@ use Illuminate\Http\Request;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserBlock;
+use App\Models\Message;
+use App\Models\ChatGroup;
+use App\Models\ChatGroupMessage;
+use App\Events\MessageSent;
 use App\Notifications\NewPostNotification;
+use App\Notifications\NewMessageNotification;
 use Illuminate\Support\Collection;
 
 class PostController extends Controller
@@ -34,6 +39,35 @@ class PostController extends Controller
             return true;
         }
         return false;
+    }
+
+    private function canMessage(User $sender, User $recipient): bool
+    {
+        if ($sender->id === $recipient->id) {
+            return true;
+        }
+
+        $setting = $recipient->messages_visibility ?: 'everyone';
+        if ($setting === 'followers') {
+            $setting = 'friends';
+        }
+        if ($setting === 'nobody') {
+            return false;
+        }
+        if ($setting === 'friends') {
+            return $sender->friends()->where('users.id', $recipient->id)->exists();
+        }
+
+        return true;
+    }
+
+    private function isLectureChatClosed(ChatGroup $group, User $user): bool
+    {
+        if ($group->type !== 'lecture' || !$group->lecture) {
+            return false;
+        }
+
+        return $group->lecture->isEnded() && !$user->isGlobalAdmin();
     }
 
     public function index(Request $request)
@@ -106,6 +140,85 @@ class PostController extends Controller
         $this->notifyTaggedUsers($user, $post, $tags, $scope, $isGlobal);
 
         return response()->json($post, 201);
+    }
+
+    public function share(Request $request, $id)
+    {
+        $post = Post::findOrFail($id);
+        $this->authorize('view', $post);
+
+        $data = $request->validate([
+            'target_type' => 'required|string|in:user,group',
+            'target_id' => 'required|integer',
+            'body' => 'nullable|string',
+        ]);
+
+        $sender = $request->user();
+
+        if ($data['target_type'] === 'user') {
+            $recipient = User::find($data['target_id']);
+            if (!$recipient) {
+                return response()->json(['message' => 'Recipient not found.'], 404);
+            }
+
+            $senderBlocked = $sender->blockedUsers()->where('users.id', $recipient->id)->exists();
+            $recipientBlocked = $sender->blockedBy()->where('users.id', $recipient->id)->exists();
+            if ($senderBlocked || $recipientBlocked) {
+                return response()->json(['message' => 'Messaging is blocked.'], 403);
+            }
+
+            if ($recipient->is_private) {
+                $senderIsFriend = $sender->friends()->wherePivot('friend_id', $recipient->id)->exists();
+                $recipientIsFriend = $recipient->friends()->wherePivot('friend_id', $sender->id)->exists();
+                if (!($senderIsFriend && $recipientIsFriend)) {
+                    return response()->json(['message' => 'Recipient is private. You must be mutual friends to send messages.'], 403);
+                }
+            }
+
+            if (!$this->canMessage($sender, $recipient)) {
+                return response()->json(['message' => 'Recipient does not accept messages from you.'], 403);
+            }
+
+            $message = Message::create([
+                'sender_id' => $sender->id,
+                'recipient_id' => $recipient->id,
+                'body' => $data['body'] ?? '',
+                'shared_post_id' => $post->id,
+            ]);
+
+            event(new MessageSent($message));
+
+            if ($recipient->notifications_enabled ?? true) {
+                $recipient->notify(new NewMessageNotification($message));
+            }
+
+            return response()->json($message->load(['sender', 'replyTo.sender', 'reactions.user', 'sharedPost']), 201);
+        }
+
+        $group = ChatGroup::find($data['target_id']);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found.'], 404);
+        }
+
+        if ($this->isLectureChatClosed($group, $sender)) {
+            return response()->json(['message' => 'Lecture chat is closed.'], 403);
+        }
+
+        $isMember = $group->members()->where('users.id', $sender->id)->exists();
+        if (!$isMember && !$sender->isGlobalAdmin()) {
+            return response()->json(['message' => 'Not a member of this group.'], 403);
+        }
+
+        $message = ChatGroupMessage::create([
+            'chat_group_id' => $group->id,
+            'sender_id' => $sender->id,
+            'body' => $data['body'] ?? '',
+            'reply_to_message_id' => null,
+            'is_system' => false,
+            'shared_post_id' => $post->id,
+        ]);
+
+        return response()->json($message->load(['sender', 'replyTo.sender', 'reactions.user', 'sharedPost']), 201);
     }
 
     public function show($id)
