@@ -1,12 +1,12 @@
 // main.js (или в начале скрипта главной страницы)
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
     // 1. Проверяем наличие токена
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem("auth_token");
 
     // 2. Если токена нет — сразу перенаправляем на вход
     if (!token) {
-        window.location.href = '/';
+        window.location.href = "/";
         return;
     }
     console.log("Пользователь авторизован, грузим контент...");
@@ -17,21 +17,23 @@ document.addEventListener('DOMContentLoaded', () => {
 // Функция выхода
 function logout() {
     // 1. Удаляем токен и данные юзера
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_info');
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_info");
 
     // 2. (Опционально) Отправляем запрос на бэк, чтобы он тоже убил сессию
-    // fetch('/api/logout', ...); 
+    // fetch('/api/logout', ...);
 
     // 3. Перенаправляем на страницу входа
-    window.location.href = '/';
+    window.location.href = "/";
 }
 
 // Находим кнопку выхода (добавь ей id="logoutBtn" в HTML или ищи по классу)
-const logoutBtn = document.querySelector('.icon-btn-logout') || document.querySelector('.text-danger');
+const logoutBtn =
+    document.querySelector(".icon-btn-logout") ||
+    document.querySelector(".text-danger");
 
 if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener("click", (e) => {
         e.preventDefault();
         logout();
     });
@@ -207,8 +209,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     // --- КОНФИГУРАЦИЯ API ---
-    const API_URL = 'http://localhost:8000/api'; // Проверь порт!
-    const token = localStorage.getItem('auth_token');
+    const API_URL = "http://localhost:8000/api"; // Проверь порт!
+    const token = localStorage.getItem("auth_token");
 
     // Если нет токена — календарь не заработает (или можно редиректить)
     if (!token) console.warn("Нет токена авторизации!");
@@ -243,14 +245,14 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch(`${API_URL}/events`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
             });
 
             if (response.ok) {
                 const serverData = await response.json();
-                events = serverData.map(event => {
+                events = serverData.map((event) => {
                     // Берем только первые 10 символов (YYYY-MM-DD)
                     return event.start.substring(0, 10);
                 });
@@ -290,7 +292,10 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 1; i <= daysInMonth; i++) {
             const span = document.createElement("span");
             span.textContent = i;
-            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+            const dateStr = `${year}-${String(month + 1).padStart(
+                2,
+                "0"
+            )}-${String(i).padStart(2, "0")}`;
 
             if (
                 i === today.getDate() &&
@@ -339,7 +344,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function saveEvent() {
-
         const title = eventInput.value.trim();
 
         if (selectedDateStr && title !== "") {
@@ -353,34 +357,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     start: selectedDateStr + " 09:00:00",
                     end: selectedDateStr + " 10:00:00",
                     description: "Создано через календарь",
-                    is_global: false
+                    is_global: false,
                 };
 
                 const response = await fetch(`${API_URL}/events`, {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
                 });
 
                 if (response.ok) {
-                    console.log(`Сохранено: ${title} на дату ${selectedDateStr}`);
+                    console.log(
+                        `Сохранено: ${title} на дату ${selectedDateStr}`
+                    );
                     closeModal();
                     await loadEventsFromBackend();
                 } else {
                     alert("Ошибка сохранения на сервере");
                 }
-
             } catch (error) {
                 console.error(error);
                 alert("Ошибка соединения");
                 // Для ДЕМО (если сервер упал): все равно добавляем точку локально
-                if (!events.includes(selectedDateStr)) events.push(selectedDateStr);
+                if (!events.includes(selectedDateStr))
+                    events.push(selectedDateStr);
                 renderCalendar(activeYear, activeMonth);
                 closeModal();
-
             } finally {
                 saveBtn.textContent = originalBtnText;
                 saveBtn.disabled = false;

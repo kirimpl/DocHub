@@ -13,7 +13,6 @@
 
 /* Блокируем скролл всей страницы */
 body {
-    overflow: hidden;
     margin: 0;
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
@@ -26,7 +25,16 @@ body {
 /* === ГЛАВНЫЙ КОНТЕЙНЕР === */
 .messenger-container {
     width: 1180px;
+<<<<<<< HEAD
     margin: 30px auto 30px auto;
+=======
+
+    /* Отступы: Сверху 30px, Справа auto, Снизу 30px, Слева auto */
+    margin: 30px auto 15px auto;
+
+    /* Высота: Весь экран (100vh) минус 160px. 
+       Чем больше число 160, тем меньше будет окно по высоте. */
+>>>>>>> b454954656f9867076098af2e436a52a5db2a9ee
     height: calc(100vh - 160px);
     display: flex;
     gap: 24px;
