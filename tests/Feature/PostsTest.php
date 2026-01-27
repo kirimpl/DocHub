@@ -47,7 +47,6 @@ class PostsTest extends TestCase
         $me = $users->last();
         $token = $me->createToken('api')->plainTextToken;
 
-        
         DB::table('friends')->insert([
             'user_id' => $me->id,
             'friend_id' => $author->id,
