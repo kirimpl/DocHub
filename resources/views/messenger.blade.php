@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <link rel="stylesheet" href="{{ asset('css/messenger.css') }}">
 
     <div class="messenger-container">
@@ -9,7 +11,7 @@
 
             <div class="card group-section">
                 <h3 class="section-title">Группы</h3>
-                <div class="list-container"></div>
+                <div class="list-container scrollable" id="groupsListContainer"></div>
                 <button class="btn-create" id="btnCreateGroup">Создать группу</button>
             </div>
 
@@ -69,17 +71,39 @@
                         </div>
                     </div>
                 </div>
+
                 <div id="searchBar" class="chat-search-bar hidden">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
                     <input type="text" id="searchInput" placeholder="Поиск по переписке...">
                     <i class="fa-solid fa-xmark close-icon" id="closeSearchBtn" title="Закрыть поиск"></i>
                 </div>
+
                 <div class="chat-messages">
                 </div>
 
                 <div class="chat-input-area">
-                    <input type="text" placeholder="Напишите сообщение...">
-                    <button><i class="fa-solid fa-paper-plane"></i></button>
+
+                    <div class="input-capsule">
+                        <input type="file" id="hiddenFileInput" style="display: none;">
+                        <button class="icon-btn attach-btn" title="Прикрепить">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+
+                        <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
+
+                        <button class="icon-btn emoji-btn" title="Смайлики">
+                            <i class="fa-regular fa-face-smile"></i>
+                        </button>
+                    </div>
+
+                    <button class="aux-btn" id="micBtn" title="Голосовое сообщение">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+
+                    <button class="aux-btn send-btn hidden" id="sendBtn" title="Отправить">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+
                 </div>
             </div>
         </main>

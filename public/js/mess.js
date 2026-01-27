@@ -3,41 +3,64 @@ document.addEventListener('DOMContentLoaded', function () {
     // 1. ПЕРЕМЕННЫЕ И ЭЛЕМЕНТЫ
     // ============================================================
 
-    // Элементы чата и навигации
+    // Контейнеры
     const chatsListContainer = document.getElementById('chatsListContainer');
+    const groupsListContainer = document.getElementById('groupsListContainer');
     const emptyState = document.getElementById('emptyState');
     const chatView = document.getElementById('chatView');
     const contactsListEl = document.getElementById('contactsList');
+    const messagesContainer = document.querySelector('.chat-messages');
 
-    // Элементы Хедера чата
+    // Хедер
     const headerName = document.getElementById('chatHeaderName');
     const headerAvatar = document.getElementById('chatHeaderAvatar');
     const headerStatus = document.getElementById('chatHeaderStatus');
 
-    // Элементы Модального окна (Создание ЧАТА)
+    // Модальные окна
     const modalChat = document.getElementById('createChatModal');
-
-    // Элементы Модального окна (Создание ГРУППЫ)
     const modalGroup = document.getElementById('createGroupModal');
+
+    // Создание группы
     const btnCreateGroup = document.getElementById('btnCreateGroup');
     const groupNameInput = document.getElementById('groupNameInput');
     const groupDescInput = document.getElementById('groupDescInput');
     const submitCreateGroup = document.getElementById('submitCreateGroup');
-    const groupsListContainer = document.querySelector('.group-section .list-container');
 
-    // Элементы отправки сообщений
-    const messageInput = document.querySelector('.chat-input-area input');
-    const sendBtn = document.querySelector('.chat-input-area button');
-    const messagesContainer = document.querySelector('.chat-messages');
+    // === ЭЛЕМЕНТЫ ВВОДА (ОБЪЯВЛЯЕМ ОДИН РАЗ ЗДЕСЬ) ===
+    const messageInput = document.getElementById('messageInput');
+    const micBtn = document.getElementById('micBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const attachBtn = document.getElementById('attachBtn');
+    const hiddenFileInput = document.getElementById('hiddenFileInput');
 
-    // База данных пользователей
+    // Меню
+    const chatMenuBtn = document.getElementById('chatMenuBtn');
+    const chatDropdown = document.getElementById('chatDropdown');
+    const menuClearBtn = document.getElementById('menuClearBtn');
+    const menuDeleteBtn = document.getElementById('menuDeleteBtn');
+
+    // Кнопки в шапке
+    const menuSearchBtn = document.getElementById('menuSearchBtn'); // В меню
+    const btnHeaderSearch = document.getElementById('btnHeaderSearch'); // В шапке
+    const btnHeaderAudio = document.getElementById('btnHeaderAudio');
+    const btnHeaderVideo = document.getElementById('btnHeaderVideo');
+
+    // Поиск
+    const searchBar = document.getElementById('searchBar');
+    const searchInput = document.getElementById('searchInput');
+    const closeSearchBtn = document.getElementById('closeSearchBtn');
+
+    // === ФЕЙКОВАЯ БАЗА ===
     const usersDatabase = [
         { id: 1, name: 'Александр Иванов', role: 'Врач', hospital: 'ГКБ №1', dept: 'Хирургия', initials: 'АИ', gender: 'male' },
         { id: 2, name: 'Мария Петрова', role: 'Врач', hospital: 'ЦКБ РАН', dept: 'Терапия', initials: 'МП', gender: 'female' },
         { id: 3, name: 'Дмитрий Сидоров', role: 'Кардиолог', hospital: 'ГКБ №1', dept: 'Кардиология', initials: 'ДС', gender: 'male' },
         { id: 4, name: 'Елена Васильева', role: 'Медсестра', hospital: 'ГКБ №1', dept: 'Терапия', initials: 'ЕВ', gender: 'female' },
-        { id: 5, name: 'Сергей Волков', role: 'Главврач', hospital: 'ЦКБ РАН', dept: 'Администрация', initials: 'СВ', gender: 'male' },
     ];
+
+    // Хранилище переписки
+    const chatsData = {};
+    let currentActiveChatId = null;
 
     // ============================================================
     // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -48,93 +71,263 @@ document.addEventListener('DOMContentLoaded', function () {
         return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // ============================================================
-    // 3. ЛОГИКА ОТКРЫТИЯ И ВЫБОРА ЧАТА
-    // ============================================================
+    // --- УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ОТРИСОВКИ (ТЕКСТ / КАРТИНКА / ФАЙЛ) ---
+    function renderMessage(content, time, type, contentType = 'text') {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message-bubble ${type}`;
+        const checkIcon = type === 'sent' ? '<i class="fa-solid fa-check-double"></i>' : '';
 
-    // Функция просто открывает данные в правом окне
-    function openChatInterface(data) {
+        let innerHTML = '';
+
+        if (contentType === 'image') {
+            innerHTML = `<img src="${content}" class="msg-image" alt="image">`;
+        } else if (contentType === 'file') {
+            innerHTML = `
+                <div class="msg-file">
+                    <i class="fa-solid fa-file-lines msg-file-icon"></i>
+                    <div>
+                        <div class="msg-file-name">${content.name}</div>
+                        <div style="font-size:10px; opacity:0.7;">${content.size}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            innerHTML = `<div class="msg-text">${content}</div>`;
+        }
+
+        msgDiv.innerHTML = `
+            ${innerHTML}
+            <div class="msg-meta">${time} ${checkIcon}</div>
+        `;
+
+        messagesContainer.appendChild(msgDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // --- ЛОГИКА ОТКРЫТИЯ ЧАТА ---
+    function openChatInterface(data, uniqueId) {
         emptyState.classList.add('hidden');
         chatView.classList.remove('hidden');
+        if (searchBar) searchBar.classList.add('hidden');
 
-        // Заполняем хедер
+        currentActiveChatId = uniqueId;
         headerName.textContent = data.name;
         headerAvatar.textContent = data.initials;
 
-        // Логика статуса
-        if (headerStatus) {
-            if (data.gender === 'group') {
-                headerStatus.textContent = 'Участников: 1 (Вы)';
-            } else {
-                const minAgo = Math.floor(Math.random() * 59) + 1;
-                const verb = (data.gender === 'female') ? 'Была' : 'Был';
-                headerStatus.textContent = `${verb} онлайн: ${minAgo} минут назад`;
-            }
+        // Очистка и загрузка
+        messagesContainer.innerHTML = '';
+        if (chatsData[uniqueId]) {
+            chatsData[uniqueId].forEach(msg => {
+                renderMessage(msg.content, msg.time, msg.type, msg.contentType || 'text');
+            });
+        }
+
+        // Сброс ввода
+        if (messageInput) {
+            messageInput.value = '';
+            toggleInputButtons();
         }
     }
 
-    // Функция ДЕЛАЕТ элемент активным (визуально) и открывает чат
-    function activateSidebarItem(element, data) {
-        // 1. Убираем класс active у ВСЕХ элементов списка (и чатов, и групп)
-        document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
-
-        // 2. Добавляем класс active ТОЛЬКО текущему нажатому элементу
-        element.classList.add('active');
-
-        // 3. Открываем данные справа
-        openChatInterface(data);
-    }
-
-    // Функция СОЗДАЕТ новый элемент в списке (вызывается 1 раз при создании)
     function createSidebarItem(data, container, isGroup = false) {
+        const uniqueId = isGroup ? `group_${data.id}` : `user_${data.id}`;
         const newItem = document.createElement('div');
-        newItem.className = 'list-item'; // Сразу без active, добавим позже
-
-        const avatarColor = isGroup ? '#6EA8DB' : '#004080';
+        newItem.className = 'list-item';
+        const color = isGroup ? '#6EA8DB' : '#004080';
 
         newItem.innerHTML = `
-            <div class="avatar-sq" style="background-color: ${avatarColor};">${data.initials}</div>
+            <div class="avatar-sq" style="background-color: ${color};">${data.initials}</div>
             <div class="item-info">
                 <span class="name">${data.name}</span>
-                <span class="desc">${data.desc || 'Нажмите, чтобы написать...'}</span>
+                <span class="desc">${data.desc || (isGroup ? 'Группа' : 'Личный чат')}</span>
             </div>
-            ${!isGroup ? `<div class="item-meta"><span class="time">${getCurrentTime()}</span></div>` : ''}
         `;
 
-        // Обработчик клика: НЕ создает новый, а просто АКТИВИРУЕТ этот
         newItem.addEventListener('click', function (e) {
-            e.stopPropagation(); // Предотвращаем клики сквозь элементы
-            activateSidebarItem(this, data);
+            e.stopPropagation();
+            document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
+            newItem.classList.add('active');
+            openChatInterface(data, uniqueId);
         });
 
-        // Добавляем в список и сразу активируем
         container.prepend(newItem);
-        activateSidebarItem(newItem, data);
     }
 
     // ============================================================
-    // 4. ЛОГИКА МОДАЛЬНОГО ОКНА (ПОИСК ЛЮДЕЙ)
+    // 3. ЛОГИКА ВВОДА, ОТПРАВКИ И ФАЙЛОВ
     // ============================================================
 
+    function toggleInputButtons() {
+        const text = messageInput.value.trim();
+        if (text.length > 0) {
+            if (sendBtn.classList.contains('hidden')) {
+                sendBtn.classList.remove('hidden');
+                sendBtn.classList.add('visible');
+            }
+        } else {
+            sendBtn.classList.remove('visible');
+            sendBtn.classList.add('hidden');
+        }
+    }
+
+    function sendMessage() {
+        const text = messageInput.value.trim();
+        if (text === '' || !currentActiveChatId) return;
+
+        const time = getCurrentTime();
+
+        // 1. Рисуем
+        renderMessage(text, time, 'sent', 'text');
+
+        // 2. Сохраняем
+        if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
+        chatsData[currentActiveChatId].push({ content: text, time, type: 'sent', contentType: 'text' });
+
+        // 3. Сброс
+        messageInput.value = '';
+        toggleInputButtons();
+    }
+
+    // --- ОТПРАВКА ФАЙЛОВ ---
+    if (attachBtn && hiddenFileInput) {
+        // Клик по скрепке -> Клик по скрытому инпуту
+        attachBtn.addEventListener('click', () => hiddenFileInput.click());
+
+        // Когда файл выбран
+        hiddenFileInput.addEventListener('change', function () {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const time = getCurrentTime();
+
+                if (file.type.startsWith('image/')) {
+                    // КАРТИНКА
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const imgData = e.target.result;
+                        renderMessage(imgData, time, 'sent', 'image');
+
+                        if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
+                        chatsData[currentActiveChatId].push({ content: imgData, time, type: 'sent', contentType: 'image' });
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    // ОБЫЧНЫЙ ФАЙЛ
+                    const fileData = { name: file.name, size: (file.size / 1024).toFixed(1) + ' KB' };
+                    renderMessage(fileData, time, 'sent', 'file');
+
+                    if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
+                    chatsData[currentActiveChatId].push({ content: fileData, time, type: 'sent', contentType: 'file' });
+                }
+                this.value = ''; // Сброс
+            }
+        });
+    }
+
+    // Слушатели ввода
+    if (messageInput) {
+        messageInput.addEventListener('input', toggleInputButtons);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
+
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+    if (micBtn) micBtn.addEventListener('click', () => alert('Запись голосового... (Демо)'));
+
+
+    // ============================================================
+    // 4. МЕНЮ, ПОИСК, ГРУППЫ
+    // ============================================================
+
+    // Звонки
+    if (btnHeaderAudio) btnHeaderAudio.addEventListener('click', () => alert('Аудиозвонок (Демо)'));
+    if (btnHeaderVideo) btnHeaderVideo.addEventListener('click', () => alert('Видеозвонок (Демо)'));
+
+    // Меню
+    if (chatMenuBtn) {
+        chatMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatDropdown.classList.toggle('hidden');
+        });
+    }
+    window.addEventListener('click', () => { if (chatDropdown) chatDropdown.classList.add('hidden'); });
+
+    // Очистка
+    if (menuClearBtn) {
+        menuClearBtn.addEventListener('click', () => {
+            if (!currentActiveChatId) return;
+            if (confirm('Очистить историю?')) {
+                messagesContainer.innerHTML = '';
+                chatsData[currentActiveChatId] = [];
+                const sysMsg = document.createElement('div');
+                sysMsg.style.textAlign = 'center'; sysMsg.style.color = '#BDC9D6'; sysMsg.style.fontSize = '12px'; sysMsg.style.marginTop = '20px';
+                sysMsg.innerHTML = '<i class="fa-solid fa-eraser"></i> История очищена';
+                messagesContainer.appendChild(sysMsg);
+                chatDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Удаление чата
+    if (menuDeleteBtn) {
+        menuDeleteBtn.addEventListener('click', () => {
+            if (confirm('Удалить чат?')) {
+                const active = document.querySelector('.list-item.active');
+                if (active) active.remove();
+                if (currentActiveChatId) delete chatsData[currentActiveChatId];
+                chatView.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                chatDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Поиск
+    const toggleSearch = () => {
+        searchBar.classList.toggle('hidden');
+        if (!searchBar.classList.contains('hidden')) searchInput.focus();
+        chatDropdown.classList.add('hidden');
+    };
+    if (btnHeaderSearch) btnHeaderSearch.addEventListener('click', toggleSearch);
+    if (menuSearchBtn) menuSearchBtn.addEventListener('click', toggleSearch);
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const val = this.value.toLowerCase();
+            document.querySelectorAll('.message-bubble').forEach(b => {
+                const txt = b.querySelector('.msg-text')?.textContent.toLowerCase() || '';
+                b.style.display = txt.includes(val) ? 'flex' : 'none';
+            });
+        });
+    }
+
+    if (closeSearchBtn) {
+        closeSearchBtn.addEventListener('click', () => {
+            searchBar.classList.add('hidden');
+            searchInput.value = '';
+            document.querySelectorAll('.message-bubble').forEach(b => b.style.display = 'flex');
+        });
+    }
+
+    // Создание группы
+    if (btnCreateGroup) btnCreateGroup.addEventListener('click', () => { modalGroup.classList.add('active'); });
+
+    if (submitCreateGroup) {
+        submitCreateGroup.addEventListener('click', () => {
+            const name = groupNameInput.value.trim();
+            const desc = groupDescInput.value.trim();
+            if (!name) return;
+            createSidebarItem({ id: Date.now(), name, desc, initials: name.substring(0, 2).toUpperCase() }, groupsListContainer, true);
+            modalGroup.classList.remove('active');
+            groupNameInput.value = '';
+        });
+    }
+
+    // Контакты
     function renderContacts() {
         const search = document.getElementById('contactSearch').value.toLowerCase();
-        // Фильтры (если есть в HTML)
-        const hospEl = document.getElementById('filterHospital');
-        const deptEl = document.getElementById('filterDept');
-        const roleEl = document.getElementById('filterRole');
-
-        const hosp = hospEl ? hospEl.value : '';
-        const dept = deptEl ? deptEl.value : '';
-        const role = roleEl ? roleEl.value : '';
-
         contactsListEl.innerHTML = '';
-
-        const filtered = usersDatabase.filter(u => {
-            return u.name.toLowerCase().includes(search) &&
-                (hosp === '' || u.hospital === hosp) &&
-                (dept === '' || u.dept === dept) &&
-                (role === '' || u.role === role);
-        });
+        const filtered = usersDatabase.filter(u => u.name.toLowerCase().includes(search));
 
         if (filtered.length === 0) {
             contactsListEl.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Ничего не найдено</div>';
@@ -146,10 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
             el.className = 'contact-item';
             el.innerHTML = `
                 <div class="avatar-sq" style="background:#D9EEFF; color:#0056B3;">${user.initials}</div>
-                <div class="contact-info">
-                    <h4>${user.name}</h4>
-                    <p>${user.role} • ${user.dept}</p>
-                </div>
+                <div class="contact-info"><h4>${user.name}</h4><p>${user.role}</p></div>
             `;
             el.addEventListener('click', () => {
                 createSidebarItem(user, chatsListContainer, false);
@@ -159,214 +349,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Слушатели для открытия модалки
     document.querySelectorAll('.trigger-modal').forEach(btn => {
-        btn.addEventListener('click', () => { modalChat.classList.add('active'); renderContacts(); });
-    });
-
-    // Закрытие модалок
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', function () {
-            this.closest('.modal-overlay').classList.remove('active');
+        btn.addEventListener('click', () => {
+            if (!btn.textContent.includes('группу')) {
+                modalChat.classList.add('active');
+                renderContacts();
+            }
         });
     });
 
+    const contactSearch = document.getElementById('contactSearch');
+    if (contactSearch) contactSearch.addEventListener('input', renderContacts);
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', function () { this.closest('.modal-overlay').classList.remove('active'); });
+    });
     window.addEventListener('click', (e) => {
         if (e.target === modalChat) modalChat.classList.remove('active');
         if (e.target === modalGroup) modalGroup.classList.remove('active');
     });
-
-    ['contactSearch', 'filterHospital', 'filterDept', 'filterRole'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', renderContacts);
-    });
-
-    // ============================================================
-    // 5. ЛОГИКА СОЗДАНИЯ ГРУППЫ
-    // ============================================================
-
-    if (btnCreateGroup) {
-        btnCreateGroup.addEventListener('click', () => {
-            modalGroup.classList.add('active');
-            if (groupNameInput) groupNameInput.focus();
-        });
-    }
-
-    if (submitCreateGroup) {
-        submitCreateGroup.addEventListener('click', () => {
-            const name = groupNameInput.value.trim();
-            const desc = groupDescInput.value.trim();
-
-            if (name === '') return;
-
-            const groupData = {
-                name: name,
-                desc: desc || 'Группа',
-                initials: name.substring(0, 2).toUpperCase(),
-                gender: 'group',
-                role: 'Группа'
-            };
-
-            createSidebarItem(groupData, groupsListContainer, true);
-
-            groupNameInput.value = '';
-            groupDescInput.value = '';
-            modalGroup.classList.remove('active');
-        });
-    }
-
-    // ============================================================
-    // 6. ОТПРАВКА СООБЩЕНИЙ
-    // ============================================================
-
-    function sendMessage() {
-        const text = messageInput.value.trim();
-        if (text === '') return;
-
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'message-bubble sent';
-
-        const time = getCurrentTime();
-        msgDiv.innerHTML = `
-            <div class="msg-text">${text}</div>
-            <div class="msg-meta">
-                ${time} <i class="fa-solid fa-check-double"></i>
-            </div>
-        `;
-
-        messagesContainer.appendChild(msgDiv);
-        messageInput.value = '';
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
-    if (messageInput) {
-        messageInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-    }
-
-
-    const staticChat = document.querySelector('#chatsListContainer .list-item');
-    if (staticChat) {
-        staticChat.addEventListener('click', function (e) {
-            e.stopPropagation();
-            // Данные статического пользователя
-            const staticUser = { name: 'Иван Иванов', initials: 'ИИ', gender: 'male', desc: 'Привет!' };
-            // Просто активируем, НЕ создаем новый
-            activateSidebarItem(this, staticUser);
-        });
-    }
 });
-// ============================================================
-    // 8. ЛОГИКА МЕНЮ ЧАТА И ФУНКЦИОНАЛ КНОПОК
-    // ============================================================
-
-    const chatMenuBtn = document.getElementById('chatMenuBtn');
-    const chatDropdown = document.getElementById('chatDropdown');
-    
-    // Кнопки меню
-    const menuSearchBtn = document.getElementById('menuSearchBtn');
-    const menuClearBtn = document.getElementById('menuClearBtn');
-    const menuDeleteBtn = document.getElementById('menuDeleteBtn');
-    
-    // Элементы поиска
-    const searchBar = document.getElementById('searchBar');
-    const searchInput = document.getElementById('searchInput');
-    const closeSearchBtn = document.getElementById('closeSearchBtn');
-
-    // --- 1. УПРАВЛЕНИЕ МЕНЮ (ОТКРЫТЬ/ЗАКРЫТЬ) ---
-    if(chatMenuBtn) {
-        chatMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            chatDropdown.classList.toggle('hidden');
-        });
-    }
-
-    window.addEventListener('click', () => {
-        if(chatDropdown && !chatDropdown.classList.contains('hidden')) {
-            chatDropdown.classList.add('hidden');
-        }
-    });
-
-    // --- 2. ФУНКЦИЯ ПОИСКА ---
-    if(menuSearchBtn) {
-        menuSearchBtn.addEventListener('click', () => {
-            // Показываем панель поиска
-            searchBar.classList.remove('hidden');
-            searchInput.focus();
-            // Скрываем само меню
-            chatDropdown.classList.add('hidden');
-        });
-    }
-
-    // Логика фильтрации сообщений при вводе
-    if(searchInput) {
-        searchInput.addEventListener('input', function() {
-            const filter = this.value.toLowerCase();
-            const bubbles = document.querySelectorAll('.message-bubble');
-
-            bubbles.forEach(bubble => {
-                const text = bubble.querySelector('.msg-text').textContent.toLowerCase();
-                // Если текст совпадает - показываем, иначе скрываем (display: none)
-                if(text.includes(filter)) {
-                    bubble.style.display = 'flex';
-                } else {
-                    bubble.style.display = 'none';
-                }
-            });
-        });
-    }
-
-    // Закрытие поиска и сброс фильтра
-    if(closeSearchBtn) {
-        closeSearchBtn.addEventListener('click', () => {
-            searchBar.classList.add('hidden');
-            searchInput.value = '';
-            // Возвращаем видимость всем сообщениям
-            document.querySelectorAll('.message-bubble').forEach(b => b.style.display = 'flex');
-        });
-    }
-
-    // --- 3. ФУНКЦИЯ ОЧИСТКИ ЧАТА ---
-    if(menuClearBtn) {
-        menuClearBtn.addEventListener('click', () => {
-            if(confirm('Вы уверены, что хотите удалить все сообщения?')) {
-                messagesContainer.innerHTML = ''; // Очищаем HTML
-                
-                // Добавляем системное сообщение
-                const sysMsg = document.createElement('div');
-                sysMsg.style.textAlign = 'center';
-                sysMsg.style.fontSize = '12px';
-                sysMsg.style.color = '#BDC9D6';
-                sysMsg.style.marginTop = '20px';
-                sysMsg.innerHTML = '<i class="fa-solid fa-eraser"></i> История очищена';
-                
-                messagesContainer.appendChild(sysMsg);
-                chatDropdown.classList.add('hidden');
-            }
-        });
-    }
-
-    // --- 4. ФУНКЦИЯ УДАЛЕНИЯ ЧАТА ---
-    if(menuDeleteBtn) {
-        menuDeleteBtn.addEventListener('click', () => {
-            if(confirm('Удалить этот чат навсегда?')) {
-                // 1. Находим активный элемент в сайдбаре
-                const activeItem = document.querySelector('.list-item.active');
-                
-                // 2. Удаляем его
-                if(activeItem) {
-                    activeItem.remove();
-                }
-
-                // 3. Скрываем окно чата и показываем пустой экран
-                chatView.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                
-                // Скрываем панель поиска, если она была открыта
-                searchBar.classList.add('hidden');
-                searchInput.value = '';
-            }
-        });
-    }
