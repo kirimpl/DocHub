@@ -15,7 +15,6 @@
 
 /* Блокируем скролл всей страницы */
 body {
-    overflow: hidden;
     margin: 0;
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
@@ -30,7 +29,7 @@ body {
     width: 1180px;
 
     /* Отступы: Сверху 30px, Справа auto, Снизу 30px, Слева auto */
-    margin: 30px auto 30px auto;
+    margin: 30px auto 15px auto;
 
     /* Высота: Весь экран (100vh) минус 160px. 
        Чем больше число 160, тем меньше будет окно по высоте. */

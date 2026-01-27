@@ -16,7 +16,7 @@
     <header class="header-shelf">
         <div class="header-content">
             <div class="logo">
-                <a href = "/news">DocHub</a>
+                <a href="/news">DocHub</a>
             </div>
 
             <div class="search-container">
@@ -96,6 +96,66 @@
         </div>
     </header>
     @yield('content')
+    <footer class="site-footer">
+        <div class="footer-container">
+
+            <div class="footer-column info-column">
+                <h2 class="footer-logo">DocHub</h2>
+                <p class="footer-desc">
+                    специализированная социальная сеть<br>
+                    для медицинских работников
+                </p>
+
+                <h3 class="footer-heading">Наши контакты</h3>
+
+                <div class="contact-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#0056b3" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                    <span class="contact-label">Почта:</span>
+                    <a href="mailto:askdakjsd@mail.ru">askdakjsd@mail.ru</a>
+                </div>
+
+                <div class="contact-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#0056b3" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.05 12.05 0 0 0 .57 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.03 12.03 0 0 0 2.81.57A2 2 0 0 1 22 16.92z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span class="contact-label">Телефон:</span>
+                    <a href="tel:+77057823891">+77057823891</a>
+                </div>
+            </div>
+
+            <div class="footer-column nav-column">
+                <h3 class="footer-heading">Навигация</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Новостная страница</a></li>
+                </ul>
+
+                <h3 class="footer-heading profile-heading">Профиль</h3>
+                <ul class="footer-links">
+                    <li><a href="#">Коллеги</a></li>
+                    <li><a href="#">Сообщения</a></li>
+                    <li><a href="#">Собрания</a></li>
+                    <li><a href="#">Заметки</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-column help-column">
+                <h3 class="footer-heading">Помощь</h3>
+                <ul class="footer-links">
+                    <li><a href="#">F.A.Q.</a></li>
+                    <li><a href="#">Поддержка</a></li>
+                    <li><a href="#">Политика конфиденциальности</a></li>
+                </ul>
+            </div>
+
+        </div>
+    </footer>
     <script src="{{ asset('js/feed.js') }}" defer></script>
 </body>
 
