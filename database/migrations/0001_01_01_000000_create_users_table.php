@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('password');
             $table->integer('work_experience')->nullable();
             $table->string('work_place')->nullable();
+            $table->string('city')->nullable();
             $table->string('speciality')->nullable();
             $table->string('secondary_work_place')->nullable();
             $table->string('secondary_speciality')->nullable();

@@ -57,6 +57,7 @@ class AuthController extends Controller
             'phone_number' => 'required|string|max:20|regex:/^\+?[0-9]{7,20}$/',
             'birth_date' => 'required|date|before:today',
             'education' => 'required|string|max:255',
+            'city' => 'sometimes|nullable|string|max:255',
             'work_experience' => 'required|integer|min:0|max:450',
             'work_place' => 'required|string|max:255',
             'secondary_work_place' => 'sometimes|nullable|string|max:255',
@@ -82,7 +83,8 @@ class AuthController extends Controller
         }
         if (!empty($errors)) {
             return response()->json([
-                'message' => '???????????????????????? ???????? ??????????????.',
+                'message' => 'Некорректные поля профиля.',
+
                 'errors' => $errors,
             ], 422);
         }
@@ -97,6 +99,7 @@ class AuthController extends Controller
             'phone_number' => $data['phone_number'],
             'birth_date' => $data['birth_date'],
             'education' => $data['education'],
+            'city' => $data['city'] ?? null,
             'work_experience' => $data['work_experience'],
             'work_place' => $workPlace,
             'secondary_work_place' => $secondaryWorkPlace,
@@ -140,7 +143,9 @@ class AuthController extends Controller
             'name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|nullable|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $request->user()->id,
+            'phone_number' => 'sometimes|nullable|string|max:20|regex:/^\\+?[0-9]{7,20}$/|unique:users,phone_number,' . $request->user()->id,
             'status_text' => 'nullable|string|max:140',
+            'bio' => 'nullable|string|max:1000',
             'is_private' => 'boolean',
             'avatar' => 'nullable|image|max:2048',
             'cover_image' => 'nullable|image|max:4096',
@@ -149,6 +154,8 @@ class AuthController extends Controller
             'speciality' => 'sometimes|string|max:255',
             'work_experience' => 'sometimes|integer|min:0|max:450',
             'work_place' => 'sometimes|string|max:255',
+            'education' => 'sometimes|nullable|string|max:255',
+            'city' => 'sometimes|nullable|string|max:255',
             'secondary_work_place' => 'sometimes|nullable|string|max:255',
             'secondary_speciality' => 'sometimes|nullable|string|max:255',
             'category' => 'sometimes|nullable|string|max:255',
@@ -196,7 +203,8 @@ class AuthController extends Controller
 
         if (!empty($errors)) {
             return response()->json([
-                'message' => '???????????????????????? ???????? ??????????????.',
+                'message' => 'Некорректные поля профиля.',
+
                 'errors' => $errors,
             ], 422);
         }
@@ -254,7 +262,8 @@ class AuthController extends Controller
                     'department_name' => null,
                 ],
                 [
-                    'name' => '?????????? ????????????: ' . $orgName,
+                    'name' => 'Общая группа: ' . $orgName,
+
                     'owner_id' => $user->id,
                     'is_system' => true,
                 ]
@@ -274,7 +283,8 @@ class AuthController extends Controller
                     'department_name' => $deptName,
                 ],
                 [
-                    'name' => '??????????????????: ' . $deptName,
+                    'name' => 'Отделение: ' . $deptName,
+
                     'owner_id' => $user->id,
                     'is_system' => true,
                 ]
@@ -304,7 +314,8 @@ class AuthController extends Controller
     {
         $input = trim($input);
         if ($input === '') {
-            $errors[$field] = ['???????? ??????????????????????.'];
+            $errors[$field] = ['Поле обязательно.'];
+
             return null;
         }
 
@@ -324,7 +335,8 @@ class AuthController extends Controller
             $suggestions = Organization::orderBy('name')->limit(5)->pluck('name')->all();
         }
 
-        $errors[$field] = ['???????????????? ???????????????? ???? ????????????.'];
+        $errors[$field] = ['Выберите значение из списка.'];
+
         if (!empty($suggestions)) {
             $errors[$field . '_suggestions'] = $suggestions;
         }
@@ -336,7 +348,8 @@ class AuthController extends Controller
     {
         $input = trim($input);
         if ($input === '') {
-            $errors[$field] = ['???????? ??????????????????????.'];
+            $errors[$field] = ['Поле обязательно.'];
+
             return null;
         }
 
@@ -356,7 +369,8 @@ class AuthController extends Controller
             $suggestions = Department::orderBy('name')->limit(5)->pluck('name')->all();
         }
 
-        $errors[$field] = ['???????????????? ???????????????? ???? ????????????.'];
+        $errors[$field] = ['Выберите значение из списка.'];
+     
         if (!empty($suggestions)) {
             $errors[$field . '_suggestions'] = $suggestions;
         }
@@ -383,7 +397,7 @@ class AuthController extends Controller
 
         $isBlockedByOther = $me->blockedBy()->where('users.id', $user->id)->exists();
         if ($isBlockedByOther) {
-            return response()->json(['message' => '???? ?????????????????????????? ???????? ??????????????????????????.'], 403);
+            return response()->json(['message' => 'Вы заблокированы этим пользователем.'], 403);
         }
 
         $isFriend = $me->friends()->where('users.id', $user->id)->exists();
@@ -396,7 +410,8 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'is_private' => true,
-                        'message' => '?????????????????? ??????????????'
+                        'message' => 'Приватный профиль'
+
                     ],
                     'posts' => [],
                     'followers_count' => 0,
