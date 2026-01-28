@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // ============================================================
+    
     // 1. ПЕРЕМЕННЫЕ И ЭЛЕМЕНТЫ
-    // ============================================================
-
     const chatsListContainer = document.getElementById('chatsListContainer');
     const groupsListContainer = document.getElementById('groupsListContainer');
     const emptyState = document.getElementById('emptyState');
@@ -55,10 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatsData = {};
     let currentActiveChatId = null;
 
-    // ============================================================
     // 2. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-    // ============================================================
-
     function getCurrentTime() {
         const now = new Date();
         return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -150,10 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
         container.prepend(newItem);
     }
 
-    // ============================================================
     // 3. ЛОГИКА ВВОДА И ОТПРАВКИ
-    // ============================================================
-
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     function toggleInputButtons() {
@@ -232,10 +224,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (sendBtn) sendBtn.addEventListener('click', sendMessage);
 
-    // ============================================================
+
     // 4. ЗАПИСЬ ГОЛОСА (РЕАЛЬНАЯ)
-    // ============================================================
-    
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
@@ -268,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 isRecording = true;
                 audioChunks = [];
 
-                // Визуальный эффект (Красная кнопка + иконка Стоп)
+                // Красная кнопка + иконка Стоп)
                 micBtn.classList.add('recording'); 
                 micBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
 
@@ -283,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     micBtn.classList.remove('recording');
                     micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
 
-                    // Создаем аудиофайл (Blob)
+                    // Создаем аудиофайл 
                     const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const time = getCurrentTime();
@@ -305,10 +295,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-
-    // ============================================================
     // 5. ИНТЕРФЕЙС (МЕНЮ, ПОИСК, ГРУППЫ)
-    // ============================================================
 
     if (btnHeaderAudio) btnHeaderAudio.addEventListener('click', () => alert('Аудиозвонок (Демо)'));
     if (btnHeaderVideo) btnHeaderVideo.addEventListener('click', () => alert('Видеозвонок (Демо)'));
@@ -442,9 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ============================================================
     // 6. ЛОГИКА СМАЙЛИКОВ
-    // ============================================================
 
     if (emojiBtn && emojiWrapper) {
         emojiBtn.addEventListener('click', (e) => {

@@ -804,11 +804,9 @@ body {
     bottom: 80px;     
     right: 100px;     
     z-index: 1000;
-    
-    /* Тень и скругление для красоты */
     box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
     border-radius: 20px;
-    overflow: hidden; /* Чтобы углы не торчали */
+    overflow: hidden;/
 }
 
 /* Скрытое состояние */
@@ -816,9 +814,9 @@ body {
     display: none;
 }
 
-/* Настройки самой библиотеки (размеры) */
+/* Настройки самой библиотеки  */
 emoji-picker {
-    width: 320px;
+    width: 360px;
     height: 400px;
     --background: #FFFFFF;
     --border-color: #EDEFF2;
@@ -827,7 +825,7 @@ emoji-picker {
 
 /* Анимация кнопки при записи */
 .aux-btn.recording {
-    background-color: #FF4D4D; /* Красный фон */
+    background-color: #FF4D4D;
     color: white;
     animation: pulse 1.5s infinite;
 }
@@ -847,7 +845,7 @@ emoji-picker {
     outline: none;
 }
 
-/* Стилизация стандартного плеера (работает в Chrome/Edge) */
+/* Стилизация стандартного плеера */
 .msg-audio::-webkit-media-controls-panel {
     background-color: rgba(255, 255, 255, 0.8);
 }
