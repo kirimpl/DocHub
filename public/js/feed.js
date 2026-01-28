@@ -243,7 +243,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!token) return;
 
         try {
-            const response = await fetch(`${API_URL}/events`, {
+            const response = await fetch(`/api/events`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
