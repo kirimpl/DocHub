@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocHub - Вход в систему</title>
+    <title>DocHub - Вход / Регистрация</title>
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
 </head>
 
@@ -14,7 +14,7 @@
         <div class="auth-card">
             <div class="auth-header">
                 <h2>DocHub</h2>
-                <p>Медицинская информационная система</p>
+                <p>Единый вход для врачей платформы DocHub</p>
             </div>
 
             <div class="auth-tabs">
@@ -23,6 +23,7 @@
             </div>
 
             <form id="loginForm" class="auth-form active" onsubmit="handleLogin(event)">
+                <div class="auth-error" role="alert"></div>
                 <div>
                     <label>Email</label>
                     <input type="email" name="email" required placeholder="name@clinic.com">
@@ -35,7 +36,7 @@
             </form>
 
             <form id="registerForm" class="auth-form" onsubmit="handleRegister(event)">
-
+                <div class="auth-error" role="alert"></div>
                 <h3>Личные данные</h3>
                 <input type="text" name="last_name" placeholder="Фамилия *" required>
                 <input type="text" name="name" placeholder="Имя *" required>
@@ -51,35 +52,62 @@
                     <input type="date" name="birth_date" required>
                 </div>
 
-                <h3>Контакты и аккаунт</h3>
+                <h3>Контакты и учетная запись</h3>
                 <input type="tel" name="phone_number" placeholder="Телефон (+7...)" pattern="^\+?[0-9]{7,20}$" required>
-                <input type="email" name="email" placeholder="Email (Логин) *" required>
+                <input type="email" name="email" placeholder="Email *" required>
                 <input type="password" name="password" placeholder="Пароль (мин. 6 символов) *" minlength="6" required>
-                <input type="text" name="city" placeholder="Город">
+                <select name="city" id="citySelect">
+                    <option value="" disabled selected>Город</option>
+                </select>
+                <div style="font-size:12px; color:#6b7280; margin-top:-6px;">Выберите город, чтобы открыть список мест работы</div>
 
-                <h3>Работа</h3>
-                <input type="text" name="speciality" placeholder="Специальность (напр. Терапевт) *" required>
-                <input type="text" name="education" placeholder="ВУЗ / Образование *" required>
+                <h3>Профиль</h3>
+                <select name="speciality" id="specialitySelect" required>
+                    <option value="" disabled selected>Специальность *</option>
+                </select>
+                <select name="education" id="educationSelect" required>
+                    <option value="" disabled selected>ВУЗ / образование *</option>
+                </select>
                 <input type="number" name="work_experience" placeholder="Стаж (лет) *" min="0" max="100" required>
-                <input type="text" name="work_place" placeholder="Место работы *" required>
+                <select name="work_place" id="workPlaceSelect" required disabled>
+                    <option value="" disabled selected>Сначала выберите город</option>
+                </select>
+                <div style="font-size:12px; color:#6b7280; margin-top:-6px;">Поле «Место работы» станет доступным после выбора города</div>
 
-                <input type="text" name="position" placeholder="Должность">
-                <input type="text" name="category" placeholder="Категория">
-                <input type="text" name="secondary_work_place" placeholder="Доп. место работы">
-                <input type="text" name="secondary_speciality" placeholder="Доп. специальность">
+                <select name="position" id="positionSelect">
+                    <option value="" disabled selected>Должность</option>
+                </select>
+                <select name="category" id="categorySelect">
+                    <option value="" disabled selected>Категория</option>
+                </select>
 
-                <h3>Роль в системе</h3>
-                <select name="organization_role">
-                    <option value="">Без руководящей роли</option>
+                <div class="secondary-toggle">
+                    <label class="checkbox">
+                        <input type="checkbox" id="toggleSecondaryWork">
+                        <span>Доп. место работы</span>
+                    </label>
+                </div>
+                <div id="secondaryWorkFields" style="display:none;">
+                    <select name="secondary_work_place" id="secondaryWorkPlaceSelect" disabled>
+                        <option value="" disabled selected>Сначала выберите город</option>
+                    </select>
+                    <input type="text" name="secondary_speciality" placeholder="Доп. специальность" list="specialityList">
+                </div>
+
+                <h3>Роль в организации</h3>
+                <select name="organization_role" required>
+                    <option value="" disabled selected>Выберите роль в организации *</option>
                     <option value="staff">Сотрудник</option>
                     <option value="chief">Главврач</option>
                     <option value="deputy">Заместитель</option>
                 </select>
 
-                <button type="submit">Зарегистрировать врача</button>
+                <button type="submit">Зарегистрироваться</button>
             </form>
         </div>
     </div>
+
+    <datalist id="specialityList"></datalist>
 
     <script src="{{ asset('js/auth.js') }}"></script>
 </body>

@@ -23,6 +23,7 @@ use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\VoiceRoomController;
 use App\Http\Controllers\API\VerificationController;
 use App\Http\Controllers\API\AiController;
+use App\Http\Controllers\API\DirectoryController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -33,6 +34,13 @@ Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
 Route::get('organizations', [OrganizationController::class, 'index']);
 Route::get('departments', [DepartmentController::class, 'index']);
+Route::get('directory/organizations', [DirectoryController::class, 'organizations']);
+Route::get('directory/work-places', [DirectoryController::class, 'workPlaces']);
+Route::get('directory/departments', [DirectoryController::class, 'departments']);
+Route::get('directory/cities', [DirectoryController::class, 'cities']);
+Route::get('directory/educations', [DirectoryController::class, 'educations']);
+Route::get('directory/positions', [DirectoryController::class, 'positions']);
+Route::get('directory/categories', [DirectoryController::class, 'categories']);
 
 Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(function () {
     Route::get('me', [AuthController::class, 'me']);

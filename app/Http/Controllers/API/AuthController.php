@@ -64,7 +64,7 @@ class AuthController extends Controller
             'secondary_speciality' => 'sometimes|nullable|string|max:255',
             'category' => 'sometimes|nullable|string|max:255',
             'position' => 'sometimes|nullable|string|max:255',
-            'organization_role' => 'sometimes|nullable|string|max:20',
+            'organization_role' => 'required|string|max:20',
             'department_role' => 'sometimes|nullable|string|max:20',
         ]);
 
@@ -84,7 +84,6 @@ class AuthController extends Controller
         if (!empty($errors)) {
             return response()->json([
                 'message' => 'Некорректные поля профиля.',
-
                 'errors' => $errors,
             ], 422);
         }
@@ -106,7 +105,7 @@ class AuthController extends Controller
             'secondary_speciality' => $secondarySpeciality,
             'category' => $data['category'] ?? null,
             'position' => $data['position'] ?? null,
-            'organization_role' => $data['organization_role'] ?? 'staff',
+            'organization_role' => $data['organization_role'],
             'department_role' => $data['department_role'] ?? 'staff',
             'verification_status' => 'pending',
         ]);
@@ -204,7 +203,6 @@ class AuthController extends Controller
         if (!empty($errors)) {
             return response()->json([
                 'message' => 'Некорректные поля профиля.',
-
                 'errors' => $errors,
             ], 422);
         }
@@ -312,7 +310,7 @@ class AuthController extends Controller
 
     private function resolveOrganizationName(string $input, array &$errors, string $field): ?string
     {
-        $input = trim($input);
+        $input = preg_replace('/\s+/', ' ', trim($input));
         if ($input === '') {
             $errors[$field] = ['Поле обязательно.'];
 
@@ -325,6 +323,14 @@ class AuthController extends Controller
             return $exact;
         }
 
+        $fallbackList = collect(config('directories.work_places', []));
+        $fallbackMatch = $fallbackList->first(function ($item) use ($lower) {
+            return mb_strtolower($item) === $lower;
+        });
+        if ($fallbackMatch) {
+            return $fallbackMatch;
+        }
+
         $suggestions = Organization::where('name', 'like', '%' . $input . '%')
             ->orderBy('name')
             ->limit(5)
@@ -332,7 +338,7 @@ class AuthController extends Controller
             ->all();
 
         if (empty($suggestions)) {
-            $suggestions = Organization::orderBy('name')->limit(5)->pluck('name')->all();
+            $suggestions = $fallbackList->take(5)->values()->all();
         }
 
         $errors[$field] = ['Выберите значение из списка.'];
@@ -346,7 +352,7 @@ class AuthController extends Controller
 
     private function resolveDepartmentName(string $input, array &$errors, string $field): ?string
     {
-        $input = trim($input);
+        $input = preg_replace('/\s+/', ' ', trim($input));
         if ($input === '') {
             $errors[$field] = ['Поле обязательно.'];
 
@@ -359,6 +365,14 @@ class AuthController extends Controller
             return $exact;
         }
 
+        $fallbackList = collect(config('directories.departments', []));
+        $fallbackMatch = $fallbackList->first(function ($item) use ($lower) {
+            return mb_strtolower($item) === $lower;
+        });
+        if ($fallbackMatch) {
+            return $fallbackMatch;
+        }
+
         $suggestions = Department::where('name', 'like', '%' . $input . '%')
             ->orderBy('name')
             ->limit(5)
@@ -366,11 +380,11 @@ class AuthController extends Controller
             ->all();
 
         if (empty($suggestions)) {
-            $suggestions = Department::orderBy('name')->limit(5)->pluck('name')->all();
+            $suggestions = $fallbackList->take(5)->values()->all();
         }
 
         $errors[$field] = ['Выберите значение из списка.'];
-     
+        
         if (!empty($suggestions)) {
             $errors[$field . '_suggestions'] = $suggestions;
         }
