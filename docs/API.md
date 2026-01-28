@@ -85,6 +85,18 @@ Authorization: Bearer <token>
 ### GET /api/profile/{id}
 Профиль пользователя.
 
+### POST /api/profile/{id}/share
+Поделиться профилем в ЛС или групповой чат.
+
+**Body**
+```
+{
+  "target_type": "user|group",
+  "target_id": 123,
+  "body": "Комментарий (опционально)"
+}
+```
+
 ### POST /api/profile
 Обновление профиля.
 
@@ -194,6 +206,18 @@ Realtime подписка (Echo/Reverb).
 **Уведомления по тегам:**
 - Глобальный пост → всем по тегу во всех больницах
 - Локальный пост → по тегу в своей больнице
+
+### POST /api/posts/{id}/share
+Поделиться постом в ЛС или групповой чат.
+
+**Body**
+```
+{
+  "target_type": "user|group",
+  "target_id": 123,
+  "body": "Комментарий (опционально)"
+}
+```
 
 ### GET /api/posts/{id}
 Один пост.

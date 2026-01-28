@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     // posts
     Route::get('posts', [PostController::class, 'index']);
     Route::post('posts', [PostController::class, 'store']);
+    Route::post('posts/{id}/share', [PostController::class, 'share']);
     Route::get('posts/{id}', [PostController::class, 'show']);
     Route::patch('posts/{id}', [PostController::class, 'update']);
     Route::delete('posts/{id}', [PostController::class, 'destroy']);
@@ -156,6 +157,7 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     // privacy
     Route::post('privacy', [PrivacyController::class, 'update']);
     Route::post('profile', [AuthController::class, 'updateProfile']);
+    Route::post('profile/{id}/share', [AuthController::class, 'shareProfile'])->whereNumber('id');
     Route::post('profile/pin-post', [AuthController::class, 'pinPost']);
     Route::post('security/password', [AuthController::class, 'updatePassword']);
     Route::get('security/sessions', [AuthController::class, 'sessions']);
@@ -203,3 +205,5 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     Route::post('voice-rooms/{id}/invites/{inviteId}/accept', [VoiceRoomController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
     Route::post('voice-rooms/{id}/invites/{inviteId}/decline', [VoiceRoomController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
 });
+
+
