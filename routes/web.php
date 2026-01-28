@@ -14,3 +14,6 @@ Route::get('/messenger', function () {
 Route::get('/messenger-new', function () {
     return view('messenger_new');
 });
+Route::get('/profile', function () {
+    return view('profile');
+});
