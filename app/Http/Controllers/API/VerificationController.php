@@ -93,6 +93,7 @@ class VerificationController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        $this->syncSystemGroups($user);
         $this->ensureDefaultGroups($user);
         $this->ensureSecondaryGroups($user);
 
@@ -182,5 +183,16 @@ class VerificationController extends Controller
         $tempUser->speciality = $user->secondary_speciality ?: $user->speciality;
 
         $this->ensureDefaultGroups($tempUser);
+    }
+
+    private function syncSystemGroups(User $user): void
+    {
+        $groups = ChatGroup::where('is_system', true)
+            ->whereIn('type', ['organization', 'department'])
+            ->get();
+
+        foreach ($groups as $group) {
+            $group->members()->detach($user->id);
+        }
     }
 }

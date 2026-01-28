@@ -1,41 +1,52 @@
 # API документация (backend)
 
-Базовый URL: `/api`
+Базовый URL: `/api`  
+Аутентификация: **Bearer token** (Sanctum)
 
-Аутентификация: **Bearer token** (Sanctum)  
-Передавать в заголовке:
-
+Заголовок:
 ```
 Authorization: Bearer <token>
 ```
 
 ## Важные правила доступа
 
-- После регистрации пользователь имеет `verification_status = pending`.
-- **Пока не верифицирован**, доступ ограничен: можно только смотреть **глобальные** посты и работать с верификацией.
-- Доступы ограничиваются middleware `verified.doctor`.
+- После регистрации у пользователя `verification_status = pending`.
+- Пока пользователь **не верифицирован**, доступ ограничен: можно смотреть **глобальные** посты и работать с верификацией.
+- Доступы ограничивает middleware `verified.doctor`.
+- **Системные группы** (организация/отделение) создаются **после одобрения** верификации.
+- Из **системных групп** нельзя выйти вручную (`leave` вернёт 403).
+- При повторной верификации (например, при смене места работы) членство в системных группах пересобирается по актуальным данным.
 
 ### Разрешено до верификации
-- `GET /api/feed/global`
-- `GET /api/posts`
-- `GET /api/posts/{id}`
-- `GET /api/notifications*`
-- `GET/POST /api/verification/*`
-- `GET /api/me`
+- `GET /api/feed/global` — глобальная лента.
+- `GET /api/posts` — список постов (глобальные).
+- `GET /api/posts/{id}` — просмотр поста.
+- `GET /api/notifications*` — уведомления.
+- `GET/POST /api/verification/*` — верификация.
+- `GET /api/me` — профиль текущего пользователя.
 
 ---
 
-## Публичные эндпоинты
+## Публичные справочники (для регистрации)
+
+- `GET /api/directory/cities` — города.
+- `GET /api/directory/educations` — образование/ВУЗы.
+- `GET /api/directory/departments` — специальности/отделения.
+- `GET /api/directory/organizations` — организации.
+- `GET /api/directory/work-places?city=Название` — места работы по городу.
+- `GET /api/directory/positions` — должности.
+- `GET /api/directory/categories` — категории.
+
+---
+
+## Аутентификация
 
 ### POST /api/login
 Вход по email/паролю.
 
 **Body**
 ```
-{
-  "email": "user@example.com",
-  "password": "password"
-}
+{ "email": "user@example.com", "password": "password" }
 ```
 
 **Response**
@@ -50,8 +61,14 @@ Authorization: Bearer <token>
 ```
 {
   "name": "Имя",
+  "last_name": "Фамилия",
   "email": "user@example.com",
   "password": "password",
+  "sex": "male|female",
+  "birth_date": "YYYY-MM-DD",
+  "phone_number": "+77001234567",
+  "education": "Название ВУЗа",
+  "city": "Город",
   "speciality": "Хирургия",
   "work_experience": 10,
   "work_place": "Городская больница №1",
@@ -64,26 +81,35 @@ Authorization: Bearer <token>
 }
 ```
 
+**Важно:** `organization_role` **обязателен**.
+
 **Response**
 ```
 { "token": "...", "user": { ... } }
 ```
 
-### GET /api/organizations
-Справочник организаций.
-
-### GET /api/departments
-Справочник отделений.
-
 ---
 
-## Профиль и приватность
+## Профиль
 
 ### GET /api/me
 Текущий пользователь.
 
 ### GET /api/profile/{id}
 Профиль пользователя.
+
+### POST /api/profile
+Обновление профиля (FormData).
+
+**Body (FormData, можно частично)**
+```
+name, last_name, email, phone_number, status_text, bio,
+is_private, avatar (file), cover_image (file),
+remove_avatar, remove_cover_image,
+speciality, work_experience, work_place, education, city,
+secondary_work_place, secondary_speciality,
+category, position, organization_role, department_role
+```
 
 ### POST /api/profile/{id}/share
 Поделиться профилем в ЛС или групповой чат.
@@ -96,22 +122,6 @@ Authorization: Bearer <token>
   "body": "Комментарий (опционально)"
 }
 ```
-
-### POST /api/profile
-Обновление профиля.
-
-**Body (FormData, можно частично)**
-```
-name, last_name, email, status_text,
-is_private, avatar (file), cover_image (file),
-remove_avatar, remove_cover_image,
-speciality, work_experience, work_place,
-secondary_work_place, secondary_speciality,
-category, position, organization_role, department_role
-```
-
-### POST /api/privacy
-Обновление настроек приватности.
 
 ---
 
@@ -127,18 +137,17 @@ category, position, organization_role, department_role
 Список документов пользователя.
 
 ### POST /api/verification/documents
-Загрузка документа.
-
-**Body (FormData)**
+Загрузка документа (FormData).
 ```
 document (jpg/png/pdf), notes (optional)
 ```
 
 ### GET /api/verification/pending (admin)
-Список пользователей на проверку.
+Список пользователей на проверке.
 
 ### POST /api/verification/{id}/approve (admin)
-Подтверждение врача.
+Подтверждение врача.  
+**Создаются системные группы** по месту работы и отделению.
 
 ### POST /api/verification/{id}/reject (admin)
 Отклонение врача.
@@ -147,26 +156,19 @@ document (jpg/png/pdf), notes (optional)
 
 ## Уведомления
 
-### GET /api/notifications
-Список уведомлений.
-
-### POST /api/notifications/{id}/read
-Пометить прочитанным.
-
-### POST /api/notifications/read-all
-Пометить все прочитанными.
-
-### GET /api/notifications/subscribe
-Realtime подписка (Echo/Reverb).
+- `GET /api/notifications` — список уведомлений.
+- `POST /api/notifications/{id}/read` — отметить прочитанным.
+- `POST /api/notifications/read-all` — прочитать все.
+- `GET /api/notifications/subscribe` — realtime подписка (Echo/Reverb).
 
 ---
 
 ## Лента
 
 ### GET /api/feed
-Фильтрация: `scope`, `from`, `to`, `organization`.
+Фильтры: `scope`, `from`, `to`, `organization`.
 
-**scope**:
+**scope:**
 - `global` — только глобальные
 - `organization` / `local` — только по своей организации
 - `mine` — только мои
@@ -186,13 +188,14 @@ Realtime подписка (Echo/Reverb).
 
 ## Посты
 
-### GET /api/posts
-Список постов (глобальные + свои + локальные).
+- `GET /api/posts` — список постов (глобальные + локальные).
+- `POST /api/posts` — создание поста.
+- `GET /api/posts/{id}` — один пост.
+- `PATCH /api/posts/{id}` — обновить пост.
+- `DELETE /api/posts/{id}` — удалить пост.
+- `GET /api/my-posts` — только мои посты.
 
-### POST /api/posts
-Создание поста.
-
-**Body**
+**Body для создания**
 ```
 {
   "content": "Текст",
@@ -209,8 +212,6 @@ Realtime подписка (Echo/Reverb).
 
 ### POST /api/posts/{id}/share
 Поделиться постом в ЛС или групповой чат.
-
-**Body**
 ```
 {
   "target_type": "user|group",
@@ -219,254 +220,134 @@ Realtime подписка (Echo/Reverb).
 }
 ```
 
-### GET /api/posts/{id}
-Один пост.
-
-### PATCH /api/posts/{id}
-Обновление поста.
-
-### DELETE /api/posts/{id}
-Удаление поста.
-
-### GET /api/my-posts
-Только мои посты.
-
 ---
 
 ## Медиа
 
-### POST /api/media
-Загрузка файлов (local storage).
+- `POST /api/media` — загрузка файлов (local storage).
 
 ---
 
 ## Комментарии
 
-### GET /api/posts/{id}/comments
-Список комментариев.
-
-### POST /api/posts/{id}/comments
-Добавить комментарий.
-
-### DELETE /api/comments/{id}
-Удалить комментарий.
-
-### POST /api/comments/{id}/like
-Лайк комментария.
+- `GET /api/posts/{id}/comments` — список комментариев.
+- `POST /api/posts/{id}/comments` — добавить комментарий.
+- `DELETE /api/comments/{id}` — удалить комментарий.
+- `POST /api/comments/{id}/like` — лайк комментария.
 
 ---
 
 ## Лайки
 
-### POST /api/posts/{id}/like
-Лайк поста.
-
-### POST /api/posts/{id}/unlike
-Снять лайк.
-
-### GET /api/posts/{id}/likes
-Список лайков.
+- `POST /api/posts/{id}/like` — лайк поста.
+- `POST /api/posts/{id}/unlike` — снять лайк.
+- `GET /api/posts/{id}/likes` — список лайков.
 
 ---
 
 ## Друзья и заявки
 
-### GET /api/friends
-Список друзей.
-
-### POST /api/friends/request
-Отправить заявку.
-
-### GET /api/friends/requests
-Входящие заявки.
-
-### GET /api/friends/requests/sent
-Исходящие заявки.
-
-### POST /api/friends/requests/{id}/accept
-Принять.
-
-### POST /api/friends/requests/{id}/decline
-Отклонить.
-
-### POST /api/friends/requests/{id}/cancel
-Отменить.
-
-### DELETE /api/friends/{id}
-Удалить друга.
+- `GET /api/friends` — список друзей.
+- `POST /api/friends/request` — отправить заявку.
+- `GET /api/friends/requests` — входящие заявки.
+- `GET /api/friends/requests/sent` — исходящие заявки.
+- `POST /api/friends/requests/{id}/accept` — принять.
+- `POST /api/friends/requests/{id}/decline` — отклонить.
+- `POST /api/friends/requests/{id}/cancel` — отменить исходящую.
+- `DELETE /api/friends/{id}` — удалить друга.
 
 ---
 
 ## Блокировки
 
-### GET /api/blocks
-Список блокировок.
-
-### POST /api/blocks
-Заблокировать.
-
-### DELETE /api/blocks/{id}
-Разблокировать.
+- `GET /api/blocks` — список блокировок.
+- `POST /api/blocks` — заблокировать.
+- `DELETE /api/blocks/{id}` — разблокировать.
 
 ---
 
 ## Сообщения (личные)
 
-### GET /api/messages/inbox
-Входящие.
-
-### POST /api/messages/send
-Отправка сообщения.
-
-### GET /api/messages/conversation/{userId}
-Диалог.
-
-### GET /api/messages/conversation/{userId}/pinned
-Закреплённые в диалоге.
-
-### DELETE /api/messages/conversation/{userId}
-Удалить диалог.
-
-### DELETE /api/messages/{id}
-Удалить сообщение.
-
-### POST /api/messages/{id}/reactions
-Реакции.
-
-### POST /api/messages/{id}/pin
-Закрепить сообщение.
-
-### DELETE /api/messages/{id}/pin
-Открепить.
-
-### GET /api/messages/subscribe
-Realtime подписка (Echo/Reverb).
+- `GET /api/messages/inbox` — список диалогов.
+- `POST /api/messages/send` — отправить сообщение.
+- `GET /api/messages/conversation/{userId}` — диалог.
+- `GET /api/messages/conversation/{userId}/pinned` — закреплённые.
+- `DELETE /api/messages/conversation/{userId}` — удалить диалог.
+- `DELETE /api/messages/{id}` — удалить сообщение.
+- `POST /api/messages/{id}/reactions` — реакции.
+- `POST /api/messages/{id}/pin` — закрепить.
+- `DELETE /api/messages/{id}/pin` — открепить.
+- `GET /api/messages/subscribe` — realtime подписка.
 
 ---
 
 ## Групповые чаты
 
-### GET /api/group-chats
-Список групп.
+- `GET /api/group-chats` — список групп.
+- `POST /api/group-chats` — создать группу.
+- `GET /api/group-chats/{id}` — информация о группе.
+- `PATCH /api/group-chats/{id}` — обновить группу.
+- `POST /api/group-chats/{id}/members` — добавить участников.
+- `DELETE /api/group-chats/{id}/members/{memberId}` — удалить участника.
+- `POST /api/group-chats/{id}/leave` — выйти (нельзя для системных).
+- `DELETE /api/group-chats/{id}` — удалить группу.
+- `GET /api/group-chats/{id}/messages` — сообщения в группе.
+- `POST /api/group-chats/{id}/messages` — отправить сообщение.
+- `POST /api/group-chats/{id}/join` — системное событие join.
+- `DELETE /api/group-chats/{id}/messages/{messageId}` — удалить сообщение.
+- `POST /api/group-chats/{id}/messages/{messageId}/reactions` — реакции.
+- `GET /api/group-chats/{id}/pinned` — закреплённые.
+- `POST /api/group-chats/{id}/messages/{messageId}/pin` — закрепить.
+- `DELETE /api/group-chats/{id}/messages/{messageId}/pin` — открепить.
 
-### POST /api/group-chats
-Создать группу.
-
-### GET /api/group-chats/{id}
-Инфо о группе.
-
-### PATCH /api/group-chats/{id}
-Обновить группу.
-
-### POST /api/group-chats/{id}/members
-Добавить участников.
-
-### DELETE /api/group-chats/{id}/members/{memberId}
-Удалить участника.
-
-### POST /api/group-chats/{id}/leave
-Выйти.
-
-### DELETE /api/group-chats/{id}
-Удалить группу.
-
-### GET /api/group-chats/{id}/messages
-Сообщения в группе.
-
-### POST /api/group-chats/{id}/messages
-Отправить сообщение.
-
-### POST /api/group-chats/{id}/join
-Системное событие join.
-
-### DELETE /api/group-chats/{id}/messages/{messageId}
-Удалить сообщение.
-
-### POST /api/group-chats/{id}/messages/{messageId}/reactions
-Реакции.
-
-### GET /api/group-chats/{id}/pinned
-Закреплённые.
-
-### POST /api/group-chats/{id}/messages/{messageId}/pin
-Закрепить.
-
-### DELETE /api/group-chats/{id}/messages/{messageId}/pin
-Открепить.
+**Важно:** из системных групп выйти нельзя.
 
 ---
 
 ## Лекции (старый модуль)
 
-### GET /api/lectures
-Список.
-
-### POST /api/lectures
-Создать.
-
-### GET /api/lectures/{id}
-Одна лекция.
-
-### PATCH /api/lectures/{id}
-Обновить.
-
-### POST /api/lectures/{id}/join
-Присоединиться.
-
-### POST /api/lectures/{id}/leave
-Выйти.
-
-### POST /api/lectures/{id}/end
-Завершить.
-
-### POST /api/lectures/{id}/admins
-Назначить админов.
+- `GET /api/lectures` — список.
+- `POST /api/lectures` — создать.
+- `GET /api/lectures/{id}` — одна лекция.
+- `PATCH /api/lectures/{id}` — обновить.
+- `POST /api/lectures/{id}/join` — присоединиться.
+- `POST /api/lectures/{id}/leave` — выйти.
+- `POST /api/lectures/{id}/end` — завершить.
+- `POST /api/lectures/{id}/admins` — назначить админов.
 
 ---
 
 ## События (календарь)
 
-### GET /api/events
-Список событий.
+- `GET /api/events` — список событий.
+- `GET /api/events/{id}` — одно событие.
+- `POST /api/events` — создать.
+- `PATCH /api/events/{id}` — обновить.
+- `DELETE /api/events/{id}` — удалить.
+- `GET /api/events/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD` — события по диапазону дат.
 
-### GET /api/events/{id}
-Одно событие.
-
-### POST /api/events
-Создать.
-
-### PATCH /api/events/{id}
-Обновить.
-
-### DELETE /api/events/{id}
-Удалить.
-
-### GET /api/events/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD
-Календарь по диапазону дат.
-
-### События: участники и приглашения
+### Участники и приглашения
 ```
-POST /api/events/{id}/join
-POST /api/events/{id}/leave
-POST /api/events/{id}/invite
-POST /api/events/{id}/invites/{inviteId}/accept
-POST /api/events/{id}/invites/{inviteId}/decline
-GET  /api/events/invites
+POST /api/events/{id}/join             # вступить
+POST /api/events/{id}/leave            # выйти
+POST /api/events/{id}/invite           # пригласить
+POST /api/events/{id}/invites/{inviteId}/accept  # принять
+POST /api/events/{id}/invites/{inviteId}/decline # отклонить
+GET  /api/events/invites               # мои приглашения
 ```
 
 ---
 
 ## Голосовые комнаты (лекции/собрания/созвоны)
 
-### GET /api/voice-rooms
-### POST /api/voice-rooms
-### GET /api/voice-rooms/{id}
-### PATCH /api/voice-rooms/{id}
-### DELETE /api/voice-rooms/{id}
+- `GET /api/voice-rooms` — список комнат.
+- `POST /api/voice-rooms` — создать комнату.
+- `GET /api/voice-rooms/{id}` — детали комнаты.
+- `PATCH /api/voice-rooms/{id}` — обновить.
+- `DELETE /api/voice-rooms/{id}` — удалить.
 
-**Типы**: `lecture | meeting | group_call`  
-**Доступ** (для group_call): `public | organization | department | invite`
-
+**Типы:** `lecture | meeting | group_call`  
+**Доступ для group_call:** `public | organization | department | invite`  
 Для `lecture/meeting` обязательны `department_tags`.
 
 ### Действия
@@ -497,40 +378,30 @@ GET  /api/voice-rooms/invites
 
 ### POST /api/ai/improve
 Улучшение текста.
-
-**Body**
 ```
 { "text": "..." }
 ```
 
 ### POST /api/ai/lecture/summary
 Краткий пересказ лекции по расшифровке.
-
-**Body**
 ```
 { "transcript": "..." }
 ```
 
 ### POST /api/ai/key-points
 Ключевые пункты текста.
-
-**Body**
 ```
 { "text": "...", "count": 5 }
 ```
 
 ### POST /api/ai/lecture/outline
 План лекции.
-
-**Body**
 ```
 { "text": "..." }
 ```
 
 ### POST /api/ai/lecture/questions
 Контрольные вопросы по тексту.
-
-**Body**
 ```
 { "text": "...", "count": 5 }
 ```
@@ -539,11 +410,7 @@ GET  /api/voice-rooms/invites
 
 ## Сессии и безопасность
 
-### POST /api/security/password
-Сменить пароль.
+- `POST /api/security/password` — сменить пароль.
+- `GET /api/security/sessions` — список активных сессий.
+- `POST /api/security/logout-all` — выйти из всех сессий.
 
-### GET /api/security/sessions
-Список активных сессий.
-
-### POST /api/security/logout-all
-Выйти из всех сессий.

@@ -112,6 +112,9 @@ class ChatGroupController extends Controller
     {
         $user = $request->user();
         $group = ChatGroup::findOrFail($id);
+        if ($group->is_system) {
+            return response()->json(['message' => 'System groups cannot be left.'], 403);
+        }
         if (!$group->members()->where('users.id', $user->id)->exists()) {
             return response()->json(['message' => 'Not a member of this group.'], 403);
         }
