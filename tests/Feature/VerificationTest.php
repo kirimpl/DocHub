@@ -31,6 +31,7 @@ class VerificationTest extends TestCase
             'phone_number' => '+77001234567',
             'birth_date' => '2000-01-01',
             'education' => 'KZMU',
+            'organization_role' => 'staff',
         ])->assertStatus(201);
 
         $token = $register->json('token');

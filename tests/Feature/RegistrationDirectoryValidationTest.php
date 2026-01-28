@@ -50,6 +50,7 @@ class RegistrationDirectoryValidationTest extends TestCase
             'phone_number' => '+77001234567',
             'birth_date' => '2000-01-01',
             'education' => 'KZMU',
+            'organization_role' => 'staff',
         ]);
 
         $response->assertStatus(201);
