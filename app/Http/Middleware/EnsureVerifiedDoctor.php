@@ -15,7 +15,7 @@ class EnsureVerifiedDoctor
             return $next($request);
         }
 
-        if ($user->verification_status === 'verified') {
+        if ($user->verification_status === 'approved') {
             return $next($request);
         }
 

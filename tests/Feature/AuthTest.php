@@ -32,7 +32,6 @@ class AuthTest extends TestCase
             'work_place'=> 'City Hospital',
             'category' => 'First',
             'position' => 'Doctor',
-
         ]);
 
         $response->assertStatus(201)->assertJsonStructure(['token','user']);
