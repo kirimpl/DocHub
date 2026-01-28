@@ -746,6 +746,45 @@ body {
     background-color: #ffffff;
 }
 
+/* Контейнер списка (чтобы был скролл, если событий много) */
+.events-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Карточка одного события */
+.event-card {
+    background: #f8f9fa; /* Светло-серый фон */
+    border-left: 4px solid #007bff; /* Синяя полоска слева */
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.event-card h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.event-card .event-time {
+    font-size: 12px;
+    color: #007bff;
+    font-weight: bold;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.event-card p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+}
+
 /*---Блок Навигации---*/
 .nav-menu {
     background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);

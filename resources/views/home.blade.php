@@ -235,7 +235,7 @@
         <div class="modal-window">
             <div class="modal-header">
                 <h3 id="modalDateTitle">Добавить событие</h3>
-                <button class="close-modal-btn">&times;</button>
+                <button class="close-modal-btn" id="closeAddBtn">&times;</button>
             </div>
             <div class="modal-body">
                 <p class="modal-date-label">Что планируется?</p>
@@ -243,6 +243,23 @@
                 <div class="modal-actions">
                     <button id="cancelBtn" class="btn-secondary">Отмена</button>
                     <button id="saveEventBtn" class="btn-primary">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewEventModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h3 id="viewDateTitle">События</h3> <button class="close-modal-btn" id="closeViewXBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="eventsListWrapper" class="events-list-container">
+                </div>
+
+                <div class="modal-actions">
+                    <button id="closeViewBtn" class="btn-secondary">Закрыть</button>
+                    <button id="addMoreBtn" class="btn-primary">Добавить еще</button>
                 </div>
             </div>
         </div>
