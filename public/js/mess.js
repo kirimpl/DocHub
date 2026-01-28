@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // 1. ПЕРЕМЕННЫЕ И ЭЛЕМЕНТЫ
     // ============================================================
 
-    // Контейнеры
     const chatsListContainer = document.getElementById('chatsListContainer');
     const groupsListContainer = document.getElementById('groupsListContainer');
     const emptyState = document.getElementById('emptyState');
@@ -11,46 +10,41 @@ document.addEventListener('DOMContentLoaded', function () {
     const contactsListEl = document.getElementById('contactsList');
     const messagesContainer = document.querySelector('.chat-messages');
 
-    // Хедер
     const headerName = document.getElementById('chatHeaderName');
     const headerAvatar = document.getElementById('chatHeaderAvatar');
     const headerStatus = document.getElementById('chatHeaderStatus');
 
-    // Модальные окна
     const modalChat = document.getElementById('createChatModal');
     const modalGroup = document.getElementById('createGroupModal');
 
-    // Создание группы
     const btnCreateGroup = document.getElementById('btnCreateGroup');
     const groupNameInput = document.getElementById('groupNameInput');
     const groupDescInput = document.getElementById('groupDescInput');
     const submitCreateGroup = document.getElementById('submitCreateGroup');
 
-    // === ЭЛЕМЕНТЫ ВВОДА (ОБЪЯВЛЯЕМ ОДИН РАЗ ЗДЕСЬ) ===
     const messageInput = document.getElementById('messageInput');
     const micBtn = document.getElementById('micBtn');
     const sendBtn = document.getElementById('sendBtn');
     const attachBtn = document.getElementById('attachBtn');
     const hiddenFileInput = document.getElementById('hiddenFileInput');
 
-    // Меню
+    const emojiBtn = document.getElementById('emojiBtn');
+    const emojiWrapper = document.getElementById('emojiWrapper');
+
     const chatMenuBtn = document.getElementById('chatMenuBtn');
     const chatDropdown = document.getElementById('chatDropdown');
     const menuClearBtn = document.getElementById('menuClearBtn');
     const menuDeleteBtn = document.getElementById('menuDeleteBtn');
 
-    // Кнопки в шапке
-    const menuSearchBtn = document.getElementById('menuSearchBtn'); // В меню
-    const btnHeaderSearch = document.getElementById('btnHeaderSearch'); // В шапке
+    const menuSearchBtn = document.getElementById('menuSearchBtn');
+    const btnHeaderSearch = document.getElementById('btnHeaderSearch');
     const btnHeaderAudio = document.getElementById('btnHeaderAudio');
     const btnHeaderVideo = document.getElementById('btnHeaderVideo');
 
-    // Поиск
     const searchBar = document.getElementById('searchBar');
     const searchInput = document.getElementById('searchInput');
     const closeSearchBtn = document.getElementById('closeSearchBtn');
 
-    // === ФЕЙКОВАЯ БАЗА ===
     const usersDatabase = [
         { id: 1, name: 'Александр Иванов', role: 'Врач', hospital: 'ГКБ №1', dept: 'Хирургия', initials: 'АИ', gender: 'male' },
         { id: 2, name: 'Мария Петрова', role: 'Врач', hospital: 'ЦКБ РАН', dept: 'Терапия', initials: 'МП', gender: 'female' },
@@ -58,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function () {
         { id: 4, name: 'Елена Васильева', role: 'Медсестра', hospital: 'ГКБ №1', dept: 'Терапия', initials: 'ЕВ', gender: 'female' },
     ];
 
-    // Хранилище переписки
     const chatsData = {};
     let currentActiveChatId = null;
 
@@ -71,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // --- УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ОТРИСОВКИ (ТЕКСТ / КАРТИНКА / ФАЙЛ) ---
+    // УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ОТРИСОВКИ
     function renderMessage(content, time, type, contentType = 'text') {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message-bubble ${type}`;
@@ -81,7 +74,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (contentType === 'image') {
             innerHTML = `<img src="${content}" class="msg-image" alt="image">`;
-        } else if (contentType === 'file') {
+        } 
+        else if (contentType === 'file') {
             innerHTML = `
                 <div class="msg-file">
                     <i class="fa-solid fa-file-lines msg-file-icon"></i>
@@ -91,7 +85,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
             `;
-        } else {
+        } 
+        else if (contentType === 'audio') {
+            // АУДИО ПЛЕЕР
+            innerHTML = `<audio controls src="${content}" class="msg-audio"></audio>`;
+        } 
+        else {
             innerHTML = `<div class="msg-text">${content}</div>`;
         }
 
@@ -104,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // --- ЛОГИКА ОТКРЫТИЯ ЧАТА ---
+    // ОТКРЫТИЕ ЧАТА
     function openChatInterface(data, uniqueId) {
         emptyState.classList.add('hidden');
         chatView.classList.remove('hidden');
@@ -114,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function () {
         headerName.textContent = data.name;
         headerAvatar.textContent = data.initials;
 
-        // Очистка и загрузка
         messagesContainer.innerHTML = '';
         if (chatsData[uniqueId]) {
             chatsData[uniqueId].forEach(msg => {
@@ -122,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Сброс ввода
         if (messageInput) {
             messageInput.value = '';
             toggleInputButtons();
@@ -154,8 +151,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ============================================================
-    // 3. ЛОГИКА ВВОДА, ОТПРАВКИ И ФАЙЛОВ
+    // 3. ЛОГИКА ВВОДА И ОТПРАВКИ
     // ============================================================
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
     function toggleInputButtons() {
         const text = messageInput.value.trim();
@@ -175,55 +174,55 @@ document.addEventListener('DOMContentLoaded', function () {
         if (text === '' || !currentActiveChatId) return;
 
         const time = getCurrentTime();
-
-        // 1. Рисуем
         renderMessage(text, time, 'sent', 'text');
-
-        // 2. Сохраняем
+        
         if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
         chatsData[currentActiveChatId].push({ content: text, time, type: 'sent', contentType: 'text' });
 
-        // 3. Сброс
         messageInput.value = '';
         toggleInputButtons();
     }
 
-    // --- ОТПРАВКА ФАЙЛОВ ---
+    // ОТПРАВКА ФАЙЛОВ
     if (attachBtn && hiddenFileInput) {
-        // Клик по скрепке -> Клик по скрытому инпуту
         attachBtn.addEventListener('click', () => hiddenFileInput.click());
 
-        // Когда файл выбран
         hiddenFileInput.addEventListener('change', function () {
-            if (this.files && this.files[0]) {
+            if (this.files && this.files.length > 0) {
                 const file = this.files[0];
                 const time = getCurrentTime();
 
+                if (!currentActiveChatId) {
+                    alert('Сначала выберите чат!');
+                    this.value = '';
+                    return;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    alert('Файл слишком большой! Максимальный размер: 5 МБ');
+                    this.value = '';
+                    return;
+                }
+
                 if (file.type.startsWith('image/')) {
-                    // КАРТИНКА
                     const reader = new FileReader();
                     reader.onload = function (e) {
                         const imgData = e.target.result;
                         renderMessage(imgData, time, 'sent', 'image');
-
                         if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
                         chatsData[currentActiveChatId].push({ content: imgData, time, type: 'sent', contentType: 'image' });
                     }
                     reader.readAsDataURL(file);
                 } else {
-                    // ОБЫЧНЫЙ ФАЙЛ
                     const fileData = { name: file.name, size: (file.size / 1024).toFixed(1) + ' KB' };
                     renderMessage(fileData, time, 'sent', 'file');
-
                     if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
                     chatsData[currentActiveChatId].push({ content: fileData, time, type: 'sent', contentType: 'file' });
                 }
-                this.value = ''; // Сброс
+                this.value = '';
             }
         });
     }
 
-    // Слушатели ввода
     if (messageInput) {
         messageInput.addEventListener('input', toggleInputButtons);
         messageInput.addEventListener('keypress', (e) => {
@@ -232,25 +231,94 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (sendBtn) sendBtn.addEventListener('click', sendMessage);
-    if (micBtn) micBtn.addEventListener('click', () => alert('Запись голосового... (Демо)'));
+
+    // ============================================================
+    // 4. ЗАПИСЬ ГОЛОСА (РЕАЛЬНАЯ)
+    // ============================================================
+    
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    if (micBtn) {
+        micBtn.addEventListener('click', async () => {
+            // Если чат не выбран, не даем записывать
+            if (!currentActiveChatId) {
+                alert('Сначала выберите чат!');
+                return;
+            }
+
+            // 1. ОСТАНОВКА ЗАПИСИ
+            if (isRecording) {
+                mediaRecorder.stop();
+                return;
+            }
+
+            // 2. НАЧАЛО ЗАПИСИ
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Ваш браузер не поддерживает запись звука.');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.start();
+                isRecording = true;
+                audioChunks = [];
+
+                // Визуальный эффект (Красная кнопка + иконка Стоп)
+                micBtn.classList.add('recording'); 
+                micBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    isRecording = false;
+                    
+                    // Возвращаем кнопку
+                    micBtn.classList.remove('recording');
+                    micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+
+                    // Создаем аудиофайл (Blob)
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const time = getCurrentTime();
+
+                    // Рисуем и сохраняем
+                    renderMessage(audioUrl, time, 'sent', 'audio');
+
+                    if (!chatsData[currentActiveChatId]) chatsData[currentActiveChatId] = [];
+                    chatsData[currentActiveChatId].push({ content: audioUrl, time, type: 'sent', contentType: 'audio' });
+
+                    // Отключаем микрофон
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+            } catch (err) {
+                console.error('Ошибка микрофона:', err);
+                alert('Ошибка доступа к микрофону. Проверьте настройки.');
+            }
+        });
+    }
 
 
     // ============================================================
-    // 4. МЕНЮ, ПОИСК, ГРУППЫ
+    // 5. ИНТЕРФЕЙС (МЕНЮ, ПОИСК, ГРУППЫ)
     // ============================================================
 
-    // Звонки
     if (btnHeaderAudio) btnHeaderAudio.addEventListener('click', () => alert('Аудиозвонок (Демо)'));
     if (btnHeaderVideo) btnHeaderVideo.addEventListener('click', () => alert('Видеозвонок (Демо)'));
 
-    // Меню
     if (chatMenuBtn) {
         chatMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             chatDropdown.classList.toggle('hidden');
         });
     }
-    window.addEventListener('click', () => { if (chatDropdown) chatDropdown.classList.add('hidden'); });
 
     // Очистка
     if (menuClearBtn) {
@@ -268,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Удаление чата
+    // Удаление
     if (menuDeleteBtn) {
         menuDeleteBtn.addEventListener('click', () => {
             if (confirm('Удалить чат?')) {
@@ -309,7 +377,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Создание группы
     if (btnCreateGroup) btnCreateGroup.addEventListener('click', () => { modalGroup.classList.add('active'); });
 
     if (submitCreateGroup) {
@@ -364,8 +431,34 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', function () { this.closest('.modal-overlay').classList.remove('active'); });
     });
+
+    // Глобальный клик
     window.addEventListener('click', (e) => {
         if (e.target === modalChat) modalChat.classList.remove('active');
         if (e.target === modalGroup) modalGroup.classList.remove('active');
+        if (chatDropdown) chatDropdown.classList.add('hidden');
+        if (emojiWrapper && !emojiWrapper.contains(e.target) && e.target !== emojiBtn) {
+            emojiWrapper.classList.add('hidden');
+        }
     });
+
+    // ============================================================
+    // 6. ЛОГИКА СМАЙЛИКОВ
+    // ============================================================
+
+    if (emojiBtn && emojiWrapper) {
+        emojiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiWrapper.classList.toggle('hidden');
+        });
+    }
+
+    const picker = document.querySelector('emoji-picker');
+    if (picker) {
+        picker.addEventListener('emoji-click', event => {
+            const emoji = event.detail.unicode;
+            messageInput.value += emoji;
+            toggleInputButtons();
+        });
+    }
 });

@@ -84,14 +84,16 @@
                 <div class="chat-input-area">
 
                     <div class="input-capsule">
-                        <input type="file" id="hiddenFileInput" style="display: none;">
-                        <button class="icon-btn attach-btn" title="Прикрепить">
+                        <input type="file" id="hiddenFileInput" style="display: none;"
+                            accept="image/*, .pdf, .doc, .docx, .txt">
+
+                        <button class="icon-btn attach-btn" id="attachBtn" title="Прикрепить файл">
                             <i class="fa-solid fa-paperclip"></i>
                         </button>
 
                         <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
 
-                        <button class="icon-btn emoji-btn" title="Смайлики">
+                        <button class="icon-btn emoji-btn" id="emojiBtn" title="Смайлики">
                             <i class="fa-regular fa-face-smile"></i>
                         </button>
                     </div>
@@ -104,7 +106,13 @@
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
 
+                    <div class="emoji-wrapper hidden" id="emojiWrapper">
+                        <emoji-picker></emoji-picker>
+                    </div>
+
                 </div>
+
+                <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
             </div>
         </main>
 
@@ -163,6 +171,7 @@
             </div>
         </div>
     </div>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 
     <script src="{{ asset('js/mess.js') }}"></script>
 @endsection
