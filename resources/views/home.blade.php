@@ -110,12 +110,6 @@
 
         <div class="column-center">
 
-            <div class="feed-filters">
-                <button class="filter-tab active" data-filter="all">Все</button>
-                <button class="filter-tab" data-filter="organization">Моя организация</button>
-                <button class="filter-tab" data-filter="department">Отделение</button>
-            </div>
-
             <div class="card lectures-card" id="lesson">
                 <div class="lectures-header">
                     <div class="lectures-title-group">
@@ -144,6 +138,12 @@
                 </div>
             </div>
 
+            <div class="feed-filters">
+                <button class="filter-tab active" data-filter="all">Все</button>
+                <button class="filter-tab" data-filter="organization">Моя организация</button>
+                <button class="filter-tab" data-filter="department">Отделение</button>
+            </div>
+            
             <div id="newsFeed"></div>
 
         </div>
