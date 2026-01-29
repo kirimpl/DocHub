@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    let activeThreadId = null;
     let activeThreadUserId = null;
     let currentAdminId = null;
     let echoReady = false;
@@ -123,8 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.json();
     };
 
-    const fetchSupportThreadMessages = async (userId) => {
-        const res = await fetch(`${API_URL}/verification/support/threads/${userId}`, {
+    const fetchSupportThreadMessages = async (ticketId) => {
+        const res = await fetch(`${API_URL}/verification/support/threads/${ticketId}`, {
             headers: authHeaders(),
         });
         if (!res.ok) return null;
@@ -137,8 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.json();
     };
 
-    const sendSupportReply = async (userId, text) => {
-        const res = await fetch(`${API_URL}/verification/support/threads/${userId}`, {
+    const sendSupportReply = async (ticketId, text) => {
+        const res = await fetch(`${API_URL}/verification/support/threads/${ticketId}`, {
             method: 'POST',
             headers: {
                 ...authHeaders(),
@@ -149,8 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.ok;
     };
 
-    const resolveSupportTicket = async (userId) => {
-        const res = await fetch(`${API_URL}/verification/support/threads/${userId}/resolve`, {
+    const resolveSupportTicket = async (ticketId) => {
+        const res = await fetch(`${API_URL}/verification/support/threads/${ticketId}/resolve`, {
             method: 'POST',
             headers: authHeaders(),
         });
@@ -163,27 +164,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const selectThread = async (userId, { refresh = true } = {}) => {
+    const selectThread = async (ticketId, userId, { refresh = true } = {}) => {
+        activeThreadId = ticketId;
         activeThreadUserId = userId;
         if (threadsList) {
             threadsList.querySelectorAll('[data-thread]').forEach((btn) => {
-                const isActive = btn.dataset.thread === String(userId);
+                const isActive = btn.dataset.thread === String(ticketId);
                 btn.classList.toggle('is-active', isActive);
                 btn.style.borderColor = isActive ? '#93c5fd' : '';
                 btn.style.background = isActive ? '#eff6ff' : '';
             });
         }
         if (refresh) {
-            const payload = await fetchSupportThreadMessages(userId);
+            const payload = await fetchSupportThreadMessages(ticketId);
             if (payload) {
                 const statusLabel = payload.ticket?.status === 'resolved' ? 'Решена' : 'Не решена';
                 chatHeader.textContent = `Чат: ${payload.user?.name || 'Пользователь'} — Статус заявки: ${statusLabel}`;
                 renderResolveButton(payload.ticket);
+                const isResolved = payload.ticket?.status === 'resolved';
+                if (chatInput) chatInput.disabled = isResolved;
+                if (chatSend) chatSend.disabled = isResolved;
                 if (Array.isArray(payload.messages) && payload.messages.length > 0) {
-                    messageCache.set(String(userId), payload.messages);
+                    messageCache.set(String(ticketId), payload.messages);
                     renderChatMessages(payload.messages, payload.current_user_id);
-                } else if (messageCache.has(String(userId))) {
-                    renderChatMessages(messageCache.get(String(userId)), payload.current_user_id);
+                } else if (messageCache.has(String(ticketId))) {
+                    renderChatMessages(messageCache.get(String(ticketId)), payload.current_user_id);
                 } else {
                     renderChatMessages(payload.messages, payload.current_user_id);
                 }
@@ -200,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = threads.map((thread) => {
             const statusLabel = thread.status === 'resolved' ? 'Решена' : 'Не решена';
             return `
-                <button class="btn-secondary" style="text-align:left;" data-thread="${thread.user_id}">
+                <button class="btn-secondary" style="text-align:left;" data-thread="${thread.ticket_id}" data-user="${thread.user_id}">
                     <div style="font-weight:600;">${thread.name || 'Пользователь'}</div>
                     <div style="font-size:12px; color:#6b7280;">${thread.email || ''}</div>
                     <div style="font-size:11px; color:#93a3b8;">Статус: ${statusLabel}</div>
@@ -210,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.querySelectorAll('[data-thread]').forEach((btn) => {
             btn.addEventListener('click', async () => {
-                await selectThread(btn.dataset.thread);
+                await selectThread(btn.dataset.thread, btn.dataset.user);
             });
         });
     };
@@ -221,10 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderThreadList(resolvedList, resolvedThreads, 'Нет решенных обращений.');
 
         const allThreads = [...(openThreads || []), ...(resolvedThreads || [])];
-        if (activeThreadUserId) {
-            const exists = allThreads.some((thread) => String(thread.user_id) === String(activeThreadUserId));
+        if (activeThreadId) {
+            const exists = allThreads.some((thread) => String(thread.ticket_id) === String(activeThreadId));
             if (exists) {
-                selectThread(activeThreadUserId, { refresh: false });
+                selectThread(activeThreadId, activeThreadUserId, { refresh: false });
             }
         } else if (chatMessages && !chatMessages.innerHTML) {
             chatMessages.innerHTML = '<div style="color:#9ca3af;">Выберите диалог.</div>';
@@ -257,14 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ]);
         if (openThreads === null || resolvedThreads === null) return;
         renderThreads(openThreads, resolvedThreads);
-        if (activeThreadUserId) {
-            const payload = await fetchSupportThreadMessages(activeThreadUserId);
+        if (activeThreadId) {
+            const payload = await fetchSupportThreadMessages(activeThreadId);
             if (payload) {
                 if (Array.isArray(payload.messages) && payload.messages.length > 0) {
-                    messageCache.set(String(activeThreadUserId), payload.messages);
+                    messageCache.set(String(activeThreadId), payload.messages);
                     renderChatMessages(payload.messages, payload.current_user_id);
-                } else if (messageCache.has(String(activeThreadUserId))) {
-                    renderChatMessages(messageCache.get(String(activeThreadUserId)), payload.current_user_id);
+                } else if (messageCache.has(String(activeThreadId))) {
+                    renderChatMessages(messageCache.get(String(activeThreadId)), payload.current_user_id);
                 } else {
                     renderChatMessages(payload.messages, payload.current_user_id);
                 }
@@ -311,8 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.className = 'btn-secondary';
             btn.textContent = 'Решена';
             btn.addEventListener('click', async () => {
-                if (!activeThreadUserId) return;
-                const ok = await resolveSupportTicket(activeThreadUserId);
+                if (!activeThreadId) return;
+                const ok = await resolveSupportTicket(activeThreadId);
                 if (ok) {
                     const [openThreads, resolvedThreads] = await Promise.all([
                         fetchSupportThreads('open'),
@@ -321,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (openThreads !== null && resolvedThreads !== null) {
                         renderThreads(openThreads, resolvedThreads);
                     }
-                    const payload = await fetchSupportThreadMessages(activeThreadUserId);
+                    const payload = await fetchSupportThreadMessages(activeThreadId);
                     if (payload) {
                         const statusLabel = payload.ticket?.status === 'resolved' ? 'Решена' : 'Не решена';
                         chatHeader.textContent = `Чат: ${payload.user?.name || 'Пользователь'} — Статус заявки: ${statusLabel}`;
@@ -343,11 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleAdminMessage = async (event) => {
         const msg = event?.message || event;
         if (!msg) return;
-        const otherId = msg.sender_id === currentAdminId ? msg.recipient_id : msg.sender_id;
-        if (otherId) {
-            const cached = messageCache.get(String(otherId)) || [];
-            messageCache.set(String(otherId), [...cached, msg]);
-        }
+        const ticketId = msg.support_ticket_id;
+        if (!ticketId) return;
+        const cached = messageCache.get(String(ticketId)) || [];
+        messageCache.set(String(ticketId), [...cached, msg]);
 
         const [openThreads, resolvedThreads] = await Promise.all([
             fetchSupportThreads('open'),
@@ -357,8 +361,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renderThreads(openThreads, resolvedThreads);
         }
 
-        if (activeThreadUserId && String(activeThreadUserId) === String(otherId)) {
-            renderChatMessages(messageCache.get(String(otherId)) || [msg], currentAdminId);
+        if (activeThreadId && String(activeThreadId) === String(ticketId)) {
+            renderChatMessages(messageCache.get(String(ticketId)) || [msg], currentAdminId);
         }
     };
 
@@ -427,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatSend.addEventListener('click', async () => {
             if (sending) return;
             const text = chatInput.value.trim();
-            if (!text || !activeThreadUserId) return;
+            if (!text || !activeThreadId) return;
             sending = true;
             chatSend.disabled = true;
             chatSend.textContent = 'Отправка...';
@@ -437,11 +441,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: text,
                 created_at: new Date().toISOString(),
             };
-            const cached = messageCache.get(String(activeThreadUserId)) || [];
-            messageCache.set(String(activeThreadUserId), [...cached, optimistic]);
-            renderChatMessages(messageCache.get(String(activeThreadUserId)), currentAdminId);
+            const cached = messageCache.get(String(activeThreadId)) || [];
+            messageCache.set(String(activeThreadId), [...cached, optimistic]);
+            renderChatMessages(messageCache.get(String(activeThreadId)), currentAdminId);
             chatInput.value = '';
-            const ok = await sendSupportReply(activeThreadUserId, text);
+            const ok = await sendSupportReply(activeThreadId, text);
             if (!ok) {
                 alert('Не удалось отправить сообщение.');
             }

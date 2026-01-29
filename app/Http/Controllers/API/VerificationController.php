@@ -39,19 +39,28 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Support not available.'], 404);
         }
 
-        $ticket = SupportTicket::where('user_id', $user->id)->first();
+        $ticketId = $request->query('ticket_id');
+        $ticketQuery = SupportTicket::where('user_id', $user->id);
+        $ticket = $ticketId
+            ? $ticketQuery->where('id', $ticketId)->first()
+            : $ticketQuery->where('status', 'open')->orderByDesc('created_at')->first();
+
+        if (!$ticket) {
+            $ticket = $ticketQuery->orderByDesc('created_at')->first();
+        }
 
         $messages = Message::query()
             ->where(function ($query) use ($user, $support) {
-                $query->where('sender_id', $user->id)
-                    ->where('recipient_id', $support->id);
+                $query->where(function ($sub) use ($user, $support) {
+                    $sub->where('sender_id', $user->id)
+                        ->where('recipient_id', $support->id);
+                })->orWhere(function ($sub) use ($user, $support) {
+                    $sub->where('sender_id', $support->id)
+                        ->where('recipient_id', $user->id);
+                });
             })
-            ->orWhere(function ($query) use ($user, $support) {
-                $query->where('sender_id', $support->id)
-                    ->where('recipient_id', $user->id);
-            })
-            ->when($ticket?->last_cleared_at, function ($query) use ($ticket) {
-                $query->where('created_at', '>', $ticket->last_cleared_at);
+            ->when($ticket, function ($query) use ($ticket) {
+                $query->where('support_ticket_id', $ticket->id);
             })
             ->orderBy('created_at')
             ->get(['id', 'sender_id', 'recipient_id', 'body', 'created_at']);
@@ -60,6 +69,7 @@ class VerificationController extends Controller
             'support' => $support,
             'current_user_id' => $user->id,
             'ticket' => $ticket ? [
+                'id' => $ticket->id,
                 'status' => $ticket->status,
                 'resolved_by' => $ticket->resolved_by,
                 'resolved_by_name' => $ticket->resolver?->name,
@@ -69,10 +79,26 @@ class VerificationController extends Controller
         ]);
     }
 
+    public function supportTickets(Request $request)
+    {
+        $user = $request->user();
+        $status = $request->query('status');
+
+        $tickets = SupportTicket::where('user_id', $user->id)
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->orderByDesc('created_at')
+            ->get(['id', 'status', 'last_message_at', 'resolved_at']);
+
+        return response()->json($tickets);
+    }
+
     public function sendSupportMessage(Request $request)
     {
         $data = $request->validate([
             'body' => 'required|string|max:2000',
+            'ticket_id' => 'nullable|integer',
         ]);
 
         $user = $request->user();
@@ -81,10 +107,29 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Support not available.'], 404);
         }
 
-        $ticket = SupportTicket::firstOrCreate(
-            ['user_id' => $user->id],
-            ['status' => 'open', 'last_message_at' => now()]
-        );
+        $ticket = null;
+        if (!empty($data['ticket_id'])) {
+            $ticket = SupportTicket::where('user_id', $user->id)->where('id', $data['ticket_id'])->first();
+            if (!$ticket) {
+                return response()->json(['message' => 'Ticket not found.'], 404);
+            }
+            if ($ticket->status !== 'open') {
+                return response()->json(['message' => 'Ticket resolved.'], 409);
+            }
+        } else {
+            $ticket = SupportTicket::where('user_id', $user->id)
+                ->where('status', 'open')
+                ->orderByDesc('created_at')
+                ->first();
+        }
+
+        if (!$ticket) {
+            $ticket = SupportTicket::create([
+                'user_id' => $user->id,
+                'status' => 'open',
+                'last_message_at' => now(),
+            ]);
+        }
 
         if ($ticket->status !== 'open') {
             $ticket->status = 'open';
@@ -97,6 +142,7 @@ class VerificationController extends Controller
         $message = Message::create([
             'sender_id' => $user->id,
             'recipient_id' => $support->id,
+            'support_ticket_id' => $ticket->id,
             'body' => $data['body'],
         ]);
 
@@ -109,7 +155,10 @@ class VerificationController extends Controller
             \Log::warning('Support message broadcast failed', ['error' => $e->getMessage()]);
         }
 
-        return response()->json($message, 201);
+        return response()->json([
+            'ticket_id' => $ticket->id,
+            'message' => $message,
+        ], 201);
     }
 
     public function supportThreads(Request $request)
@@ -149,7 +198,7 @@ class VerificationController extends Controller
         return response()->json($payload);
     }
 
-    public function supportThreadMessages(Request $request, $userId)
+    public function supportThreadMessages(Request $request, $ticketId)
     {
         $admin = $request->user();
         if (!$admin->isGlobalAdmin()) {
@@ -161,18 +210,20 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Support not available.'], 404);
         }
 
-        $user = User::findOrFail($userId);
-        $ticket = SupportTicket::where('user_id', $user->id)->first();
+        $ticket = SupportTicket::with('user:id,name,email')->findOrFail($ticketId);
+        $user = $ticket->user;
 
         $messages = Message::query()
             ->where(function ($query) use ($user, $support) {
-                $query->where('sender_id', $user->id)
-                    ->where('recipient_id', $support->id);
+                $query->where(function ($sub) use ($user, $support) {
+                    $sub->where('sender_id', $user->id)
+                        ->where('recipient_id', $support->id);
+                })->orWhere(function ($sub) use ($user, $support) {
+                    $sub->where('sender_id', $support->id)
+                        ->where('recipient_id', $user->id);
+                });
             })
-            ->orWhere(function ($query) use ($user, $support) {
-                $query->where('sender_id', $support->id)
-                    ->where('recipient_id', $user->id);
-            })
+            ->where('support_ticket_id', $ticket->id)
             ->orderBy('created_at')
             ->get(['id', 'sender_id', 'recipient_id', 'body', 'created_at']);
 
@@ -186,6 +237,7 @@ class VerificationController extends Controller
         return response()->json([
             'user' => $user->only(['id', 'name', 'email']),
             'ticket' => $ticket ? [
+                'id' => $ticket->id,
                 'status' => $ticket->status,
                 'resolved_by' => $ticket->resolved_by,
                 'resolved_by_name' => $ticket->resolver?->name,
@@ -196,7 +248,7 @@ class VerificationController extends Controller
         ]);
     }
 
-    public function sendSupportReply(Request $request, $userId)
+    public function sendSupportReply(Request $request, $ticketId)
     {
         $admin = $request->user();
         if (!$admin->isGlobalAdmin()) {
@@ -212,15 +264,10 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Support not available.'], 404);
         }
 
-        $user = User::findOrFail($userId);
-        $ticket = SupportTicket::firstOrCreate(
-            ['user_id' => $user->id],
-            ['status' => 'open', 'last_message_at' => now()]
-        );
+        $ticket = SupportTicket::with('user')->findOrFail($ticketId);
+        $user = $ticket->user;
         if ($ticket->status !== 'open') {
-            $ticket->status = 'open';
-            $ticket->resolved_by = null;
-            $ticket->resolved_at = null;
+            return response()->json(['message' => 'Ticket resolved.'], 409);
         }
         $ticket->last_message_at = now();
         $ticket->save();
@@ -228,6 +275,7 @@ class VerificationController extends Controller
         $message = Message::create([
             'sender_id' => $support->id,
             'recipient_id' => $user->id,
+            'support_ticket_id' => $ticket->id,
             'body' => $data['body'],
         ]);
 
@@ -243,7 +291,7 @@ class VerificationController extends Controller
         return response()->json($message, 201);
     }
 
-    public function resolveSupportTicket(Request $request, $userId)
+    public function resolveSupportTicket(Request $request, $ticketId)
     {
         $admin = $request->user();
         if (!$admin->isGlobalAdmin()) {
@@ -255,28 +303,14 @@ class VerificationController extends Controller
             return response()->json(['message' => 'Support not available.'], 404);
         }
 
-        $user = User::findOrFail($userId);
-        $ticket = SupportTicket::firstOrCreate(
-            ['user_id' => $user->id],
-            ['status' => 'open', 'last_message_at' => now()]
-        );
+        $ticket = SupportTicket::with('user')->findOrFail($ticketId);
+        $user = $ticket->user;
 
         $ticket->status = 'resolved';
         $ticket->resolved_by = $admin->id;
         $ticket->resolved_at = now();
         $ticket->last_cleared_at = now();
         $ticket->save();
-
-        Message::query()
-            ->where(function ($query) use ($user, $support) {
-                $query->where('sender_id', $user->id)
-                    ->where('recipient_id', $support->id);
-            })
-            ->orWhere(function ($query) use ($user, $support) {
-                $query->where('sender_id', $support->id)
-                    ->where('recipient_id', $user->id);
-            })
-            ->delete();
 
         try {
             event(new SupportTicketResolved($user, $ticket));

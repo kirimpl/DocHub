@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const messagesBox = document.getElementById('supportChatMessages');
     const messageInput = document.getElementById('supportChatInput');
     const btnSend = document.getElementById('btnSupportSend');
+    const ticketsList = document.getElementById('supportTicketsList');
+    const newTicketBtn = document.getElementById('supportNewTicket');
 
     if (!statusLabel && !messagesBox && !docsList) {
         return;
@@ -16,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let supportUser = null;
     let currentUserId = null;
+    let activeTicketId = null;
+    let activeTicketStatus = null;
     let echoReady = false;
 
     const getAuthToken = () => localStorage.getItem('auth_token');
@@ -75,6 +79,27 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesBox.scrollTop = messagesBox.scrollHeight;
     };
 
+    const normalizeTicketsList = () => {
+        if (!ticketsList) return;
+        const buttons = ticketsList.querySelectorAll('[data-ticket]');
+        if (!buttons.length) {
+            ticketsList.innerHTML = '<div style="color:#9ca3af;">Нет обращений.</div>';
+            return;
+        }
+        buttons.forEach((btn) => {
+            const status = btn.dataset.status;
+            const label = status === 'resolved'
+                ? '\u0420\u0435\u0448\u0435\u043d\u0430'
+                : '\u041e\u0442\u043a\u0440\u044b\u0442\u0430';
+            const lastLine = btn.querySelector('div:last-child');
+            if (lastLine) {
+                lastLine.textContent = lastLine.textContent.includes('Статус')
+                    ? `Статус: ${label}`
+                    : label;
+            }
+        });
+    };
+
     const appendMessage = (msg) => {
         if (!messagesBox || !currentUserId) return;
         if (!msg) return;
@@ -115,22 +140,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return data.support || null;
     };
 
-    const fetchMessages = async () => {
-        const res = await fetch(`${API_URL}/verification/support/messages`, { headers: authHeaders() });
+    const fetchTickets = async (status = '') => {
+        const query = status ? `?status=${encodeURIComponent(status)}` : '';
+        const res = await fetch(`${API_URL}/verification/support/tickets${query}`, { headers: authHeaders() });
+        if (!res.ok) return [];
+        return res.json();
+    };
+
+    const fetchMessages = async (ticketId) => {
+        const query = ticketId ? `?ticket_id=${encodeURIComponent(ticketId)}` : '';
+        const res = await fetch(`${API_URL}/verification/support/messages${query}`, { headers: authHeaders() });
         if (!res.ok) return null;
         return res.json();
     };
 
-    const sendMessage = async (text) => {
+    const sendMessage = async (text, ticketId) => {
         const res = await fetch(`${API_URL}/verification/support/messages`, {
             method: 'POST',
             headers: {
                 ...authHeaders(),
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ body: text }),
+            body: JSON.stringify({
+                body: text,
+                ticket_id: ticketId || null,
+            }),
         });
-        return res.ok;
+        if (!res.ok) return null;
+        return res.json();
     };
 
     const uploadDocument = async (file) => {
@@ -155,12 +192,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!msg) return;
             if (!supportUser) return;
             if (msg.sender_id !== supportUser.id && msg.recipient_id !== supportUser.id) return;
+            if (activeTicketId && msg.support_ticket_id && msg.support_ticket_id !== activeTicketId) return;
             appendMessage(msg);
         });
         handler('SupportTicketResolved', (event) => {
             if (!event || event.user_id !== currentUserId) return;
-            if (messagesBox) {
-                messagesBox.innerHTML = '<div style="color:#9ca3af;">Нет сообщений.</div>';
+            if (event.ticket_id && activeTicketId && event.ticket_id !== activeTicketId) return;
+            activeTicketStatus = 'resolved';
+            if (messageInput) messageInput.disabled = true;
+            if (btnSend) btnSend.disabled = true;
+            if (ticketsList) {
+                fetchTickets().then((tickets) => {
+                    ticketsList.innerHTML = tickets.length
+                        ? tickets.map((ticket) => {
+                            const label = ticket.status === 'resolved' ? 'Решена' : 'Открыта';
+                            return `
+                                <button class="btn-secondary" style="text-align:left;" data-ticket="${ticket.id}" data-status="${ticket.status}">
+                                    <div style="font-weight:600;">#${ticket.id}</div>
+                                    <div style="font-size:11px; color:#93a3b8;">${label}</div>
+                                </button>
+                            `;
+                        }).join('')
+                        : '<div style="color:#9ca3af;">Нет обращений.</div>';
+                    normalizeTicketsList();
+                });
             }
         });
     };
@@ -221,11 +276,38 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDocs(docs);
 
         supportUser = await fetchSupport();
-        const messagesPayload = await fetchMessages();
+        const tickets = await fetchTickets();
+        if (ticketsList) {
+            if (!tickets.length) {
+                ticketsList.innerHTML = '<div style="color:#9ca3af;">РќРµС‚ РѕР±СЂР°С‰РµРЅРёР№.</div>';
+            } else {
+                    ticketsList.innerHTML = tickets.map((ticket) => {
+                        const label = ticket.status === 'resolved' ? 'Р РµС€РµРЅР°' : 'РћС‚РєСЂС‹С‚Р°';
+                        return `
+                            <button class="btn-secondary" style="text-align:left;" data-ticket="${ticket.id}" data-status="${ticket.status}">
+                                <div style="font-weight:600;">#${ticket.id}</div>
+                                <div style="font-size:11px; color:#93a3b8;">${label}</div>
+                            </button>
+                        `;
+                    }).join('');
+                    normalizeTicketsList();
+                }
+            }
+        normalizeTicketsList();
+
+        const openTicket = tickets.find((ticket) => ticket.status === 'open');
+        activeTicketId = openTicket ? openTicket.id : (tickets[0]?.id || null);
+        activeTicketStatus = openTicket ? 'open' : (tickets[0]?.status || null);
+
+        const messagesPayload = await fetchMessages(activeTicketId);
         if (messagesPayload) {
             supportUser = messagesPayload.support || supportUser;
             currentUserId = messagesPayload.current_user_id;
+            activeTicketId = messagesPayload.ticket?.id || activeTicketId;
+            activeTicketStatus = messagesPayload.ticket?.status || activeTicketStatus;
             renderMessages(messagesPayload.messages || [], messagesPayload.current_user_id);
+            if (messageInput) messageInput.disabled = activeTicketStatus === 'resolved';
+            if (btnSend) btnSend.disabled = activeTicketStatus === 'resolved';
         }
 
         initEcho();
@@ -254,26 +336,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (ticketsList) {
+        ticketsList.addEventListener('click', async (event) => {
+            const target = event.target.closest('[data-ticket]');
+            if (!target) return;
+            activeTicketId = Number(target.dataset.ticket);
+            activeTicketStatus = target.dataset.status;
+            const payload = await fetchMessages(activeTicketId);
+            if (payload) {
+                supportUser = payload.support || supportUser;
+                currentUserId = payload.current_user_id;
+                renderMessages(payload.messages || [], payload.current_user_id);
+                if (messageInput) messageInput.disabled = activeTicketStatus === 'resolved';
+                if (btnSend) btnSend.disabled = activeTicketStatus === 'resolved';
+            }
+        });
+    }
+
+    if (newTicketBtn) {
+        newTicketBtn.addEventListener('click', () => {
+            activeTicketId = null;
+            activeTicketStatus = 'open';
+            if (messageInput) messageInput.disabled = false;
+            if (btnSend) btnSend.disabled = false;
+            if (messagesBox) {
+                messagesBox.innerHTML = '<div style="color:#9ca3af;">Новое обращение.</div>';
+            }
+        });
+    }
+
     if (btnSend && messageInput) {
         let sending = false;
         btnSend.addEventListener('click', async () => {
             if (sending) return;
             const text = messageInput.value.trim();
             if (!text) return;
+            if (activeTicketStatus === 'resolved') return;
             sending = true;
             btnSend.disabled = true;
             btnSend.textContent = 'Отправка...';
             const optimistic = {
                 sender_id: currentUserId,
                 recipient_id: supportUser?.id,
+                support_ticket_id: activeTicketId || null,
                 body: text,
                 created_at: new Date().toISOString(),
             };
             appendMessage(optimistic);
             messageInput.value = '';
-            const ok = await sendMessage(text);
-            if (!ok) {
+            const response = await sendMessage(text, activeTicketId);
+            if (!response) {
                 alert('Не удалось отправить сообщение.');
+            } else if (!activeTicketId && response.ticket_id) {
+                activeTicketId = response.ticket_id;
+                const tickets = await fetchTickets();
+                if (ticketsList) {
+                    ticketsList.innerHTML = tickets.map((ticket) => {
+                        const label = ticket.status === 'resolved' ? 'Решена' : 'Открыта';
+                        return `
+                            <button class="btn-secondary" style="text-align:left;" data-ticket="${ticket.id}" data-status="${ticket.status}">
+                                <div style="font-weight:600;">#${ticket.id}</div>
+                                <div style="font-size:11px; color:#93a3b8;">${label}</div>
+                            </button>
+                        `;
+                    }).join('');
+                }
             }
             btnSend.disabled = false;
             btnSend.textContent = 'Отправить';

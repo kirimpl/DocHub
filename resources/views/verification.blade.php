@@ -30,6 +30,14 @@
             Статус: <strong id="verificationStatusLabel">загрузка...</strong>
         </div>
 
+        <div id="supportTicketsSection" style="margin-top: 20px;">
+            <div style="display:flex; align-items:center; justify-content: space-between; gap: 12px;">
+                <h3 style="margin: 0;">История обращений</h3>
+                <button id="supportNewTicket" class="btn-secondary">Новое обращение</button>
+            </div>
+            <div id="supportTicketsList" style="display: grid; gap: 8px; margin-top: 10px;"></div>
+        </div>
+
         <div style="margin-top: 20px;">
             <h3 style="margin: 0 0 12px;">Чат поддержки</h3>
             <div id="supportChatBox" style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #ffffff;">

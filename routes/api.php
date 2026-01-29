@@ -46,12 +46,13 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     // verification (available for pending users)
     Route::get('verification/status', [VerificationController::class, 'status']);
     Route::get('verification/support', [VerificationController::class, 'support']);
+    Route::get('verification/support/tickets', [VerificationController::class, 'supportTickets']);
     Route::get('verification/support/messages', [VerificationController::class, 'supportMessages']);
     Route::post('verification/support/messages', [VerificationController::class, 'sendSupportMessage']);
     Route::get('verification/support/threads', [VerificationController::class, 'supportThreads']);
-    Route::get('verification/support/threads/{userId}', [VerificationController::class, 'supportThreadMessages'])->whereNumber('userId');
-    Route::post('verification/support/threads/{userId}', [VerificationController::class, 'sendSupportReply'])->whereNumber('userId');
-    Route::post('verification/support/threads/{userId}/resolve', [VerificationController::class, 'resolveSupportTicket'])->whereNumber('userId');
+    Route::get('verification/support/threads/{ticketId}', [VerificationController::class, 'supportThreadMessages'])->whereNumber('ticketId');
+    Route::post('verification/support/threads/{ticketId}', [VerificationController::class, 'sendSupportReply'])->whereNumber('ticketId');
+    Route::post('verification/support/threads/{ticketId}/resolve', [VerificationController::class, 'resolveSupportTicket'])->whereNumber('ticketId');
     Route::get('verification/documents', [VerificationController::class, 'documents']);
     Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
     Route::get('verification/pending', [VerificationController::class, 'pending']);

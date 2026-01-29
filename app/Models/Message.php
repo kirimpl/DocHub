@@ -14,6 +14,7 @@ class Message extends Model
     protected $fillable = [
         'sender_id',
         'recipient_id',
+        'support_ticket_id',
         'body',
         'audio_url',
         'image_url',

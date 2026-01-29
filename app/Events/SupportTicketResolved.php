@@ -36,6 +36,7 @@ class SupportTicketResolved implements ShouldBroadcastNow
     {
         return [
             'user_id' => $this->user->id,
+            'ticket_id' => $this->ticket->id,
             'cleared_at' => optional($this->ticket->last_cleared_at)->toDateTimeString(),
         ];
     }

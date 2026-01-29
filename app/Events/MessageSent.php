@@ -39,6 +39,7 @@ class MessageSent implements ShouldBroadcastNow
                 'id' => $message->id,
                 'sender_id' => $message->sender_id,
                 'recipient_id' => $message->recipient_id,
+                'support_ticket_id' => $message->support_ticket_id,
                 'body' => $message->body,
                 'created_at' => $message->created_at,
             ],
