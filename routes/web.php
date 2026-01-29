@@ -17,3 +17,9 @@ Route::get('/messenger-new', function () {
 Route::get('/profile', function () {
     return view('profile');
 });
+Route::get('/verification', function () {
+    return view('verification');
+});
+Route::get('/support', function () {
+    return view('verification');
+});

@@ -149,7 +149,7 @@
                 <h3 class="footer-heading">Помощь</h3>
                 <ul class="footer-links">
                     <li><a href="#">F.A.Q.</a></li>
-                    <li><a href="#">Поддержка</a></li>
+                    <li><a href="/support">Поддержка</a></li>
                     <li><a href="#">Политика конфиденциальности</a></li>
                 </ul>
             </div>
