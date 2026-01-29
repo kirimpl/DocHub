@@ -223,6 +223,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const initEcho = () => {
         if (echoReady || !currentUserId) return;
         if (!window.Pusher) return;
+        const token = getAuthToken();
+        if (!token) return;
+        const echoKey = window.ECHO_KEY || 'h81dgta6jqvb3e3mkasl';
+
+        if (window.Echo && typeof window.Echo.private !== 'function') {
+            const EchoCtor = window.Echo?.default || (typeof window.Echo === 'function' ? window.Echo : null);
+            if (EchoCtor) {
+                window.Echo = new EchoCtor({
+                    broadcaster: 'reverb',
+                    key: echoKey,
+                    wsHost: window.location.hostname,
+                    wsPort: 8080,
+                    forceTLS: false,
+                    encrypted: false,
+                    enabledTransports: ['ws', 'wss'],
+                    auth: { headers: { Authorization: `Bearer ${token}` } },
+                });
+            }
+        }
 
         if (window.Echo && typeof window.Echo.private === 'function') {
             echoReady = true;
@@ -232,9 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!pusherClient) {
-            const token = getAuthToken();
-            if (!token) return;
-            const echoKey = window.ECHO_KEY || 'h81dgta6jqvb3e3mkasl';
             pusherClient = new window.Pusher(echoKey, {
                 wsHost: window.location.hostname,
                 wsPort: 8080,

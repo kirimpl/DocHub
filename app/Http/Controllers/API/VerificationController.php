@@ -321,6 +321,24 @@ class VerificationController extends Controller
         return response()->json(['message' => 'Ticket resolved.']);
     }
 
+    public function deleteSupportTicket(Request $request, $ticketId)
+    {
+        $admin = $request->user();
+        if (!$admin->isGlobalAdmin()) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        $ticket = SupportTicket::findOrFail($ticketId);
+        if ($ticket->status !== 'resolved') {
+            return response()->json(['message' => 'Only resolved tickets can be deleted.'], 409);
+        }
+
+        Message::where('support_ticket_id', $ticket->id)->delete();
+        $ticket->delete();
+
+        return response()->json(['message' => 'Ticket deleted.']);
+    }
+
     public function documents(Request $request)
     {
         $user = $request->user();

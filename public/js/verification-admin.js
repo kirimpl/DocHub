@@ -150,6 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.ok;
     };
 
+    const deleteSupportTicket = async (ticketId) => {
+        const res = await fetch(`${API_URL}/verification/support/threads/${ticketId}`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
+        return res.ok;
+    };
+
     const resolveSupportTicket = async (ticketId) => {
         const res = await fetch(`${API_URL}/verification/support/threads/${ticketId}/resolve`, {
             method: 'POST',
@@ -196,20 +204,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const renderThreadList = (container, threads, emptyText) => {
+    const renderThreadList = (container, threads, emptyText, allowDelete = false) => {
         if (!container) return;
         if (!threads || !threads.length) {
             container.innerHTML = `<div>${emptyText}</div>`;
             return;
         }
+        const canDelete = allowDelete || container === resolvedList;
         container.innerHTML = threads.map((thread) => {
             const statusLabel = thread.status === 'resolved' ? 'Решена' : 'Не решена';
             return `
-                <button class="btn-secondary" style="text-align:left;" data-thread="${thread.ticket_id}" data-user="${thread.user_id}">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="btn-secondary" style="text-align:left; flex:1;" data-thread="${thread.ticket_id}" data-user="${thread.user_id}">
                     <div style="font-weight:600;">${thread.name || 'Пользователь'}</div>
                     <div style="font-size:12px; color:#6b7280;">${thread.email || ''}</div>
                     <div style="font-size:11px; color:#93a3b8;">Статус: ${statusLabel}</div>
-                </button>
+                    </button>
+                    ${canDelete ? `<button class="btn-secondary" data-delete="${thread.ticket_id}" title="Delete">🗑️</button>` : ''}
+                </div>
             `;
         }).join('');
 
@@ -218,6 +230,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 await selectThread(btn.dataset.thread, btn.dataset.user);
             });
         });
+
+        if (canDelete) {
+            container.querySelectorAll('[data-delete]').forEach((btn) => {
+                btn.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    const ticketId = btn.dataset.delete;
+                    if (!ticketId) return;
+                    if (!confirm('Delete resolved ticket and history?')) return;
+                    const ok = await deleteSupportTicket(ticketId);
+                    if (ok) {
+                        if (String(activeThreadId) === String(ticketId)) {
+                            activeThreadId = null;
+                            activeThreadUserId = null;
+                            if (chatMessages) {
+                                chatMessages.innerHTML = '<div style="color:#9ca3af;">Select a dialog.</div>';
+                            }
+                        }
+                        await refreshThreads();
+                    }
+                });
+            });
+        }
     };
 
     const renderThreads = (openThreads, resolvedThreads) => {
@@ -369,6 +403,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const initEcho = () => {
         if (echoReady || !currentAdminId) return;
         if (!window.Pusher) return;
+        const token = getAuthToken();
+        if (!token) return;
+        const echoKey = window.ECHO_KEY || 'h81dgta6jqvb3e3mkasl';
+
+        if (window.Echo && typeof window.Echo.private !== 'function') {
+            const EchoCtor = window.Echo?.default || (typeof window.Echo === 'function' ? window.Echo : null);
+            if (EchoCtor) {
+                window.Echo = new EchoCtor({
+                    broadcaster: 'reverb',
+                    key: echoKey,
+                    wsHost: window.location.hostname,
+                    wsPort: 8080,
+                    forceTLS: false,
+                    encrypted: false,
+                    enabledTransports: ['ws', 'wss'],
+                    auth: { headers: { Authorization: `Bearer ${token}` } },
+                });
+            }
+        }
         if (window.Echo && typeof window.Echo.private === 'function') {
             window.Echo.private(`messages.${currentAdminId}`).listen('.MessageSent', handleAdminMessage);
             echoReady = true;
@@ -376,9 +429,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!pusherClient) {
-            const token = getAuthToken();
-            if (!token) return;
-            const echoKey = window.ECHO_KEY || 'h81dgta6jqvb3e3mkasl';
             pusherClient = new window.Pusher(echoKey, {
                 wsHost: window.location.hostname,
                 wsPort: 8080,

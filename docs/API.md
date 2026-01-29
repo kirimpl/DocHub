@@ -9,26 +9,25 @@ Authorization: Bearer <token>
 ```
 
 ## Важные правила доступа
-
 - После регистрации у пользователя `verification_status = pending`.
-- Пока пользователь **не верифицирован**, доступ ограничен: можно смотреть **глобальные** посты и работать с верификацией.
+- Пока пользователь **не верифицирован**, доступ ограничен: можно смотреть **глобальные** посты и работать с верификацией/поддержкой.
 - Доступы ограничивает middleware `verified.doctor`.
 - **Системные группы** (организация/отделение) создаются **после одобрения** верификации.
-- Из **системных групп** нельзя выйти вручную (`leave` вернёт 403).
-- При повторной верификации (например, при смене места работы) членство в системных группах пересобирается по актуальным данным.
+- При повторной верификации (например, смена места работы) членство в системных группах пересобирается по актуальным данным.
+
+**Важно:** из системных групп выйти нельзя (`leave` вернёт 403).
 
 ### Разрешено до верификации
 - `GET /api/feed/global` — глобальная лента.
-- `GET /api/posts` — список постов (глобальные).
+- `GET /api/posts` — список глобальных постов.
 - `GET /api/posts/{id}` — просмотр поста.
 - `GET /api/notifications*` — уведомления.
-- `GET/POST /api/verification/*` — верификация.
+- `GET/POST /api/verification/*` — верификация/поддержка.
 - `GET /api/me` — профиль текущего пользователя.
 
 ---
 
 ## Публичные справочники (для регистрации)
-
 - `GET /api/directory/cities` — города.
 - `GET /api/directory/educations` — образование/ВУЗы.
 - `GET /api/directory/departments` — специальности/отделения.
@@ -40,24 +39,18 @@ Authorization: Bearer <token>
 ---
 
 ## Аутентификация
-
 ### POST /api/login
 Вход по email/паролю.
-
-**Body**
 ```
 { "email": "user@example.com", "password": "password" }
 ```
-
-**Response**
+Ответ:
 ```
 { "token": "...", "user": { ... } }
 ```
 
 ### POST /api/register
 Регистрация врача.
-
-**Body**
 ```
 {
   "name": "Имя",
@@ -80,28 +73,16 @@ Authorization: Bearer <token>
   "department_role": "staff|head"
 }
 ```
-
-**Важно:** `organization_role` **обязателен**.
-
-**Response**
-```
-{ "token": "...", "user": { ... } }
-```
+**Важно:** `organization_role` обязателен.
 
 ---
 
 ## Профиль
+- `GET /api/me` — текущий пользователь.
+- `GET /api/profile/{id}` — профиль пользователя.
+- `POST /api/profile` — обновление профиля (FormData, частично).
 
-### GET /api/me
-Текущий пользователь.
-
-### GET /api/profile/{id}
-Профиль пользователя.
-
-### POST /api/profile
-Обновление профиля (FormData).
-
-**Body (FormData, можно частично)**
+**FormData поля:**
 ```
 name, last_name, email, phone_number, status_text, bio,
 is_private, avatar (file), cover_image (file),
@@ -113,8 +94,6 @@ category, position, organization_role, department_role
 
 ### POST /api/profile/{id}/share
 Поделиться профилем в ЛС или групповой чат.
-
-**Body**
 ```
 {
   "target_type": "user|group",
@@ -126,7 +105,6 @@ category, position, organization_role, department_role
 ---
 
 ## Верификация врача
-
 ### GET /api/verification/status
 Статус верификации.
 
@@ -146,16 +124,36 @@ document (jpg/png/pdf), notes (optional)
 Список пользователей на проверке.
 
 ### POST /api/verification/{id}/approve (admin)
-Подтверждение врача.  
-**Создаются системные группы** по месту работы и отделению.
+Подтверждение врача. Создаются системные группы.
 
 ### POST /api/verification/{id}/reject (admin)
 Отклонение врача.
 
 ---
 
-## Уведомления
+## Поддержка / CRM (обращения)
+### Пользователь
+- `GET /api/verification/support/tickets?status=open|resolved` — мои обращения.
+- `GET /api/verification/support/messages?ticket_id=ID` — сообщения по обращению.
+- `POST /api/verification/support/messages` — отправить сообщение.
+```
+{ "body": "Текст", "ticket_id": 123 }
+```
+**Важно:** если `ticket_id` не передан — создаётся новое обращение (open).
 
+### Админ
+- `GET /api/verification/support/threads?status=open|resolved` — список обращений.
+- `GET /api/verification/support/threads/{ticketId}` — сообщения обращения.
+- `POST /api/verification/support/threads/{ticketId}` — ответить.
+```
+{ "body": "Ответ" }
+```
+- `POST /api/verification/support/threads/{ticketId}/resolve` — пометить решённым.
+- `DELETE /api/verification/support/threads/{ticketId}` — удалить **решённое** обращение и историю.
+
+---
+
+## Уведомления
 - `GET /api/notifications` — список уведомлений.
 - `POST /api/notifications/{id}/read` — отметить прочитанным.
 - `POST /api/notifications/read-all` — прочитать все.
@@ -164,7 +162,6 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## Лента
-
 ### GET /api/feed
 Фильтры: `scope`, `from`, `to`, `organization`.
 
@@ -187,15 +184,14 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## Посты
-
-- `GET /api/posts` — список постов (глобальные + локальные).
+- `GET /api/posts` — список постов.
 - `POST /api/posts` — создание поста.
 - `GET /api/posts/{id}` — один пост.
 - `PATCH /api/posts/{id}` — обновить пост.
 - `DELETE /api/posts/{id}` — удалить пост.
 - `GET /api/my-posts` — только мои посты.
 
-**Body для создания**
+**Body для создания:**
 ```
 {
   "content": "Текст",
@@ -207,8 +203,8 @@ document (jpg/png/pdf), notes (optional)
 ```
 
 **Уведомления по тегам:**
-- Глобальный пост → всем по тегу во всех больницах
-- Локальный пост → по тегу в своей больнице
+- глобальный пост → всем по тегу во всех больницах
+- локальный пост → по тегу в своей больнице
 
 ### POST /api/posts/{id}/share
 Поделиться постом в ЛС или групповой чат.
@@ -223,13 +219,11 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## Медиа
-
 - `POST /api/media` — загрузка файлов (local storage).
 
 ---
 
 ## Комментарии
-
 - `GET /api/posts/{id}/comments` — список комментариев.
 - `POST /api/posts/{id}/comments` — добавить комментарий.
 - `DELETE /api/comments/{id}` — удалить комментарий.
@@ -238,7 +232,6 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## Лайки
-
 - `POST /api/posts/{id}/like` — лайк поста.
 - `POST /api/posts/{id}/unlike` — снять лайк.
 - `GET /api/posts/{id}/likes` — список лайков.
@@ -246,31 +239,28 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## Друзья и заявки
-
 - `GET /api/friends` — список друзей.
 - `POST /api/friends/request` — отправить заявку.
 - `GET /api/friends/requests` — входящие заявки.
 - `GET /api/friends/requests/sent` — исходящие заявки.
-- `POST /api/friends/requests/{id}/accept` — принять.
-- `POST /api/friends/requests/{id}/decline` — отклонить.
+- `POST /api/friends/requests/{id}/accept` — принять заявку.
+- `POST /api/friends/requests/{id}/decline` — отклонить заявку.
 - `POST /api/friends/requests/{id}/cancel` — отменить исходящую.
 - `DELETE /api/friends/{id}` — удалить друга.
 
 ---
 
 ## Блокировки
-
 - `GET /api/blocks` — список блокировок.
-- `POST /api/blocks` — заблокировать.
+- `POST /api/blocks` — заблокировать пользователя.
 - `DELETE /api/blocks/{id}` — разблокировать.
 
 ---
 
 ## Сообщения (личные)
-
 - `GET /api/messages/inbox` — список диалогов.
 - `POST /api/messages/send` — отправить сообщение.
-- `GET /api/messages/conversation/{userId}` — диалог.
+- `GET /api/messages/conversation/{userId}` — сообщения диалога.
 - `GET /api/messages/conversation/{userId}/pinned` — закреплённые.
 - `DELETE /api/messages/conversation/{userId}` — удалить диалог.
 - `DELETE /api/messages/{id}` — удалить сообщение.
@@ -282,34 +272,30 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## Групповые чаты
-
 - `GET /api/group-chats` — список групп.
 - `POST /api/group-chats` — создать группу.
 - `GET /api/group-chats/{id}` — информация о группе.
 - `PATCH /api/group-chats/{id}` — обновить группу.
-- `POST /api/group-chats/{id}/members` — добавить участников.
+- `POST /api/group-chats/{id}/members` — добавить участника.
 - `DELETE /api/group-chats/{id}/members/{memberId}` — удалить участника.
 - `POST /api/group-chats/{id}/leave` — выйти (нельзя для системных).
 - `DELETE /api/group-chats/{id}` — удалить группу.
-- `GET /api/group-chats/{id}/messages` — сообщения в группе.
+- `GET /api/group-chats/{id}/messages` — сообщения группы.
 - `POST /api/group-chats/{id}/messages` — отправить сообщение.
-- `POST /api/group-chats/{id}/join` — системное событие join.
+- `POST /api/group-chats/{id}/join` — системное join.
 - `DELETE /api/group-chats/{id}/messages/{messageId}` — удалить сообщение.
 - `POST /api/group-chats/{id}/messages/{messageId}/reactions` — реакции.
 - `GET /api/group-chats/{id}/pinned` — закреплённые.
 - `POST /api/group-chats/{id}/messages/{messageId}/pin` — закрепить.
 - `DELETE /api/group-chats/{id}/messages/{messageId}/pin` — открепить.
 
-**Важно:** из системных групп выйти нельзя.
-
 ---
 
 ## Лекции (старый модуль)
-
-- `GET /api/lectures` — список.
-- `POST /api/lectures` — создать.
+- `GET /api/lectures` — список лекций.
+- `POST /api/lectures` — создать лекцию.
 - `GET /api/lectures/{id}` — одна лекция.
-- `PATCH /api/lectures/{id}` — обновить.
+- `PATCH /api/lectures/{id}` — обновить лекцию.
 - `POST /api/lectures/{id}/join` — присоединиться.
 - `POST /api/lectures/{id}/leave` — выйти.
 - `POST /api/lectures/{id}/end` — завершить.
@@ -318,37 +304,35 @@ document (jpg/png/pdf), notes (optional)
 ---
 
 ## События (календарь)
-
 - `GET /api/events` — список событий.
 - `GET /api/events/{id}` — одно событие.
-- `POST /api/events` — создать.
-- `PATCH /api/events/{id}` — обновить.
-- `DELETE /api/events/{id}` — удалить.
+- `POST /api/events` — создать событие.
+- `PATCH /api/events/{id}` — обновить событие.
+- `DELETE /api/events/{id}` — удалить событие.
 - `GET /api/events/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD` — события по диапазону дат.
 
 ### Участники и приглашения
 ```
-POST /api/events/{id}/join             # вступить
-POST /api/events/{id}/leave            # выйти
-POST /api/events/{id}/invite           # пригласить
-POST /api/events/{id}/invites/{inviteId}/accept  # принять
-POST /api/events/{id}/invites/{inviteId}/decline # отклонить
-GET  /api/events/invites               # мои приглашения
+POST /api/events/{id}/join
+POST /api/events/{id}/leave
+POST /api/events/{id}/invite
+POST /api/events/{id}/invites/{inviteId}/accept
+POST /api/events/{id}/invites/{inviteId}/decline
+GET  /api/events/invites
 ```
 
 ---
 
 ## Голосовые комнаты (лекции/собрания/созвоны)
-
 - `GET /api/voice-rooms` — список комнат.
 - `POST /api/voice-rooms` — создать комнату.
 - `GET /api/voice-rooms/{id}` — детали комнаты.
-- `PATCH /api/voice-rooms/{id}` — обновить.
-- `DELETE /api/voice-rooms/{id}` — удалить.
+- `PATCH /api/voice-rooms/{id}` — обновить комнату.
+- `DELETE /api/voice-rooms/{id}` — удалить комнату.
 
 **Типы:** `lecture | meeting | group_call`  
 **Доступ для group_call:** `public | organization | department | invite`  
-Для `lecture/meeting` обязательны `department_tags`.
+**Важно:** для `lecture/meeting` обязательны `department_tags`.
 
 ### Действия
 ```
@@ -368,49 +352,75 @@ GET  /api/voice-rooms/invites
 ---
 
 ## Поиск
-
 ### GET /api/search
 Поиск пользователей (имя/фамилия).
 
 ---
 
 ## AI (Gemini)
-
-### POST /api/ai/improve
-Улучшение текста.
-```
-{ "text": "..." }
-```
-
-### POST /api/ai/lecture/summary
-Краткий пересказ лекции по расшифровке.
-```
-{ "transcript": "..." }
-```
-
-### POST /api/ai/key-points
-Ключевые пункты текста.
-```
-{ "text": "...", "count": 5 }
-```
-
-### POST /api/ai/lecture/outline
-План лекции.
-```
-{ "text": "..." }
-```
-
-### POST /api/ai/lecture/questions
-Контрольные вопросы по тексту.
-```
-{ "text": "...", "count": 5 }
-```
+- `POST /api/ai/improve` — улучшение текста.
+- `POST /api/ai/lecture/summary` — краткий пересказ по расшифровке.
+- `POST /api/ai/key-points` — ключевые пункты текста.
+- `POST /api/ai/lecture/outline` — план лекции.
+- `POST /api/ai/lecture/questions` — контрольные вопросы.
 
 ---
 
 ## Сессии и безопасность
-
 - `POST /api/security/password` — сменить пароль.
-- `GET /api/security/sessions` — список активных сессий.
+- `GET /api/security/sessions` — активные сессии.
 - `POST /api/security/logout-all` — выйти из всех сессий.
 
+---
+
+## WebSocket / Reverb (Realtime)
+**Авторизация канала:**  
+`POST /broadcasting/auth` (Bearer token обязателен)
+
+**Каналы:**
+- `private-messages.{userId}` *(Pusher protocol; в Echo это `private('messages.{id}')`)*
+- `private-App.Models.User.{userId}` *(Laravel Notifications)*
+
+**События:**
+- `MessageSent` — новое сообщение (ЛС + поддержка).
+- `SupportTicketResolved` — обращение решено (только пользователю).
+- `notification` — стандартные уведомления Laravel.
+
+**Payload MessageSent:**
+```
+{
+  "message": {
+    "id": 1,
+    "sender_id": 10,
+    "recipient_id": 20,
+    "support_ticket_id": 55,
+    "body": "..."
+  },
+  "sender": { "id": 10, "name": "..." }
+}
+```
+
+**Payload SupportTicketResolved:**
+```
+{ "user_id": 20, "ticket_id": 55, "cleared_at": "2026-01-29 21:14:00" }
+```
+
+### Пример подписки (Echo/Reverb)
+```js
+const userId = window.currentUserId;
+
+// Сообщения (ЛС + поддержка)
+window.Echo.private(`messages.${userId}`)
+  .listen('.MessageSent', (e) => {
+    console.log('MessageSent', e.message);
+  })
+  .listen('.SupportTicketResolved', (e) => {
+    console.log('SupportTicketResolved', e);
+  });
+
+// Уведомления (Laravel Notifications)
+window.Echo.private(`App.Models.User.${userId}`)
+  .notification((notification) => {
+    console.log('Notification', notification);
+  });
+```

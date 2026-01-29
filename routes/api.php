@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::get('verification/support/threads/{ticketId}', [VerificationController::class, 'supportThreadMessages'])->whereNumber('ticketId');
     Route::post('verification/support/threads/{ticketId}', [VerificationController::class, 'sendSupportReply'])->whereNumber('ticketId');
     Route::post('verification/support/threads/{ticketId}/resolve', [VerificationController::class, 'resolveSupportTicket'])->whereNumber('ticketId');
+    Route::delete('verification/support/threads/{ticketId}', [VerificationController::class, 'deleteSupportTicket'])->whereNumber('ticketId');
     Route::get('verification/documents', [VerificationController::class, 'documents']);
     Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
     Route::get('verification/pending', [VerificationController::class, 'pending']);
