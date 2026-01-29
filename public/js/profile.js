@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const usernameEl = document.getElementById('profileUsername');
         const avatarEl = document.getElementById('profileAvatar');
 
-        const name = user.name || '????';
+        const name = user.name || 'Гость';
         const username = user.username || 'doctor';
         const sexLabel = user.sex === 'woman' ? 'Женщина' : 'Мужчина';
         let ageLabel = '???';
@@ -35,48 +35,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (nameEl) nameEl.textContent = name;
-        if (usernameEl) usernameEl.textContent = `@ ${username}`;
+        if (usernameEl) usernameEl.textContent = `@${username}`;
         if (sexAgeEl) sexAgeEl.textContent = `${sexLabel}, ${ageLabel} лет`;
         if (avatarEl && user.avatar) avatarEl.src = user.avatar;
     };
 
     const renderInfo = (user) => {
         if (!infoGrid) return;
+
         infoGrid.innerHTML = `
-            <div class="details-grid">
-                <div class="detail-item">
-                    <i class="fa-solid fa-location-dot"></i> Город: <b>${user.city}</b>
-                </div>
-                <div class="detail-item">
-                    <i class="fa-solid fa-briefcase"></i> Место работы: <b>${user.work_place}</b>
-                </div>
-                <div class="detail-item">
-                    <i class="fa-solid fa-medal"></i> Стаж: <b>${user.work_experience} лет</b>
-                </div>
-                <div class="detail-item">
-                    <i class="fa-solid fa-graduation-cap"></i> Образование: <b>${user.education}</b>
-                </div>
-                <div class="detail-item">
-                    <i class="fa-solid fa-stethoscope"></i> Специализация: <b>${user.speciality}</b>
-                </div>
+            <div class="detail-item">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>Город</span>
+                <b>${user.city || '—'}</b>
+            </div>
 
-                <hr style="border:0; border-top:1px solid #f0f4f8; margin: 15px 0;">
-                <h3 style="color: #004080; font-size: 18px; margin-bottom: 15px;">Контакты</h3>
+            <div class="detail-item">
+                <i class="fa-solid fa-briefcase"></i>
+                <span>Место работы</span>
+                <b>${user.work_place || '—'}</b>
+            </div>
 
-                <div class="detail-item">
-                    <i class="fa-solid fa-envelope"></i> Почта: <b>${user.email}</b>
-                </div>
-                <div class="detail-item">
-                    <i class="fa-solid fa-phone"></i> Телефон: <b>${user.phone_number}</b>
-                </div>
+            <div class="detail-item">
+                <i class="fa-solid fa-medal"></i>
+                <span>Стаж</span>
+                <b>${user.work_experience || 0} лет</b>
+            </div>
+
+            <div class="detail-item">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>Образование</span>
+                <b>${user.education || '—'}</b>
+            </div>
+
+            <div class="detail-item">
+                <i class="fa-solid fa-stethoscope"></i>
+                <span>Специализация</span>
+                <b>${user.speciality || '—'}</b>
+            </div>
+
+            <div class="section-title contacts-title">Контакты</div>
+            <div class="underline-link"></div>
+
+            <div class="detail-item">
+                <i class="fa-solid fa-envelope"></i>
+                <span>Почта</span>
+                <b>${user.email || '—'}</b>
+            </div>
+
+            <div class="detail-item">
+                <i class="fa-solid fa-phone"></i>
+                <span>Телефон</span>
+                <b>${user.phone_number || '—'}</b>
             </div>
         `;
     };
 
     const renderPosts = (user, posts) => {
         if (!postsList) return;
+
         if (!posts || posts.length === 0) {
-            postsList.innerHTML = '<p style="text-align: center; color: #8abceb; padding: 20px;">Постов пока нет</p>';
+            postsList.innerHTML = '<p style="text-align: center; color: var(--text-title); padding: 20px;">Постов пока нет</p>';
             return;
         }
 
@@ -86,14 +105,16 @@ document.addEventListener('DOMContentLoaded', () => {
         postsList.innerHTML = posts.map((post) => {
             const time = formatTime(post.created_at);
             return `
-                <div class="post-card-style" style="background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.03); margin-bottom: 20px;">
-                    <div style="background: #004080; height: 10px;"></div>
+                <div class="post-card-style">
+                    <div></div>
                     <div style="padding: 20px;">
                         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                            <div style="background: #004080; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">${initials}</div>
-                            <strong style="color: #333;">${name}${time ? ` • ${time}` : ''}</strong>
+                            <div style="background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">
+                                ${initials}
+                            </div>
+                            <strong class="author">${name}${time ? ` • ${time}` : ''}</strong>
                         </div>
-                        <p style="color: #000; font-size: 15px; line-height: 1.5;">${post.content || ''}</p>
+                        <p>${post.content || ''}</p>
                     </div>
                 </div>
             `;

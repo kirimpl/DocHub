@@ -1,21 +1,24 @@
-/* Глобальные настройки */
+:root {
+    --bg-main: #D9EEFF;
+    --text-main: #004080;
+    --text-secondary: #4A90D9;
+    --text-title: #75ABDF;
+    --accent: #0056A6;
+    --shadow-light: rgba(0, 86, 166, 0.15);
+}
+
 body {
-    background-color: #D9EEFF; /* Из Figma */
+    background-color: var(--bg-main);
     margin: 0;
     padding: 0;
     font-family: 'Inter', sans-serif;
-    min-height: 100vh;
+    color: var(--text-main);
 }
 
-/* Главный контейнер - Стягиваем всё к центру */
 .main-app-container {
     display: grid;
-    /* Колонки остаются фиксированными: 80, 680, 380 */
     grid-template-columns: 80px 680px 380px;
-    /* Gap: 20px создает плотное прилегание, как в Figma */
     gap: 20px;
-
-    /* Центрируем саму сетку на странице */
     justify-content: center;
     margin: 0 auto;
     width: 100%;
@@ -23,7 +26,7 @@ body {
     box-sizing: border-box;
 }
 
-/* 1. Левая панель (теперь плотно слева от постов) */
+
 .sidebar-nav {
     width: 80px;
     height: 708px;
@@ -34,15 +37,57 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 30px 0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    box-shadow: 0 4px 15px var(--shadow-light);
 }
 
-/* 2. Центральная часть (Посты - строго по центру) */
+.sidebar-nav .nav-item {
+    color: var(--accent);
+    font-size: 18px;
+    margin: 20px 0;
+    text-decoration: none;
+}
+
+.sidebar-nav .nav-item.active {
+    color: var(--text-title);
+}
+
+.settings-icon {
+    margin-top: auto;
+    color: var(--accent);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+
 .posts-section {
     width: 680px;
 }
 
-/* 3. Правая часть (плотно справа от постов) */
+.post-card-style {
+    background: white;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px var(--shadow-light);
+    margin-bottom: 20px;
+}
+
+.post-card-style > div:first-child {
+    background: var(--accent);
+    height: 10px;
+}
+
+.post-card-style .author {
+    color: var(--text-main);
+    font-weight: bold;
+}
+
+.post-card-style p {
+    color: var(--text-title);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+
 .info-section {
     width: 380px;
     display: flex;
@@ -50,19 +95,179 @@ body {
     gap: 20px;
 }
 
-/* Стили карточек (оставляем без изменений для красоты) */
 .profile-card, .details-card {
     background: white;
     border-radius: 30px;
-    box-shadow: 0 10px 40px rgba(138, 188, 235, 0.2);
+    box-shadow: 0 10px 40px var(--shadow-light);
     overflow: hidden;
 }
 
-.card-banner { background: #8abceb; height: 120px; }
-.profile-info-content { text-align: center; padding: 0 20px 25px; margin-top: -60px; }
-.avatar-wrapper { width: 120px; height: 120px; border-radius: 50%; border: 6px solid white; margin: 0 auto 10px; overflow: hidden; background: #eee; }
-.avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-.display-name { color: #004080; font-size: 22px; font-weight: bold; margin: 5px 0; }
-.details-card { padding: 30px; box-sizing: border-box; }
-.details-grid { display: flex; flex-direction: column; gap: 18px; font-size: 14px; }
-.detail-item i { color: #8abceb; width: 25px; }
+
+.profile-header {
+    position: relative;
+    height: 140px;
+    background: #8ABCEB;
+}
+
+.profile-avatar {
+    position: absolute;
+    left: 50%;
+    bottom: -60px;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 6px solid #fff;
+    overflow: hidden;
+    background: #eee;
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-body {
+    padding: 80px 24px 30px;
+    text-align: center;
+}
+
+.profile-username {
+    font-size: 14px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.profile-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.profile-name-row h2 {
+    margin: 6px 0;
+    font-size: 22px;
+    color: var(--text-main);
+}
+
+.verified {
+    color: var(--text-title);
+    font-size: 16px;
+}
+
+.profile-meta {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0056A6, #007BFF);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-icon {
+    background: #eef6ff;
+    border: none;
+    border-radius: 14px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-icon:hover {
+    background: #d9eeff;
+}
+
+
+.details-card {
+    padding: 24px 20px;
+    box-sizing: border-box;
+}
+
+.details-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-size: 14px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    flex-wrap: wrap;
+}
+
+.detail-item i {
+    color: var(--accent);
+    width: 20px;
+    min-width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.detail-item span {
+    color: var(--text-main);
+    font-weight: normal;
+    flex-shrink: 0;
+}
+
+.detail-item b {
+    color: var(--text-title);
+    margin-left: 4px;
+}
+
+.card-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-title);
+    margin: 0;
+}
+
+.card-divider {
+    width: 100%;
+    height: 1px;
+    background: #e6eef6;
+    margin: 12px auto 22px;
+}
+
+.section-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-title);
+    margin-top: 10px;
+}
+
+.contacts-title {
+   margin-top: 15px;
+}
+
+.underline-link {
+    width: 100%;
+    height: 1px;
+    background: #e6eef6;
+    margin: 2px auto 2px;
+}
