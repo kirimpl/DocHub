@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
         infoGrid.innerHTML = `
             <div class="details-grid">
                 <div class="detail-item">
-                    <i class="fa-solid fa-location-dot"></i> Город: <b>${user.city || 'Не указан'}</b>
+                    <i class="fa-solid fa-location-dot"></i> Город: <b>${data.user.city || 'Не указан'}</b>
                 </div>
                 <div class="detail-item">
                     <i class="fa-solid fa-briefcase"></i> Место работы: <b>${user.work_place || 'Не указано'}</b>
