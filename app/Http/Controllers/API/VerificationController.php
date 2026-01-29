@@ -7,6 +7,8 @@ use App\Models\ChatGroup;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\VerificationDocument;
+use App\Events\MessageSent;
+use App\Notifications\NewMessageNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -71,6 +73,11 @@ class VerificationController extends Controller
             'recipient_id' => $support->id,
             'body' => $data['body'],
         ]);
+
+        event(new MessageSent($message));
+        if ($support->notifications_enabled ?? true) {
+            $support->notify(new NewMessageNotification($message));
+        }
 
         return response()->json($message, 201);
     }
@@ -191,6 +198,11 @@ class VerificationController extends Controller
             'recipient_id' => $user->id,
             'body' => $data['body'],
         ]);
+
+        event(new MessageSent($message));
+        if ($user->notifications_enabled ?? true) {
+            $user->notify(new NewMessageNotification($message));
+        }
 
         return response()->json($message, 201);
     }

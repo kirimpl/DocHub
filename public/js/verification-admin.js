@@ -7,7 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('supportChatInput');
     const chatSend = document.getElementById('supportChatSend');
 
+    if (!adminList && !threadsList) {
+        return;
+    }
+
     let activeThreadUserId = null;
+    let currentAdminId = null;
+    let echoReady = false;
+    const messageCache = new Map();
 
     const getAuthToken = () => localStorage.getItem('auth_token');
 
@@ -99,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`${API_URL}/verification/support/threads`, {
             headers: authHeaders(),
         });
-        if (!res.ok) return [];
+        if (!res.ok) return null;
         return res.json();
     };
 
@@ -107,6 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`${API_URL}/verification/support/threads/${userId}`, {
             headers: authHeaders(),
         });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const fetchCurrentUser = async () => {
+        const res = await fetch(`${API_URL}/me`, { headers: authHeaders() });
         if (!res.ok) return null;
         return res.json();
     };
@@ -129,10 +142,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const selectThread = async (userId, { refresh = true } = {}) => {
+        activeThreadUserId = userId;
+        if (threadsList) {
+            threadsList.querySelectorAll('[data-thread]').forEach((btn) => {
+                const isActive = btn.dataset.thread === String(userId);
+                btn.classList.toggle('is-active', isActive);
+                btn.style.borderColor = isActive ? '#93c5fd' : '';
+                btn.style.background = isActive ? '#eff6ff' : '';
+            });
+        }
+        if (refresh) {
+            const payload = await fetchSupportThreadMessages(userId);
+            if (payload) {
+                chatHeader.textContent = `Чат: ${payload.user?.name || 'Пользователь'}`;
+                if (Array.isArray(payload.messages) && payload.messages.length > 0) {
+                    messageCache.set(String(userId), payload.messages);
+                    renderChatMessages(payload.messages, payload.current_user_id);
+                } else if (messageCache.has(String(userId))) {
+                    renderChatMessages(messageCache.get(String(userId)), payload.current_user_id);
+                } else {
+                    renderChatMessages(payload.messages, payload.current_user_id);
+                }
+            }
+        }
+    };
+
     const renderThreads = (threads) => {
         if (!threadsList) return;
         if (!threads || !threads.length) {
             threadsList.innerHTML = '<div>Нет обращений.</div>';
+            if (!activeThreadUserId) {
+                if (chatHeader) chatHeader.textContent = 'Чат';
+                if (chatMessages) chatMessages.innerHTML = '<div style="color:#9ca3af;">Выберите диалог.</div>';
+            }
             return;
         }
         threadsList.innerHTML = threads.map((thread) => `
@@ -144,14 +187,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         threadsList.querySelectorAll('[data-thread]').forEach((btn) => {
             btn.addEventListener('click', async () => {
-                activeThreadUserId = btn.dataset.thread;
-                const payload = await fetchSupportThreadMessages(activeThreadUserId);
-                if (payload) {
-                    chatHeader.textContent = `Чат: ${payload.user?.name || 'Пользователь'}`;
-                    renderChatMessages(payload.messages, payload.current_user_id);
-                }
+                await selectThread(btn.dataset.thread);
             });
         });
+
+        if (activeThreadUserId) {
+            const exists = threads.some((thread) => String(thread.user_id) === String(activeThreadUserId));
+            if (exists) {
+                selectThread(activeThreadUserId, { refresh: false });
+            }
+        } else if (chatMessages && !chatMessages.innerHTML) {
+            chatMessages.innerHTML = '<div style="color:#9ca3af;">Выберите диалог.</div>';
+        }
+    };
+
+    const refreshThreads = async () => {
+        const threads = await fetchSupportThreads();
+        if (threads === null) return;
+        renderThreads(threads);
+        if (activeThreadUserId) {
+            const payload = await fetchSupportThreadMessages(activeThreadUserId);
+            if (payload) {
+                if (Array.isArray(payload.messages) && payload.messages.length > 0) {
+                    messageCache.set(String(activeThreadUserId), payload.messages);
+                    renderChatMessages(payload.messages, payload.current_user_id);
+                } else if (messageCache.has(String(activeThreadUserId))) {
+                    renderChatMessages(messageCache.get(String(activeThreadUserId)), payload.current_user_id);
+                } else {
+                    renderChatMessages(payload.messages, payload.current_user_id);
+                }
+            }
+        }
     };
 
     const renderChatMessages = (messages, currentUserId) => {
@@ -176,6 +242,44 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     };
 
+    const initEcho = () => {
+        if (echoReady || !currentAdminId) return;
+        if (!window.Echo || !window.Pusher) return;
+        const token = getAuthToken();
+        if (!token) return;
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: 'h81dgta6jqvb3e3mkasl',
+            wsHost: window.location.hostname,
+            wsPort: 8080,
+            forceTLS: false,
+            encrypted: false,
+            disableStats: true,
+            enabledTransports: ['ws', 'wss'],
+            auth: { headers: { Authorization: `Bearer ${token}` } },
+        });
+
+        window.Echo.private(`messages.${currentAdminId}`).listen('.MessageSent', async (event) => {
+            const msg = event?.message;
+            if (!msg) return;
+            const otherId = msg.sender_id;
+            if (otherId) {
+                const cached = messageCache.get(String(otherId)) || [];
+                messageCache.set(String(otherId), [...cached, msg]);
+            }
+
+            const threads = await fetchSupportThreads();
+            if (threads !== null) {
+                renderThreads(threads);
+            }
+
+            if (activeThreadUserId && String(activeThreadUserId) === String(otherId)) {
+                renderChatMessages(messageCache.get(String(otherId)) || [msg], currentAdminId);
+            }
+        });
+        echoReady = true;
+    };
+
     const init = async () => {
         const token = getAuthToken();
         if (!token) {
@@ -184,11 +288,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const me = await fetchCurrentUser();
+        currentAdminId = me?.id || null;
         const pending = await fetchPending();
         renderRequests(pending);
 
         const threads = await fetchSupportThreads();
-        renderThreads(threads);
+        if (threads !== null) {
+            renderThreads(threads);
+        }
+
+        initEcho();
     };
 
     if (chatSend && chatInput) {
@@ -200,6 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatInput.value = '';
                 const payload = await fetchSupportThreadMessages(activeThreadUserId);
                 if (payload) {
+                    if (Array.isArray(payload.messages)) {
+                        messageCache.set(String(activeThreadUserId), payload.messages);
+                    }
                     renderChatMessages(payload.messages, payload.current_user_id);
                 }
             }

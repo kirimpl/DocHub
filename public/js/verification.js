@@ -10,8 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('supportChatInput');
     const btnSend = document.getElementById('btnSupportSend');
 
+    if (!statusLabel && !messagesBox && !docsList) {
+        return;
+    }
+
     let supportUser = null;
-    let pollingId = null;
+    let currentUserId = null;
+    let echoReady = false;
 
     const getAuthToken = () => localStorage.getItem('auth_token');
 
@@ -70,6 +75,27 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesBox.scrollTop = messagesBox.scrollHeight;
     };
 
+    const appendMessage = (msg) => {
+        if (!messagesBox || !currentUserId) return;
+        if (!msg) return;
+        const isMine = msg.sender_id === currentUserId;
+        const align = isMine ? 'flex-end' : 'flex-start';
+        const bg = isMine ? '#e0f2fe' : '#f3f4f6';
+        const label = isMine ? 'Вы' : (supportUser?.name || 'Поддержка');
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.justifyContent = align;
+        wrapper.innerHTML = `
+            <div style="max-width: 70%; background: ${bg}; padding: 8px 12px; border-radius: 10px;">
+                <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">${label}</div>
+                <div>${msg.body || ''}</div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px; text-align: right;">${formatTime(msg.created_at)}</div>
+            </div>
+        `;
+        messagesBox.appendChild(wrapper);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    };
+
     const fetchStatus = async () => {
         const res = await fetch(`${API_URL}/verification/status`, { headers: authHeaders() });
         if (!res.ok) return null;
@@ -120,6 +146,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.ok;
     };
 
+    const initEcho = () => {
+        if (echoReady || !currentUserId) return;
+        if (!window.Echo || !window.Pusher) return;
+        const token = getAuthToken();
+        if (!token) return;
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: 'h81dgta6jqvb3e3mkasl',
+            wsHost: window.location.hostname,
+            wsPort: 8080,
+            forceTLS: false,
+            encrypted: false,
+            disableStats: true,
+            enabledTransports: ['ws', 'wss'],
+            auth: { headers: { Authorization: `Bearer ${token}` } },
+        });
+        window.Echo.private(`messages.${currentUserId}`).listen('.MessageSent', (event) => {
+            const msg = event?.message;
+            if (!msg) return;
+            if (!supportUser) return;
+            if (msg.sender_id !== supportUser.id && msg.recipient_id !== supportUser.id) return;
+            appendMessage(msg);
+        });
+        echoReady = true;
+    };
+
     const init = async () => {
         const token = getAuthToken();
         if (!token) {
@@ -140,21 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const messagesPayload = await fetchMessages();
         if (messagesPayload) {
             supportUser = messagesPayload.support || supportUser;
+            currentUserId = messagesPayload.current_user_id;
             renderMessages(messagesPayload.messages || [], messagesPayload.current_user_id);
         }
 
-        if (!pollingId) {
-            pollingId = setInterval(async () => {
-                const freshStatus = await fetchStatus();
-                setStatus(freshStatus?.status || 'неизвестно');
-                const freshDocs = await fetchDocs();
-                renderDocs(freshDocs);
-                const freshMessages = await fetchMessages();
-                if (freshMessages) {
-                    renderMessages(freshMessages.messages || [], freshMessages.current_user_id);
-                }
-            }, 8000);
-        }
+        initEcho();
     };
 
     if (btnUpload && fileInput) {
