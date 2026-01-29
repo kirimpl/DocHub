@@ -72,6 +72,16 @@
                     </div>
                 </div>
 
+                <div id="pinnedMessageBar" class="pinned-bar hidden">
+                    <div class="pinned-content" id="pinnedContentClick">
+                        <div class="pinned-line"></div>
+                        <div class="pinned-info">
+                            <span class="pinned-label">Закрепленное сообщение</span>
+                            <span id="pinnedText" class="pinned-text">Текст сообщения...</span>
+                        </div>
+                    </div>
+                    <button id="unpinBtn" class="pinned-close" title="Открепить"><i class="fa-solid fa-xmark"></i></button>
+                </div>
                 <div id="searchBar" class="chat-search-bar hidden">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
                     <input type="text" id="searchInput" placeholder="Поиск по переписке...">
@@ -82,6 +92,17 @@
                 </div>
 
                 <div class="chat-input-area">
+
+                    <div id="replyPanel" class="reply-panel hidden">
+                        <div class="reply-content">
+                            <i class="fa-solid fa-reply reply-icon"></i>
+                            <div class="reply-info">
+                                <span class="reply-label">Ответ на сообщение</span>
+                                <span id="replyTextPreview" class="reply-text">Текст сообщения...</span>
+                            </div>
+                        </div>
+                        <button id="closeReplyBtn" class="close-reply"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
 
                     <div class="input-capsule">
                         <input type="file" id="hiddenFileInput" style="display: none;"
@@ -162,7 +183,8 @@
                 </div>
                 <div class="modal-search">
                     <label style="display:block; margin-bottom:5px; color:#75ABDF; font-size:12px;">Описание</label>
-                    <input type="text" id="groupDescInput" placeholder="Цель группы..." style="box-sizing: border-box;">
+                    <input type="text" id="groupDescInput" placeholder="Цель группы..."
+                        style="box-sizing: border-box;">
                 </div>
                 <button class="btn-primary" id="submitCreateGroup"
                     style="width:100%; background:#0056B3; color:white; border:none; margin-top:10px;">
@@ -171,7 +193,34 @@
             </div>
         </div>
     </div>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
+    <div id="msgContextMenu" class="ctx-menu hidden">
+        <ul class="ctx-list">
+            <li id="ctxReply"><i class="fa-solid fa-reply"></i> Ответить</li>
+            <li id="ctxCopy"><i class="fa-regular fa-copy"></i> Копировать</li>
+            <li id="ctxPin"><i class="fa-solid fa-thumbtack"></i> Закрепить</li>
+            <li id="ctxForward"><i class="fa-solid fa-share"></i> Переслать</li>
+            <hr>
+            <li id="ctxDelete" class="ctx-danger"><i class="fa-solid fa-trash"></i> Удалить</li>
+        </ul>
+    </div>
+
+    <div id="forwardModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Переслать сообщение</h3>
+                <span class="close-modal" id="closeForwardModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-search">
+                    <input type="text" id="forwardSearch" placeholder="Поиск чата...">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div class="contacts-list" id="forwardList">
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ asset('js/mess.js') }}"></script>
 @endsection

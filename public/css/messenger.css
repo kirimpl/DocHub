@@ -775,29 +775,62 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(0, 0, 0, 0.05);
-    padding: 10px 14px;
-    border-radius: 12px;
-    min-width: 150px;
+    background: transparent; /* Убираем фон, чтобы сливалось с сообщением */
+    padding: 2px 0; /* Минимальный отступ */
+    min-width: 180px; /* Чтобы длинные имена не сжимались слишком сильно */
+    max-width: 100%;
 }
 
-/* Цвет иконки файла зависит от того, кто отправил */
-.message-bubble.sent .msg-file {
-    background: rgba(255, 255, 255, 0.2);
-}
-
+/* Иконка файла (Круглая) */
 .msg-file-icon {
-    font-size: 24px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2); /* Полупрозрачный круг */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0; /* Чтобы иконка не сплющивалась */
+    cursor: pointer;
+    transition: 0.2s;
 }
 
+.msg-file-icon:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Информация о файле */
+.msg-file-details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Чтобы обрезать длинный текст */
+}
+
+/* Имя файла */
 .msg-file-name {
     font-size: 14px;
     font-weight: 600;
+    color: #fff;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
+    text-overflow: ellipsis; /* Троеточие, если имя длинное */
+    margin-bottom: 2px;
 }
+
+/* Размер файла */
+.msg-file-size {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Адаптация под входящие сообщения (темный фон) */
+.message-bubble.received .msg-file-icon {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
 /*  БИБЛИОТЕКА СМАЙЛИКОВ */
 .emoji-wrapper {
     position: absolute;
@@ -848,4 +881,284 @@ emoji-picker {
 /* Стилизация стандартного плеера */
 .msg-audio::-webkit-media-controls-panel {
     background-color: rgba(255, 255, 255, 0.8);
+}
+.reply-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 15px;
+    background-color: #f5f9fc; 
+    border-top: 1px solid #e1e8ed;
+    border-bottom: 1px solid #e1e8ed;
+    animation: slideUp 0.2s ease-out;
+}
+
+.reply-panel.hidden {
+    display: none;
+}
+
+.reply-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.reply-icon {
+    color: #0056B3;
+    font-size: 14px;
+}
+
+.reply-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.reply-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #0056B3;
+}
+
+.reply-text {
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.close-reply {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 16px;
+    padding: 5px;
+}
+
+.close-reply:hover {
+    color: #333;
+}
+
+/*  КОНТЕКСТНОЕ МЕНЮ (ПКМ)  */
+.ctx-menu {
+    position: fixed;
+    z-index: 9999;
+    background: white;
+    width: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    overflow: hidden;
+    border: 1px solid #eee;
+    animation: fadeIn 0.1s ease-out;
+}
+
+.ctx-menu.hidden {
+    display: none;
+}
+
+.ctx-list {
+    list-style: none;
+    margin: 0;
+    padding: 5px 0;
+}
+
+.ctx-list li {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.1s;
+}
+
+.ctx-list li:hover {
+    background-color: #f0f2f5;
+}
+
+.ctx-list li i {
+    width: 16px;
+    color: #666;
+    text-align: center;
+}
+
+.ctx-list hr {
+    border: 0;
+    height: 1px;
+    background: #eee;
+    margin: 5px 0;
+}
+
+.ctx-list li.ctx-danger {
+    color: #ff4d4d;
+}
+.ctx-list li.ctx-danger:hover {
+    background-color: #fff0f0;
+}
+.ctx-list li.ctx-danger i {
+    color: #ff4d4d;
+}
+
+/* Анимации */
+@keyframes slideUp {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.reply-panel {
+    border-left: 3px solid var(--accent-blue); 
+    background: #fff;
+    margin: 0 20px 0 20px; 
+    border-radius: 8px 8px 0 0;
+    padding: 8px 15px;
+}
+
+.reply-content {
+    align-items: flex-start; 
+}
+
+.reply-label {
+    color: var(--accent-blue);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* 2. Внутри самого сообщения  */
+.msg-quote {
+    background: rgba(0, 0, 0, 0.05);
+    border-left: 3px solid #fff; 
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+/* Если сообщение мое (синее), цитата выглядит иначе */
+.message-bubble.sent .msg-quote {
+    background: rgba(255, 255, 255, 0.2);
+    border-left-color: rgba(255, 255, 255, 0.8);
+    color: white;
+}
+
+.quote-name {
+    font-weight: bold;
+    font-size: 11px;
+    margin-bottom: 2px;
+    opacity: 0.9;
+}
+
+.quote-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.8;
+}
+
+/*  СТИЛИ ПЕРЕСЛАННОГО СООБЩЕНИЯ  */
+.forwarded-tag {
+    font-size: 11px;
+    color: #75ABDF; 
+    margin-bottom: 4px;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.message-bubble.sent .forwarded-tag {
+    color: rgba(255, 255, 255, 0.8);
+}
+/* --- ЗАКРЕПЛЕННОЕ СООБЩЕНИЯ (Telegram Style) --- */
+.pinned-bar {
+    height: 50px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #F0F2F5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 90;
+    animation: slideDown 0.2s ease-out;
+}
+
+.pinned-bar.hidden {
+    display: none;
+}
+
+.pinned-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-grow: 1;
+    height: 100%;
+}
+
+/* Синяя вертикальная полоска */
+.pinned-line {
+    width: 2px;
+    height: 34px;
+    background-color: var(--accent-blue);
+    border-radius: 2px;
+}
+
+.pinned-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.pinned-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    margin-bottom: 2px;
+}
+
+.pinned-text {
+    font-size: 13px;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+}
+
+.pinned-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #8DA9C4;
+    font-size: 18px;
+    padding: 8px;
+    border-radius: 50%;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pinned-close:hover {
+    background-color: #F0F2F5;
+    color: #333;
+}
+
+/* Иконка "скрепки" на самом сообщении  */
+.pinned-icon-indicator {
+    font-size: 10px;
+    color: var(--accent-blue);
+    margin-left: 5px;
 }
