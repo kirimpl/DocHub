@@ -78,6 +78,11 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     // verification
     Route::get('verification/status', [VerificationController::class, 'status']);
     Route::get('verification/support', [VerificationController::class, 'support']);
+    Route::get('verification/support/messages', [VerificationController::class, 'supportMessages']);
+    Route::post('verification/support/messages', [VerificationController::class, 'sendSupportMessage']);
+    Route::get('verification/support/threads', [VerificationController::class, 'supportThreads']);
+    Route::get('verification/support/threads/{userId}', [VerificationController::class, 'supportThreadMessages'])->whereNumber('userId');
+    Route::post('verification/support/threads/{userId}', [VerificationController::class, 'sendSupportReply'])->whereNumber('userId');
     Route::get('verification/documents', [VerificationController::class, 'documents']);
     Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
     Route::get('verification/pending', [VerificationController::class, 'pending']);
@@ -213,5 +218,3 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     Route::post('voice-rooms/{id}/invites/{inviteId}/accept', [VoiceRoomController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
     Route::post('voice-rooms/{id}/invites/{inviteId}/decline', [VoiceRoomController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
 });
-
-

@@ -4,71 +4,55 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
-<div class="main-app-container">
-    <aside class="sidebar-nav">
-        <div class="brand">DocHub</div>
-        <a href="/news" class="nav-item"><i class="fa-solid fa-newspaper"></i></a>
-        <a href="/profile" class="nav-item"><i class="fa-solid fa-user"></i></a>
-        <a href="/friends" class="nav-item"><i class="fa-solid fa-users"></i></a>
-        <a href="/messages" class="nav-item"><i class="fa-solid fa-comment"></i></a>
-        <a href="/events" class="nav-item"><i class="fa-solid fa-calendar"></i></a>
-        <a href="/verification" class="nav-item active"><i class="fa-solid fa-shield"></i></a>
-        <div class="settings-icon"><i class="fa-solid fa-gear"></i></div>
-    </aside>
+<main class="posts-section">
+    <div class="card" style="padding: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <h2 style="margin: 0;">Верификация врача</h2>
+            <button id="btnHelpToggle" class="btn-secondary">Подсказка</button>
+        </div>
 
-    <main class="posts-section">
-        <div class="card" style="padding: 24px;">
-            <h2 style="margin: 0 0 16px;">Верификация врача</h2>
-            <p style="margin: 0 0 20px; color: #6b7280;">
+        <div id="helpPanel" style="display: none; margin-top: 16px; background: #f8fafc; border-radius: 12px; padding: 16px;">
+            <p style="margin: 0 0 12px; color: #6b7280;">
                 Для доступа к функциям сайта подтвердите свои данные. Отправьте документы в чат поддержки.
             </p>
-
-            <div class="verification-steps" style="display: grid; gap: 12px;">
-                <div class="step-item">
-                    <strong>Шаг 1.</strong> Откройте чат поддержки.
-                </div>
-                <div class="step-item">
-                    <strong>Шаг 2.</strong> Отправьте фото документов (ФИО, место работы).
-                </div>
-                <div class="step-item">
-                    <strong>Шаг 3.</strong> Дождитесь проверки статуса администратором.
-                </div>
-            </div>
-
-            <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-                <button id="btnOpenSupport" class="btn-primary">Открыть чат поддержки</button>
-                <button id="btnUploadDocs" class="btn-secondary">Отправить документы</button>
-            </div>
-
-            <div id="verificationStatus" style="margin-top: 20px; color: #374151;">
-                Статус: <strong id="verificationStatusLabel">загрузка...</strong>
+            <div style="display: grid; gap: 8px;">
+                <div><strong>Шаг 1.</strong> Откройте чат поддержки ниже.</div>
+                <div><strong>Шаг 2.</strong> Отправьте фото документов (ФИО, место работы).</div>
+                <div><strong>Шаг 3.</strong> Дождитесь проверки статуса администратором.</div>
             </div>
         </div>
-    </main>
 
-    <aside class="info-section">
-        <div class="details-card">
-            <h3>Подсказка</h3>
-            <p style="color: #6b7280;">
-                После проверки появится синяя галочка возле профиля и откроется доступ к постам организации.
-            </p>
+        <div style="margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <button id="btnUploadDocs" class="btn-secondary">Отправить документы</button>
         </div>
 
-        <div id="adminPanel" class="details-card" style="display: none;">
-            <h3>Админ панель</h3>
-            <p style="color: #6b7280; margin-bottom: 12px;">Заявки на верификацию</p>
-            <div id="adminRequestsList">
-                <p style="color: #999;">Загрузка заявок...</p>
+        <div id="verificationStatus" style="margin-top: 16px; color: #374151;">
+            Статус: <strong id="verificationStatusLabel">загрузка...</strong>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="margin: 0 0 12px;">Чат поддержки</h3>
+            <div id="supportChatBox" style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #ffffff;">
+                <div id="supportChatMessages" style="max-height: 280px; overflow-y: auto; display: grid; gap: 10px;"></div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <input id="supportChatInput" type="text" class="form-input" placeholder="Введите сообщение..." style="flex: 1;">
+                    <button id="btnSupportSend" class="btn-primary">Отправить</button>
+                </div>
+                <div style="margin-top: 10px; color: #6b7280; font-size: 12px;">
+                    Документы отправляйте через кнопку «Отправить документы».
+                </div>
             </div>
         </div>
-    </aside>
+
+        <div style="margin-top: 20px;">
+            <h3 style="margin: 0 0 10px;">Отправленные документы</h3>
+            <div id="verificationDocsList" style="display: grid; gap: 8px; color: #6b7280;"></div>
+        </div>
+    </div>
+</main>
+
+<aside class="info-section"></aside>
 </div>
 
 <input type="file" id="verificationFileInput" accept="image/*,application/pdf" style="display:none;">
-
-<script>
-    window.userData = @json(auth()->user());
-</script>
-
-<script src="{{ asset('js/verification.js') }}"></script>
 @endsection

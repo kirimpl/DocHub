@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChatGroup;
+use App\Models\Message;
 use App\Models\User;
 use App\Models\VerificationDocument;
 use Illuminate\Http\Request;
@@ -22,11 +23,176 @@ class VerificationController extends Controller
 
     public function support(Request $request)
     {
-        $support = User::where('global_role', 'admin')
-            ->select('id', 'name', 'avatar', 'email')
-            ->first();
-
+        $support = $this->getSupportUser();
         return response()->json(['support' => $support]);
+    }
+
+    public function supportMessages(Request $request)
+    {
+        $user = $request->user();
+        $support = $this->getSupportUser();
+        if (!$support) {
+            return response()->json(['message' => 'Support not available.'], 404);
+        }
+
+        $messages = Message::query()
+            ->where(function ($query) use ($user, $support) {
+                $query->where('sender_id', $user->id)
+                    ->where('recipient_id', $support->id);
+            })
+            ->orWhere(function ($query) use ($user, $support) {
+                $query->where('sender_id', $support->id)
+                    ->where('recipient_id', $user->id);
+            })
+            ->orderBy('created_at')
+            ->get(['id', 'sender_id', 'recipient_id', 'body', 'created_at']);
+
+        return response()->json([
+            'support' => $support,
+            'current_user_id' => $user->id,
+            'messages' => $messages,
+        ]);
+    }
+
+    public function sendSupportMessage(Request $request)
+    {
+        $data = $request->validate([
+            'body' => 'required|string|max:2000',
+        ]);
+
+        $user = $request->user();
+        $support = $this->getSupportUser();
+        if (!$support) {
+            return response()->json(['message' => 'Support not available.'], 404);
+        }
+
+        $message = Message::create([
+            'sender_id' => $user->id,
+            'recipient_id' => $support->id,
+            'body' => $data['body'],
+        ]);
+
+        return response()->json($message, 201);
+    }
+
+    public function supportThreads(Request $request)
+    {
+        $admin = $request->user();
+        if (!$admin->isGlobalAdmin()) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        $support = $this->getSupportUser();
+        if (!$support) {
+            return response()->json([]);
+        }
+
+        $messages = Message::query()
+            ->where(function ($query) use ($support) {
+                $query->where('sender_id', $support->id)
+                    ->orWhere('recipient_id', $support->id);
+            })
+            ->orderByDesc('created_at')
+            ->get(['sender_id', 'recipient_id', 'body', 'created_at']);
+
+        $threads = [];
+        foreach ($messages as $message) {
+            $otherId = $message->sender_id === $support->id
+                ? $message->recipient_id
+                : $message->sender_id;
+
+            if (!$otherId || isset($threads[$otherId])) {
+                continue;
+            }
+
+            $threads[$otherId] = [
+                'user_id' => $otherId,
+                'last_message' => $message->body,
+                'last_message_at' => $message->created_at,
+            ];
+        }
+
+        if (!$threads) {
+            return response()->json([]);
+        }
+
+        $users = User::whereIn('id', array_keys($threads))
+            ->get(['id', 'name', 'email'])
+            ->keyBy('id');
+
+        $payload = [];
+        foreach ($threads as $userId => $thread) {
+            $user = $users->get($userId);
+            $payload[] = [
+                'user_id' => $userId,
+                'name' => $user?->name,
+                'email' => $user?->email,
+                'last_message' => $thread['last_message'],
+                'last_message_at' => $thread['last_message_at'],
+            ];
+        }
+
+        return response()->json($payload);
+    }
+
+    public function supportThreadMessages(Request $request, $userId)
+    {
+        $admin = $request->user();
+        if (!$admin->isGlobalAdmin()) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        $support = $this->getSupportUser();
+        if (!$support) {
+            return response()->json(['message' => 'Support not available.'], 404);
+        }
+
+        $user = User::findOrFail($userId);
+
+        $messages = Message::query()
+            ->where(function ($query) use ($user, $support) {
+                $query->where('sender_id', $user->id)
+                    ->where('recipient_id', $support->id);
+            })
+            ->orWhere(function ($query) use ($user, $support) {
+                $query->where('sender_id', $support->id)
+                    ->where('recipient_id', $user->id);
+            })
+            ->orderBy('created_at')
+            ->get(['id', 'sender_id', 'recipient_id', 'body', 'created_at']);
+
+        return response()->json([
+            'user' => $user->only(['id', 'name', 'email']),
+            'current_user_id' => $support->id,
+            'messages' => $messages,
+        ]);
+    }
+
+    public function sendSupportReply(Request $request, $userId)
+    {
+        $admin = $request->user();
+        if (!$admin->isGlobalAdmin()) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        $data = $request->validate([
+            'body' => 'required|string|max:2000',
+        ]);
+
+        $support = $this->getSupportUser();
+        if (!$support) {
+            return response()->json(['message' => 'Support not available.'], 404);
+        }
+
+        $user = User::findOrFail($userId);
+
+        $message = Message::create([
+            'sender_id' => $support->id,
+            'recipient_id' => $user->id,
+            'body' => $data['body'],
+        ]);
+
+        return response()->json($message, 201);
     }
 
     public function documents(Request $request)
@@ -194,5 +360,12 @@ class VerificationController extends Controller
         foreach ($groups as $group) {
             $group->members()->detach($user->id);
         }
+    }
+
+    private function getSupportUser(): ?User
+    {
+        return User::where('global_role', 'admin')
+            ->select('id', 'name', 'avatar', 'email')
+            ->first();
     }
 }
