@@ -122,7 +122,7 @@
                         <h3>Присоединитесь к лекциям</h3>
                         <p>Проводимые в данный момент лекции</p>
                     </div>
-                    <button class="btn-more">⌄</button>
+                    <button class="btn-more">⌄</button> 
                 </div>
                 <div class="lectures-list">
                     <div class="lecture-item">
