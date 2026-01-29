@@ -146,30 +146,62 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.ok;
     };
 
-    const initEcho = () => {
-        if (echoReady || !currentUserId) return;
-        if (!window.Echo || !window.Pusher) return;
-        const token = getAuthToken();
-        if (!token) return;
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: 'h81dgta6jqvb3e3mkasl',
-            wsHost: window.location.hostname,
-            wsPort: 8080,
-            forceTLS: false,
-            encrypted: false,
-            disableStats: true,
-            enabledTransports: ['ws', 'wss'],
-            auth: { headers: { Authorization: `Bearer ${token}` } },
-        });
-        window.Echo.private(`messages.${currentUserId}`).listen('.MessageSent', (event) => {
-            const msg = event?.message;
+    let echoRetryCount = 0;
+    let pusherClient = null;
+
+    const bindSupportEvents = (handler) => {
+        handler('MessageSent', (event) => {
+            const msg = event?.message || event;
             if (!msg) return;
             if (!supportUser) return;
             if (msg.sender_id !== supportUser.id && msg.recipient_id !== supportUser.id) return;
             appendMessage(msg);
         });
-        echoReady = true;
+        handler('SupportTicketResolved', (event) => {
+            if (!event || event.user_id !== currentUserId) return;
+            if (messagesBox) {
+                messagesBox.innerHTML = '<div style="color:#9ca3af;">Нет сообщений.</div>';
+            }
+        });
+    };
+
+    const initEcho = () => {
+        if (echoReady || !currentUserId) return;
+        if (!window.Pusher) return;
+
+        if (window.Echo && typeof window.Echo.private === 'function') {
+            echoReady = true;
+            const channel = window.Echo.private(`messages.${currentUserId}`);
+            bindSupportEvents((eventName, cb) => channel.listen(`.${eventName}`, cb));
+            return;
+        }
+
+        if (!pusherClient) {
+            const token = getAuthToken();
+            if (!token) return;
+            const echoKey = window.ECHO_KEY || 'h81dgta6jqvb3e3mkasl';
+            pusherClient = new window.Pusher(echoKey, {
+                wsHost: window.location.hostname,
+                wsPort: 8080,
+                forceTLS: false,
+                encrypted: false,
+                enabledTransports: ['ws', 'wss'],
+                authEndpoint: '/broadcasting/auth',
+                auth: { headers: { Authorization: `Bearer ${token}` } },
+            });
+        }
+
+        if (pusherClient) {
+            const channel = pusherClient.subscribe(`private-messages.${currentUserId}`);
+            bindSupportEvents((eventName, cb) => channel.bind(eventName, cb));
+            echoReady = true;
+            return;
+        }
+
+        if (echoRetryCount < 10) {
+            echoRetryCount += 1;
+            setTimeout(initEcho, 500);
+        }
     };
 
     const init = async () => {
@@ -223,17 +255,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (btnSend && messageInput) {
+        let sending = false;
         btnSend.addEventListener('click', async () => {
+            if (sending) return;
             const text = messageInput.value.trim();
             if (!text) return;
+            sending = true;
+            btnSend.disabled = true;
+            btnSend.textContent = 'Отправка...';
+            const optimistic = {
+                sender_id: currentUserId,
+                recipient_id: supportUser?.id,
+                body: text,
+                created_at: new Date().toISOString(),
+            };
+            appendMessage(optimistic);
+            messageInput.value = '';
             const ok = await sendMessage(text);
-            if (ok) {
-                messageInput.value = '';
-                const messagesPayload = await fetchMessages();
-                if (messagesPayload) {
-                    renderMessages(messagesPayload.messages || [], messagesPayload.current_user_id);
-                }
+            if (!ok) {
+                alert('Не удалось отправить сообщение.');
             }
+            btnSend.disabled = false;
+            btnSend.textContent = 'Отправить';
+            sending = false;
         });
         messageInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {

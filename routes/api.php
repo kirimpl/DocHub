@@ -42,6 +42,24 @@ Route::get('directory/educations', [DirectoryController::class, 'educations']);
 Route::get('directory/positions', [DirectoryController::class, 'positions']);
 Route::get('directory/categories', [DirectoryController::class, 'categories']);
 
+Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
+    // verification (available for pending users)
+    Route::get('verification/status', [VerificationController::class, 'status']);
+    Route::get('verification/support', [VerificationController::class, 'support']);
+    Route::get('verification/support/messages', [VerificationController::class, 'supportMessages']);
+    Route::post('verification/support/messages', [VerificationController::class, 'sendSupportMessage']);
+    Route::get('verification/support/threads', [VerificationController::class, 'supportThreads']);
+    Route::get('verification/support/threads/{userId}', [VerificationController::class, 'supportThreadMessages'])->whereNumber('userId');
+    Route::post('verification/support/threads/{userId}', [VerificationController::class, 'sendSupportReply'])->whereNumber('userId');
+    Route::post('verification/support/threads/{userId}/resolve', [VerificationController::class, 'resolveSupportTicket'])->whereNumber('userId');
+    Route::get('verification/documents', [VerificationController::class, 'documents']);
+    Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
+    Route::get('verification/pending', [VerificationController::class, 'pending']);
+    Route::get('verification/approved', [VerificationController::class, 'approved']);
+    Route::post('verification/{id}/approve', [VerificationController::class, 'approve'])->whereNumber('id');
+    Route::post('verification/{id}/reject', [VerificationController::class, 'reject'])->whereNumber('id');
+});
+
 Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     // users
@@ -74,20 +92,6 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     Route::get('notifications/subscribe', [NotificationController::class, 'subscribe']);
     Route::post('notifications/{id}/read', [NotificationController::class, 'markRead']);
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead']);
-
-    // verification
-    Route::get('verification/status', [VerificationController::class, 'status']);
-    Route::get('verification/support', [VerificationController::class, 'support']);
-    Route::get('verification/support/messages', [VerificationController::class, 'supportMessages']);
-    Route::post('verification/support/messages', [VerificationController::class, 'sendSupportMessage']);
-    Route::get('verification/support/threads', [VerificationController::class, 'supportThreads']);
-    Route::get('verification/support/threads/{userId}', [VerificationController::class, 'supportThreadMessages'])->whereNumber('userId');
-    Route::post('verification/support/threads/{userId}', [VerificationController::class, 'sendSupportReply'])->whereNumber('userId');
-    Route::get('verification/documents', [VerificationController::class, 'documents']);
-    Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
-    Route::get('verification/pending', [VerificationController::class, 'pending']);
-    Route::post('verification/{id}/approve', [VerificationController::class, 'approve'])->whereNumber('id');
-    Route::post('verification/{id}/reject', [VerificationController::class, 'reject'])->whereNumber('id');
 
     // AI
     Route::post('ai/improve', [AiController::class, 'improve']);

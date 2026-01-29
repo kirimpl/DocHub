@@ -12,12 +12,23 @@
         </div>
     </div>
 
+    <div class="card" style="padding: 24px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 16px;">Одобренные заявки</h2>
+        <div id="verificationApprovedList">
+            <p style="color:#999;">Загрузка...</p>
+        </div>
+    </div>
+
     <div class="card" style="padding: 24px;">
         <h2 style="margin: 0 0 16px;">Поддержка: обращения пользователей</h2>
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
             <div style="border: 1px solid #eef2f7; border-radius: 12px; padding: 12px; background: #fff;">
-                <div style="font-weight: 600; margin-bottom: 8px;">Список обращений</div>
+                <div style="font-weight: 600; margin-bottom: 8px;">Открытые обращения</div>
                 <div id="supportThreadsList" style="display: grid; gap: 8px; color: #6b7280;">
+                    <div>Загрузка...</div>
+                </div>
+                <div style="font-weight: 600; margin: 16px 0 8px;">Решенные обращения</div>
+                <div id="supportResolvedList" style="display: grid; gap: 8px; color: #6b7280;">
                     <div>Загрузка...</div>
                 </div>
             </div>
