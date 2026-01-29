@@ -20,6 +20,9 @@ Route::get('/profile', function () {
 Route::get('/verification', function () {
     return view('verification');
 });
+Route::get('/verification/admin', function () {
+    return view('verification-admin');
+});
 Route::get('/support', function () {
     return view('verification');
 });

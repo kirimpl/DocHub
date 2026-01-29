@@ -136,13 +136,16 @@
                 <h3 class="footer-heading">Помощь</h3>
                 <ul class="footer-links">
                     <li><a href="#">F.A.Q.</a></li>
-                    <li><a href="/support">Поддержка</a></li>
+                    <li><a href="#" id="supportLink">Поддержка</a></li>
                     <li><a href="#">Политика конфиденциальности</a></li>
                 </ul>
             </div>
 
         </div>
     </footer>
+    <script src="{{ asset('js/admin.js') }}" defer></script>
+    <script src="{{ asset('js/verification.js') }}" defer></script>
+    <script src="{{ asset('js/verification-admin.js') }}" defer></script>
     <script src="{{ asset('js/feed.js') }}" defer></script>
 </body>
 

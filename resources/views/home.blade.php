@@ -105,12 +105,10 @@
                         </svg></span>
                     <span class="nav-text">Записки</span>
                 </a>
-                @if(auth()->check() && auth()->user()->global_role === 'admin')
-                    <a href="/verification" class="nav-item">
-                        <span class="nav-icon"><i class="fa-solid fa-shield"></i></span>
-                        <span class="nav-text">Админ панель</span>
-                    </a>
-                @endif
+                <a href="/verification/admin" class="nav-item" id="adminPanelLink" style="display: none;">
+                    <span class="nav-icon"><i class="fa-solid fa-shield"></i></span>
+                    <span class="nav-text">Админ панель</span>
+                </a>
             </nav>
         </aside>
 
