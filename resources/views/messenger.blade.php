@@ -4,20 +4,32 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link rel="stylesheet" href="{{ asset('css/messenger.css') }}">
-
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.js"></script>
+    <script>
+        window.Pusher = Pusher;
+        window.REVERB_CONFIG = {
+            key: "{{ env('VITE_REVERB_APP_KEY') }}",
+            host: "{{ env('VITE_REVERB_HOST', window . location . hostname) }}",
+            port: {{ env('VITE_REVERB_PORT', 8080) }},
+            scheme: "{{ env('VITE_REVERB_SCHEME', 'http') }}"
+        };
+    </script>
     <div class="messenger-container">
 
         <aside class="messenger-sidebar">
 
             <div class="card group-section">
                 <h3 class="section-title">Группы</h3>
-                <div class="list-container scrollable" id="groupsListContainer"></div>
+                <div class="list-container scrollable" id="groupsListContainer">
+                </div>
                 <button class="btn-create" id="btnCreateGroup">Создать группу</button>
             </div>
 
             <div class="card message-section">
                 <h3 class="section-title">Сообщения</h3>
-                <div class="list-container scrollable" id="chatsListContainer"></div>
+                <div class="list-container scrollable" id="chatsListContainer">
+                </div>
                 <button class="btn-create trigger-modal">
                     <i class="fa-solid fa-plus"></i> Создать чат
                 </button>
@@ -62,7 +74,7 @@
                                     <i class="fa-solid fa-magnifying-glass"></i> Поиск
                                 </div>
                                 <div class="dropdown-item" id="menuClearBtn">
-                                    <i class="fa-solid fa-eraser"></i> Очистить чат
+                                    <i class="fa-solid fa-eraser"></i> Очистить чат (Local)
                                 </div>
                                 <div class="dropdown-item danger" id="menuDeleteBtn">
                                     <i class="fa-solid fa-trash"></i> Удалить чат
@@ -82,6 +94,7 @@
                     </div>
                     <button id="unpinBtn" class="pinned-close" title="Открепить"><i class="fa-solid fa-xmark"></i></button>
                 </div>
+
                 <div id="searchBar" class="chat-search-bar hidden">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
                     <input type="text" id="searchInput" placeholder="Поиск по переписке...">
@@ -106,7 +119,7 @@
 
                     <div class="input-capsule">
                         <input type="file" id="hiddenFileInput" style="display: none;"
-                            accept="image/*, .pdf, .doc, .docx, .txt">
+                            accept="image/*, .pdf, .doc, .docx, .txt, audio/*">
 
                         <button class="icon-btn attach-btn" id="attachBtn" title="Прикрепить файл">
                             <i class="fa-solid fa-paperclip"></i>
@@ -153,15 +166,12 @@
                 <div class="filters-grid">
                     <select id="filterHospital">
                         <option value="">Все больницы</option>
-                        <option value="ГКБ №1">ГКБ №1</option>
                     </select>
                     <select id="filterDept">
                         <option value="">Все отделения</option>
-                        <option value="Хирургия">Хирургия</option>
                     </select>
                     <select id="filterRole">
                         <option value="">Все должности</option>
-                        <option value="Врач">Врач</option>
                     </select>
                 </div>
                 <div class="contacts-list" id="contactsList"></div>
@@ -183,8 +193,7 @@
                 </div>
                 <div class="modal-search">
                     <label style="display:block; margin-bottom:5px; color:#75ABDF; font-size:12px;">Описание</label>
-                    <input type="text" id="groupDescInput" placeholder="Цель группы..."
-                        style="box-sizing: border-box;">
+                    <input type="text" id="groupDescInput" placeholder="Цель группы..." style="box-sizing: border-box;">
                 </div>
                 <button class="btn-primary" id="submitCreateGroup"
                     style="width:100%; background:#0056B3; color:white; border:none; margin-top:10px;">
