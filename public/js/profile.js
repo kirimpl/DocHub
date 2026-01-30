@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     const infoGrid = document.getElementById('userDataGrid');
     const postsList = document.getElementById('postsList');
+    const avatarImg = document.getElementById('profileAvatar');
+    const avatarInput = document.getElementById('avatarInput');
+    const coverImg = document.getElementById('profileCover');
+    const coverInput = document.getElementById('coverInput');
 
     const getAuthToken = () => localStorage.getItem('auth_token');
 
@@ -15,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameEl = document.getElementById('profileName');
         const sexAgeEl = document.getElementById('profileSexAge');
         const usernameEl = document.getElementById('profileUsername');
-        const avatarEl = document.getElementById('profileAvatar');
 
         const name = user.name || 'Гость';
         const username = user.username || 'doctor';
@@ -37,7 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nameEl) nameEl.textContent = name;
         if (usernameEl) usernameEl.textContent = `@${username}`;
         if (sexAgeEl) sexAgeEl.textContent = `${sexLabel}, ${ageLabel} лет`;
-        if (avatarEl && user.avatar) avatarEl.src = user.avatar;
+
+        if (avatarImg && user.avatar) avatarImg.src = user.avatar;
+        if (coverImg && user.cover_image) coverImg.style.backgroundImage = `url(${user.cover_image})`;
     };
 
     const renderInfo = (user) => {
@@ -122,9 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchCurrentUser = async () => {
-        if (window.userData && window.userData.id) {
-            return window.userData;
-        }
+        if (window.userData && window.userData.id) return window.userData;
         const token = getAuthToken();
         if (!token) return {};
         const response = await fetch(`/api/me`, {
@@ -150,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return response.json();
     };
 
+    // --- Загрузка данных пользователя и постов ---
     (async () => {
         const user = await fetchCurrentUser();
         renderHeader(user || {});
@@ -157,4 +161,70 @@ document.addEventListener('DOMContentLoaded', () => {
         const posts = await fetchMyPosts();
         renderPosts(user || {}, posts || []);
     })();
+
+    // --- Смена аватара ---
+    if (avatarImg && avatarInput) {
+        avatarImg.addEventListener('click', () => avatarInput.click());
+
+        avatarInput.addEventListener('change', async () => {
+            const file = avatarInput.files[0];
+            if (!file) return;
+            const token = getAuthToken();
+            if (!token) return alert('Нет авторизации');
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const response = await fetch('/api/profile/avatar', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json'
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                alert('Ошибка загрузки аватарки');
+                return;
+            }
+
+            const data = await response.json();
+            avatarImg.src = data.avatar + '?t=' + Date.now();
+        });
+    }
+
+    // --- Смена обложки ---
+    if (coverImg && coverInput) {
+        coverImg.addEventListener('click', () => coverInput.click());
+
+        coverInput.addEventListener('change', async () => {
+            const file = coverInput.files[0];
+            if (!file) return;
+
+            const token = getAuthToken();
+            if (!token) return alert('Нет авторизации');
+
+            const formData = new FormData();
+            formData.append('cover', file);
+
+            const response = await fetch('/api/profile/cover', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                alert('Ошибка загрузки обложки: ' + (err.error || response.statusText));
+                return;
+            }
+
+            const data = await response.json();
+            coverImg.style.backgroundImage = `url(${data.cover_image}?t=${Date.now()})`;
+        });
+    }
 });

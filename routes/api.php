@@ -24,6 +24,7 @@ use App\Http\Controllers\API\VoiceRoomController;
 use App\Http\Controllers\API\VerificationController;
 use App\Http\Controllers\API\AiController;
 use App\Http\Controllers\API\DirectoryController;
+use App\Http\Controllers\API\ProfileController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -223,4 +224,10 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     Route::post('voice-rooms/{id}/invite', [VoiceRoomController::class, 'invite'])->whereNumber('id');
     Route::post('voice-rooms/{id}/invites/{inviteId}/accept', [VoiceRoomController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
     Route::post('voice-rooms/{id}/invites/{inviteId}/decline', [VoiceRoomController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
+    //avatar
+    
+
+    Route::post('profile/cover', [ProfileController::class, 'updateCover'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
 });
+    

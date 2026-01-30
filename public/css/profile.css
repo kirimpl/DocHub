@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Geologica:wght@500;800&display=swap");
+
 :root {
     --bg-main: #D9EEFF;
     --text-main: #004080;
@@ -26,11 +28,10 @@ body {
     box-sizing: border-box;
 }
 
-
 .sidebar-nav {
     width: 80px;
     height: 708px;
-    background: white;
+    background: #ffffff;
     border-radius: 20px;
     border: 1px solid #eee;
     display: flex;
@@ -58,13 +59,12 @@ body {
     cursor: pointer;
 }
 
-
 .posts-section {
     width: 680px;
 }
 
 .post-card-style {
-    background: white;
+    background: #ffffff;
     border-radius: 25px;
     overflow: hidden;
     box-shadow: 0 5px 15px var(--shadow-light);
@@ -87,7 +87,6 @@ body {
     line-height: 1.5;
 }
 
-
 .info-section {
     width: 380px;
     display: flex;
@@ -96,17 +95,16 @@ body {
 }
 
 .profile-card, .details-card {
-    background: white;
+    background: #ffffff;
     border-radius: 30px;
     box-shadow: 0 10px 40px var(--shadow-light);
     overflow: hidden;
 }
 
-
 .profile-header {
     position: relative;
     height: 140px;
-    background: #8ABCEB;
+    background: var(--accent);
 }
 
 .profile-avatar {
@@ -120,6 +118,7 @@ body {
     border: 6px solid #fff;
     overflow: hidden;
     background: #eee;
+    cursor: pointer;
 }
 
 .profile-avatar img {
@@ -171,8 +170,9 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #0056A6, #007BFF);
-    color: white;
+    box-shadow: 0 10px 40px var(--shadow-light);
+    background:white;
+    color: var(--accent);
     border: none;
     border-radius: 14px;
     padding: 10px 18px;
@@ -197,7 +197,6 @@ body {
 .btn-icon:hover {
     background: #d9eeff;
 }
-
 
 .details-card {
     padding: 24px 20px;
@@ -262,7 +261,7 @@ body {
 }
 
 .contacts-title {
-   margin-top: 15px;
+    margin-top: 15px;
 }
 
 .underline-link {
@@ -271,3 +270,19 @@ body {
     background: #e6eef6;
     margin: 2px auto 2px;
 }
+
+.profile-avatar {
+    cursor: pointer;
+}
+.profile-cover {
+    width: 100%;
+    height: 140px;
+    background: var(--accent);
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    position: relative;
+    cursor: pointer;
+    background-size: cover;
+    background-position: center;
+}
+

@@ -15,57 +15,47 @@
 
     <main class="posts-section">
         <div id="postsList">
-            <p style="text-align: center; color: #8abceb; padding: 20px;">Загрузка ленты...</p>
+            <p style="text-align: center; color: var(--accent); padding: 20px;">Загрузка ленты...</p>
         </div>
     </main>
 
     <aside class="info-section">
         <div class="profile-card">
-    <div class="profile-header">
-        <div class="profile-cover"></div>
-
-        <div class="profile-avatar">
-            <img id="profileAvatar" src="{{ asset('images/default-avatar.png') }}">
-        </div>
+        <div class="profile-header">
+    <div class="profile-cover" id="profileCover"></div>
+    <div class="profile-avatar">
+        <img id="profileAvatar" src="{{ asset('images/avatar.png') }}">
+        <input type="file" id="avatarInput" accept="image/*" hidden>
     </div>
-
-    <div class="profile-body">
-        <span class="profile-username" id="profileUsername">@doctor</span>
-
-        <div class="profile-name-row">
-            <h2 id="profileName">Гость</h2>
-            <i class="fa-solid fa-circle-check verified"></i>
-        </div>
-
-        <p class="profile-meta" id="profileSexAge">
-            Мужчина, 25 лет
-        </p>
-
-        <div class="profile-actions">
-            <button class="btn-primary">Редактировать</button>
-            <button class="btn-icon">
-                <i class="fa-solid fa-share"></i>
-            </button>
-        </div>
-    </div>
+    <!-- input для обложки -->
+    <input type="file" id="coverInput" accept="image/*" hidden>
 </div>
 
 
-       <div class="details-card">
-    <h3 class="card-title">Информация</h3>
-    <div class="card-divider"></div>
+            <div class="profile-body">
+                <span class="profile-username" id="profileUsername">@doctor</span>
+                <div class="profile-name-row">
+                    <h2 id="profileName">Гость</h2>
+                    <i class="fa-solid fa-circle-check verified"></i>
+                </div>
+                <p class="profile-meta" id="profileSexAge">Мужчина, 25 лет</p>
 
-    <div id="userDataGrid" class="details-grid">
-        <p style="color: #999;">Загрузка данных...</p>
-    </div>
-</div>
+                <div class="profile-actions">
+                    <button class="btn-primary">Редактировать</button>
+                    <button class="btn-icon"><i class="fa-solid fa-share"></i></button>
+                </div>
+            </div>
+        </div>
 
-
+        <div class="details-card">
+            <h3 class="card-title">Информация</h3>
+            <div class="card-divider"></div>
+            <div id="userDataGrid" class="details-grid">
+                <p style="color: #999;">Загрузка данных...</p>
+            </div>
+        </div>
     </aside>
 </div>
 
-
-
 <script src="{{ asset('js/profile.js') }}"></script>
-
 @endsection
