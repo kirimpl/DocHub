@@ -10,7 +10,7 @@
         window.Pusher = Pusher;
         window.REVERB_CONFIG = {
             key: "{{ env('VITE_REVERB_APP_KEY') }}",
-            host: "{{ env('VITE_REVERB_HOST', window . location . hostname) }}",
+            hhost: "{{ env('VITE_REVERB_HOST') }}" || window.location.hostname,
             port: {{ env('VITE_REVERB_PORT', 8080) }},
             scheme: "{{ env('VITE_REVERB_SCHEME', 'http') }}"
         };
