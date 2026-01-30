@@ -1,5 +1,9 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const API_URL = "http://localhost:8000/api";
+    const REVERB_HOST = "localhost";
+    const REVERB_PORT = 8080;
+    const REVERB_APP_KEY = "my_app_key";
+
     const token = localStorage.getItem("auth_token");
 
     if (!token) {
@@ -7,34 +11,370 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
+    const postsApi = {
+        async uploadMedia(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch(`${API_URL}/media`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+            if (!res.ok) throw new Error("Ошибка загрузки файла");
+            return await res.json();
+        },
+
+        async createPost(data) {
+            const res = await fetch(`${API_URL}/posts`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error("Ошибка создания поста");
+            return await res.json();
+        },
+
+        async getPosts() {
+            const res = await fetch(`${API_URL}/posts`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error("Ошибка получения постов");
+            return await res.json();
+        },
+
+        async deletePost(id) {
+            const res = await fetch(`${API_URL}/posts/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error("Ошибка удаления поста");
+            return true;
+        },
+
+        async likePost(id) {
+            return await fetch(`${API_URL}/posts/${id}/like`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+        },
+
+        async unlikePost(id) {
+            return await fetch(`${API_URL}/posts/${id}/unlike`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+        },
+
+        async getComments(postId) {
+            const res = await fetch(`${API_URL}/posts/${postId}/comments`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            return await res.json();
+        },
+
+        async addComment(postId, content) {
+            return await fetch(`${API_URL}/posts/${postId}/comments`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ content }),
+            });
+        },
+    };
+
+    let currentScope = "org";
+    let selectedFile = null;
+
+    window.setPostType = (element, type) => {
+        document
+            .querySelectorAll(".cp-tab")
+            .forEach((el) => el.classList.remove("active"));
+        element.classList.add("active");
+        currentScope = type;
+    };
+
+    window.handleFileSelect = (input) => {
+        if (input.files && input.files[0]) {
+            selectedFile = input.files[0];
+            const indicator = document.getElementById("file-indicator");
+            if (indicator) indicator.style.display = "block";
+            alert(`Файл "${selectedFile.name}" прикреплен!`);
+        }
+    };
+
+    window.handlePublish = async () => {
+        const textInput = document.getElementById("postText");
+        const content = textInput.value;
+
+        if (!content && !selectedFile) {
+            alert("Введите текст или прикрепите фото");
+            return;
+        }
+
+        try {
+            let imageUrl = null;
+
+            if (selectedFile) {
+                const uploadRes = await postsApi.uploadMedia(selectedFile);
+                imageUrl = uploadRes.url || uploadRes.data?.url;
+            }
+
+            let isGlobal = false;
+            let departmentTags = [];
+
+            if (currentScope === "org") {
+                isGlobal = true;
+                departmentTags = ["Хирургия", "Терапия"];
+            } else if (currentScope === "dept") {
+                isGlobal = false;
+                departmentTags = ["Хирургия"];
+            }
+
+            const postData = {
+                content: content,
+                image: imageUrl,
+                is_global: isGlobal,
+                is_public: true,
+                department_tags: departmentTags,
+            };
+
+            await postsApi.createPost(postData);
+
+            textInput.value = "";
+            selectedFile = null;
+            const hiddenInput = document.getElementById("hiddenFileInput");
+            if (hiddenInput) hiddenInput.value = "";
+            const indicator = document.getElementById("file-indicator");
+            if (indicator) indicator.style.display = "none";
+
+            alert("Пост опубликован!");
+            loadFeed();
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Не удалось опубликовать пост");
+        }
+    };
+
+    const feedContainer = document.getElementById("newsFeed");
+    const template = document.getElementById("postTemplate");
+    const filterTabs = document.querySelectorAll(".filter-tab");
+
+    async function loadFeed(filter = "all") {
+        if (!feedContainer || !template) return;
+
+        try {
+            const response = await postsApi.getPosts();
+            const posts = Array.isArray(response)
+                ? response
+                : response.data || [];
+            renderFeed(posts, filter);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function renderFeed(posts, filter) {
+        feedContainer.innerHTML = "";
+
+        if (posts.length === 0) {
+            feedContainer.innerHTML =
+                '<p style="text-align:center; padding:20px; color:#999;">Новостей пока нет</p>';
+            return;
+        }
+
+        posts.forEach((post) => {
+            if (filter === "organization" && !post.is_global) return;
+            if (filter === "department" && post.is_global) return;
+
+            const clone = template.content.cloneNode(true);
+
+            const authorId =
+                post.user_id ||
+                post.author_id ||
+                (post.author ? post.author.id : null);
+            const authorName = post.author
+                ? post.author.name || "ID " + authorId
+                : "Неизвестный";
+
+            clone.querySelector(".post-author").textContent = authorName;
+
+            const dateObj = new Date(post.created_at);
+            clone.querySelector(".post-date").textContent =
+                dateObj.toLocaleString("ru-RU");
+            clone.querySelector(".post-text").textContent = post.content;
+
+            if (currentUserId && authorId == currentUserId) {
+                const deleteBtn = document.createElement("button");
+                deleteBtn.innerHTML = "🗑️";
+                deleteBtn.title = "Удалить пост";
+                deleteBtn.style.cssText =
+                    "border:none; background:none; cursor:pointer; font-size:16px; margin-left: 10px; color: #dc3545;";
+
+                const headerMeta =
+                    clone.querySelector(".post-meta") ||
+                    clone.querySelector(".post-header");
+                if (headerMeta) {
+                    headerMeta.appendChild(deleteBtn);
+                } else {
+                    clone.querySelector(".post-author").appendChild(deleteBtn);
+                }
+
+                deleteBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    if (confirm("Вы действительно хотите удалить этот пост?")) {
+                        try {
+                            await postsApi.deletePost(post.id);
+                            loadFeed(filter);
+                        } catch (err) {
+                            console.error(err);
+                            alert("Ошибка удаления");
+                        }
+                    }
+                });
+            }
+
+            const gallery = clone.querySelector(".post-gallery");
+            if (post.image) {
+                const imgDiv = document.createElement("div");
+                imgDiv.classList.add("gallery-item");
+                imgDiv.style.backgroundImage = `url('${post.image}')`;
+                gallery.appendChild(imgDiv);
+            } else {
+                gallery.style.display = "none";
+            }
+
+            const likeBtn = clone.querySelector(".like-btn");
+            const likeCounter = clone.querySelector(".likes-count");
+            let likesCount = post.likes_count || 0;
+            let isLiked = post.is_liked || false;
+
+            likeCounter.textContent = likesCount;
+            if (isLiked) likeBtn.classList.add("active");
+
+            likeBtn.addEventListener("click", async () => {
+                try {
+                    if (isLiked) {
+                        await postsApi.unlikePost(post.id);
+                        likesCount--;
+                        likeBtn.classList.remove("active");
+                    } else {
+                        await postsApi.likePost(post.id);
+                        likesCount++;
+                        likeBtn.classList.add("active");
+                    }
+                    isLiked = !isLiked;
+                    likeCounter.textContent = likesCount;
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+
+            const commentCounter = clone.querySelector(".comments-count");
+            const comments = post.comments || [];
+            commentCounter.textContent = comments.length;
+
+            feedContainer.appendChild(clone);
+        });
+    }
+
+    if (filterTabs.length > 0) {
+        filterTabs.forEach((tab) => {
+            tab.addEventListener("click", () => {
+                filterTabs.forEach((t) => t.classList.remove("active"));
+                tab.classList.add("active");
+                loadFeed(tab.dataset.filter);
+            });
+        });
+    }
+
     const notifBtn = document.getElementById("h_btn1");
     const notifPopup = document.getElementById("notifPopup");
     const notifList = document.getElementById("notifList");
-    const clearNotifsBtn = document.getElementById("clearNotifsBtn");
     const settingsBtn = document.getElementById("h_btn2");
     const settingsPopup = document.getElementById("settingsPopup");
     const logoutBtn = document.querySelector(".text-danger");
-    
+
+    let currentNotifications = [];
+    let currentUserId = null;
+
     let badge = notifBtn.querySelector("#notifBadge");
     if (!badge) {
         badge = document.createElement("span");
         badge.id = "notifBadge";
-        badge.style.cssText = "position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: red; border-radius: 50%; display: none; border: 2px solid #fff;";
+        badge.style.cssText =
+            "position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: red; border-radius: 50%; display: none; border: 2px solid #fff;";
         notifBtn.appendChild(badge);
+    }
+
+    async function initUser() {
+        try {
+            const res = await fetch(`${API_URL}/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const userData = data.data || data;
+
+                currentUserId = userData.id;
+
+                const nameEl = document.getElementById("profile-name");
+                const avatarEl = document.getElementById("profile-avatar");
+                if (nameEl) nameEl.textContent = userData.name;
+                if (avatarEl && userData.avatar) avatarEl.src = userData.avatar;
+
+                initRealtime();
+                loadNotifications();
+                loadFeed();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function initRealtime() {
+        if (!window.Echo) return;
+
+        window.Echo = new Echo({
+            broadcaster: "reverb",
+            key: REVERB_APP_KEY,
+            wsHost: REVERB_HOST,
+            wsPort: REVERB_PORT,
+            wssPort: REVERB_PORT,
+            forceTLS: false,
+            enabledTransports: ["ws", "wss"],
+            authEndpoint: `${API_URL.replace("/api", "")}/broadcasting/auth`,
+            auth: {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                },
+            },
+        });
+
+        window.Echo.private(`App.Models.User.${currentUserId}`).notification(
+            (notification) => {
+                loadNotifications();
+            }
+        );
     }
 
     async function loadNotifications() {
         try {
             const response = await fetch(`${API_URL}/notifications`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
-                },
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
                 const data = await response.json();
-                renderNotifications(data);
+                currentNotifications = Array.isArray(data)
+                    ? data
+                    : data.data || [];
+                renderNotifications(currentNotifications);
             }
         } catch (error) {
             console.error(error);
@@ -45,91 +385,66 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!notifList) return;
         notifList.innerHTML = "";
 
-        const notifications = Array.isArray(data) ? data : (data.data || []);
-
-        if (notifications.length === 0) {
+        if (data.length === 0) {
             notifList.innerHTML = `<div style="padding:15px; text-align:center; color:#999; font-size:13px;">Нет новых уведомлений</div>`;
             badge.style.display = "none";
             return;
         }
 
-        const hasUnread = notifications.some(n => !n.read_at);
+        const hasUnread = data.some((n) => !n.read_at);
         badge.style.display = hasUnread ? "block" : "none";
 
-        notifications.forEach((n) => {
+        data.forEach((n) => {
             const item = document.createElement("div");
             item.className = "notify-item";
             if (!n.read_at) {
                 item.style.backgroundColor = "#f0f8ff";
+                item.style.cursor = "pointer";
             }
 
-            const text = n.data.message || n.data.body || "Новое уведомление";
-            const time = new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const payload = n.data || n;
+            const text = payload.message || payload.body || "Новое уведомление";
 
             item.innerHTML = `
-                <div class="notify-avatar" style="background: #0056A6; color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">!</div>
-                <div class="notify-content" style="font-size: 13px; line-height: 1.3;">
-                    <p class="notify-text" style="margin: 0;">${text}</p>
-                    <span class="notify-time" style="font-size: 11px; color: #aaa; display: block; margin-top: 4px;">${time}</span>
+                <div class="notify-content" style="padding: 10px; font-size: 13px;">
+                    ${text}
                 </div>
             `;
 
-            item.addEventListener("click", () => markAsRead(n.id, item));
+            item.addEventListener("click", () => {
+                if (!n.read_at) markAsRead(n.id, item);
+            });
             notifList.appendChild(item);
         });
     }
 
     async function markAsRead(id, element) {
+        element.style.backgroundColor = "transparent";
+        element.style.cursor = "default";
         try {
             await fetch(`${API_URL}/notifications/${id}/read`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
             });
-            element.style.backgroundColor = "transparent";
+            loadNotifications();
         } catch (error) {
             console.error(error);
         }
     }
 
-    if (clearNotifsBtn) {
-        clearNotifsBtn.addEventListener("click", async (e) => {
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async (e) => {
             e.preventDefault();
             try {
-                await fetch(`${API_URL}/notifications/read-all`, {
+                await fetch(`${API_URL}/security/logout-all`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                loadNotifications();
-            } catch (error) {
-                console.error(error);
+            } finally {
+                localStorage.removeItem("auth_token");
+                localStorage.removeItem("user_info");
+                window.location.href = "/";
             }
-        });
-    }
-
-    async function logout() {
-        if (!confirm("Вы действительно хотите выйти?")) return;
-
-        try {
-            await fetch(`${API_URL}/security/logout-all`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-            });
-        } catch (error) {
-            console.warn(error);
-        } finally {
-            localStorage.removeItem("auth_token");
-            localStorage.removeItem("user_info");
-            window.location.href = "/";
-        }
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            logout();
         });
     }
 
@@ -138,10 +453,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             e.stopPropagation();
             if (settingsPopup) settingsPopup.classList.remove("active");
             notifPopup.classList.toggle("active");
-            
-            if (notifPopup.classList.contains("active")) {
-                loadNotifications();
-            }
         });
     }
 
@@ -154,10 +465,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.addEventListener("click", (e) => {
-        if (notifPopup && notifPopup.classList.contains("active") && !notifPopup.contains(e.target) && e.target !== notifBtn) {
+        if (
+            notifPopup &&
+            notifPopup.classList.contains("active") &&
+            !notifPopup.contains(e.target) &&
+            e.target !== notifBtn
+        ) {
             notifPopup.classList.remove("active");
         }
-        if (settingsPopup && settingsPopup.classList.contains("active") && !settingsPopup.contains(e.target) && e.target !== settingsBtn) {
+        if (
+            settingsPopup &&
+            settingsPopup.classList.contains("active") &&
+            !settingsPopup.contains(e.target) &&
+            e.target !== settingsBtn
+        ) {
             settingsPopup.classList.remove("active");
         }
     });
@@ -166,20 +487,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const monthYearLabel = document.getElementById("monthYearLabel");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-    
+
     const addModal = document.getElementById("eventModal");
-    const addModalTitle = document.getElementById("modalDateTitle");
     const eventInput = document.getElementById("eventInput");
     const saveBtn = document.getElementById("saveEventBtn");
     const cancelAddBtn = document.getElementById("cancelBtn");
     const closeAddBtn = document.getElementById("closeAddBtn");
-    
+
     const viewModal = document.getElementById("viewEventModal");
-    const viewDateTitle = document.getElementById("viewDateTitle");
     const eventsListWrapper = document.getElementById("eventsListWrapper");
     const closeViewBtn = document.getElementById("closeViewBtn");
-    const addMoreBtn = document.getElementById("addMoreBtn");
     const closeViewXBtn = document.getElementById("closeViewXBtn");
+    const addMoreBtn = document.getElementById("addMoreBtn");
 
     let currentDate = new Date();
     let activeMonth = currentDate.getMonth();
@@ -190,23 +509,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function loadEventsFromBackend() {
         try {
             const response = await fetch(`${API_URL}/events`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
                 const serverData = await response.json();
                 eventsMap = {};
-
                 serverData.forEach((event) => {
                     let rawDate = event.starts_at || event.created_at;
                     if (rawDate) {
                         const dateKey = rawDate.substring(0, 10);
-                        if (!eventsMap[dateKey]) {
-                            eventsMap[dateKey] = [];
-                        }
+                        if (!eventsMap[dateKey]) eventsMap[dateKey] = [];
                         eventsMap[dateKey].push(event);
                     }
                 });
@@ -221,7 +534,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!daysContainer) return;
 
         daysContainer.innerHTML = "";
-        const monthName = new Date(year, month).toLocaleString("ru-RU", { month: "long" });
+        const monthName = new Date(year, month).toLocaleString("ru-RU", {
+            month: "long",
+        });
         if (monthYearLabel) monthYearLabel.textContent = `${monthName} ${year}`;
 
         let firstDay = new Date(year, month, 1).getDay();
@@ -240,9 +555,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         for (let i = 1; i <= daysInMonth; i++) {
             const span = document.createElement("span");
             span.textContent = i;
-            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+            const dateStr = `${year}-${String(month + 1).padStart(
+                2,
+                "0"
+            )}-${String(i).padStart(2, "0")}`;
 
-            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+            if (
+                i === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear()
+            ) {
                 span.classList.add("today");
             }
 
@@ -261,22 +583,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             daysContainer.appendChild(span);
         }
-
-        const totalCells = adjustDay + daysInMonth;
-        const rowsNeeded = totalCells > 35 ? 42 : 35;
-        const remainingCells = rowsNeeded - totalCells;
-
-        for (let i = 1; i <= remainingCells; i++) {
-            const span = document.createElement("span");
-            span.textContent = i;
-            span.classList.add("next-month");
-            daysContainer.appendChild(span);
-        }
     }
 
     function openAddModal(dateStr) {
         if (!addModal) return;
-        addModalTitle.textContent = `Добавить на ${dateStr}`;
+        const titleEl = document.getElementById("modalDateTitle");
+        if (titleEl) titleEl.textContent = `Добавить на ${dateStr}`;
         eventInput.value = "";
         addModal.classList.add("active");
     }
@@ -287,26 +599,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function openViewModal(dateStr, list) {
         if (!viewModal) return;
-        viewDateTitle.textContent = `События: ${dateStr}`;
+        const titleEl = document.getElementById("viewDateTitle");
+        if (titleEl) titleEl.textContent = `События: ${dateStr}`;
         eventsListWrapper.innerHTML = "";
 
         list.forEach((ev) => {
             const card = document.createElement("div");
-            card.style.background = "#f8f9fa";
-            card.style.borderLeft = "4px solid #0056A6";
-            card.style.padding = "10px";
-            card.style.marginBottom = "10px";
-            card.style.borderRadius = "4px";
+            Object.assign(card.style, {
+                background: "#f8f9fa",
+                borderLeft: "4px solid #0056A6",
+                padding: "10px",
+                marginBottom: "10px",
+                borderRadius: "4px",
+            });
 
-            let timeStr = "--:--";
-            if (ev.starts_at && ev.starts_at.length > 15) {
-                timeStr = ev.starts_at.substring(11, 16);
-            }
-
+            let timeStr =
+                ev.starts_at && ev.starts_at.length > 15
+                    ? ev.starts_at.substring(11, 16)
+                    : "--:--";
             card.innerHTML = `
                 <div style="font-size:12px; color:#0056A6; font-weight:bold;">${timeStr}</div>
-                <h4 style="margin:0 0 5px; color:#333;">${ev.title || "Без названия"}</h4>
-                <p style="margin:0; font-size:13px; color:#666;">${ev.description || ""}</p>
+                <h4 style="margin:0 0 5px; color:#333;">${
+                    ev.title || "Без названия"
+                }</h4>
+                <p style="margin:0; font-size:13px; color:#666;">${
+                    ev.description || ""
+                }</p>
             `;
             eventsListWrapper.appendChild(card);
         });
@@ -321,7 +639,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function saveEvent() {
         const title = eventInput.value.trim();
         if (selectedDateStr && title !== "") {
-            const originalBtnText = saveBtn.textContent;
             saveBtn.textContent = "Сохранение...";
             saveBtn.disabled = true;
 
@@ -353,7 +670,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.error(error);
                 alert("Ошибка соединения");
             } finally {
-                saveBtn.textContent = originalBtnText;
+                saveBtn.textContent = "Сохранить";
                 saveBtn.disabled = false;
             }
         }
@@ -362,6 +679,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (saveBtn) saveBtn.addEventListener("click", saveEvent);
     if (cancelAddBtn) cancelAddBtn.addEventListener("click", closeAddModal);
     if (closeAddBtn) closeAddBtn.addEventListener("click", closeAddModal);
+
     if (addModal) {
         addModal.addEventListener("click", (e) => {
             if (e.target === addModal) closeAddModal();
@@ -369,8 +687,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (viewModal) {
-        if (closeViewBtn) closeViewBtn.addEventListener("click", closeViewModal);
-        if (closeViewXBtn) closeViewXBtn.addEventListener("click", closeViewModal);
+        if (closeViewBtn)
+            closeViewBtn.addEventListener("click", closeViewModal);
+        if (closeViewXBtn)
+            closeViewXBtn.addEventListener("click", closeViewModal);
         if (addMoreBtn) {
             addMoreBtn.addEventListener("click", () => {
                 closeViewModal();
@@ -404,137 +724,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    initUser();
     if (daysContainer) {
         renderCalendar(activeYear, activeMonth);
         loadEventsFromBackend();
     }
-
-    const postsData = [
-        {
-            id: 1,
-            author: "КГП на ПХВ «Городская поликлиника №3»",
-            date: "Понедельник, 10:14",
-            text: "Уважаемые сотрудники, в среду планируется обход кабинетов.",
-            images: ["images/hospital.png", "images/hospital2.png"],
-            category: "organization",
-            likes: 42,
-            isLiked: false,
-            comments: [
-                { user: "Иванова А.А.", text: "Принято." },
-                { user: "Петров В.В.", text: "Во сколько точно?" },
-            ],
-        },
-        {
-            id: 2,
-            author: "Отделение Терапии",
-            date: "Вчера, 15:30",
-            text: "Коллеги, прошу сдать отчеты до конца недели.",
-            images: [],
-            category: "department",
-            likes: 12,
-            isLiked: true,
-            comments: [],
-        },
-        {
-            id: 3,
-            author: "Министерство Здравоохранения",
-            date: "20.01.2026",
-            text: "Новые протоколы лечения ОРВИ уже доступны.",
-            images: [],
-            category: "all",
-            likes: 156,
-            isLiked: false,
-            comments: [{ user: "Admin", text: "Ссылка на портале." }],
-        },
-    ];
-
-    const feedContainer = document.getElementById("newsFeed");
-    const template = document.getElementById("postTemplate");
-    const filterTabs = document.querySelectorAll(".filter-tab");
-
-    function renderFeed(filter = "all") {
-        if (!feedContainer || !template) return;
-        feedContainer.innerHTML = "";
-
-        postsData.forEach((post) => {
-            if (filter !== "all" && post.category !== filter) return;
-
-            const clone = template.content.cloneNode(true);
-            clone.querySelector(".post-author").textContent = post.author;
-            clone.querySelector(".post-date").textContent = post.date;
-            clone.querySelector(".post-text").textContent = post.text;
-
-            const gallery = clone.querySelector(".post-gallery");
-            if (post.images.length > 0) {
-                post.images.forEach((imgSrc) => {
-                    const imgDiv = document.createElement("div");
-                    imgDiv.classList.add("gallery-item");
-                    imgDiv.style.backgroundImage = `url('${imgSrc}')`;
-                    gallery.appendChild(imgDiv);
-                });
-            } else {
-                gallery.style.display = "none";
-            }
-
-            const likeBtn = clone.querySelector(".like-btn");
-            const likeCounter = clone.querySelector(".likes-count");
-            likeCounter.textContent = post.likes;
-            if (post.isLiked) likeBtn.classList.add("active");
-
-            likeBtn.addEventListener("click", () => {
-                post.isLiked = !post.isLiked;
-                if (post.isLiked) {
-                    likeBtn.classList.add("active");
-                    post.likes++;
-                } else {
-                    likeBtn.classList.remove("active");
-                    post.likes--;
-                }
-                likeCounter.textContent = post.likes;
-            });
-
-            const commentBtn = clone.querySelector(".comment-btn");
-            const commentCounter = clone.querySelector(".comments-count");
-            const commentsSection = clone.querySelector(".comments-section");
-            const commentsList = clone.querySelector(".comments-list");
-
-            commentCounter.textContent = post.comments.length;
-            post.comments.forEach((comment) => {
-                const p = document.createElement("p");
-                p.classList.add("comment-row");
-                p.innerHTML = `<span class="comment-author">${comment.user}:</span> ${comment.text}`;
-                commentsList.appendChild(p);
-            });
-
-            commentBtn.addEventListener("click", () => {
-                commentsSection.style.display =
-                    commentsSection.style.display === "none" ? "block" : "none";
-            });
-
-            feedContainer.appendChild(clone);
-        });
-    }
-
-    if (filterTabs.length > 0) {
-        filterTabs.forEach((tab) => {
-            tab.addEventListener("click", () => {
-                filterTabs.forEach((t) => t.classList.remove("active"));
-                tab.classList.add("active");
-                renderFeed(tab.dataset.filter);
-            });
-        });
-        renderFeed("all");
-    }
-
-    const toggleBtn = document.querySelector(".btn-more");
-    const card = document.querySelector(".lectures-card");
-    if (toggleBtn && card) {
-        toggleBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            card.classList.toggle("collapsed");
-        });
-    }
-
-    loadNotifications();
-    setInterval(loadNotifications, 60000);
 });

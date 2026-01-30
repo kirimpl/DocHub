@@ -510,6 +510,160 @@ body {
     background-color: rgba(255, 255, 255, 0.5);
 }
 
+:root {
+    --bg-blue: #F0F6FF;
+    --text-dark: #004085;
+    --text-light: #7FA0C8;
+    --input-bg: #FFFFFF;
+    --accent-blue: #0056b3;
+}
+
+.create-post-card {
+    background-color: var(--bg-blue);
+    border-radius: 16px;
+    padding: 20px 24px;
+    font-family: sans-serif;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    max-width: 800px;
+}
+
+.cp-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 20px;
+}
+
+.cp-title {
+    font-family: Geologica;
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 18px;
+    line-height: 25px;
+    letter-spacing: 5%;
+    vertical-align: middle;
+    color: var(--text-dark)
+}
+
+.cp-tabs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cp-tab {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.cp-tab:hover {
+    color: var(--accent-blue);
+}
+
+.cp-tab.active {
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.cp-divider {
+    width: 1px;
+    height: 14px;
+    background-color: #DDE7F5;
+}
+
+.cp-body {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.cp-input-wrapper {
+    flex-grow: 1;
+    background: var(--input-bg);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    height: 48px;
+    box-sizing: border-box;
+}
+
+.cp-input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+    color: #333;
+    margin-left: 8px;
+}
+
+.cp-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.cp-icon-btn:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+.emoji-btn {
+    color: var(--accent-blue);
+    font-size: 22px;
+    padding: 0;
+}
+
+.clip-btn {
+    background: #FFFFFF;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    color: var(--accent-blue);
+}
+
+.cp-send-btn {
+    background: #FFFFFF;
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.1s;
+}
+
+.cp-send-btn svg path {
+    stroke: var(--accent-blue);
+}
+
+.cp-send-btn:active {
+    transform: scale(0.95);
+}
+
+.file-status {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    border-radius: 50%;
+    display: none;
+}
+
 /*--- Блок Лекций ---*/
 .lectures-card {
     background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
