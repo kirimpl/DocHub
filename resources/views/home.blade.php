@@ -15,7 +15,8 @@
                 <div class="profile-details">
                     <div class="detail-item">
                         <div class="detail-icon">
-                            <svg width="22" height="18" viewBox="0 0 22 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="22" height="18" viewBox="0 0 22 18" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M20 16H22V18H0V16H2V1C2 0.734784 2.10536 0.48043 2.29289 0.292893C2.48043 0.105357 2.73478 0 3 0H13C13.2652 0 13.5196 0.105357 13.7071 0.292893C13.8946 0.48043 14 0.734784 14 1V16H16V6H19C19.2652 6 19.5196 6.10536 19.7071 6.29289C19.8946 6.48043 20 6.73478 20 7V16ZM6 8V10H10V8H6ZM6 4V6H10V4H6Z"
                                     fill="#0056A6" />
@@ -26,7 +27,8 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-icon">
-                            <svg width="16" height="21" viewBox="0 0 16 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="21" viewBox="0 0 16 21" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M16 0H0V2L5.81 6.36C4.04674 6.94143 2.58648 8.19917 1.75016 9.8568C0.913849 11.5144 0.769916 13.4363 1.35 15.2C1.63699 16.0737 2.09342 16.8822 2.69318 17.5794C3.29294 18.2765 4.02426 18.8486 4.84531 19.2628C5.66635 19.677 6.56101 19.9253 7.47811 19.9935C8.39521 20.0616 9.31674 19.9483 10.19 19.66C11.5905 19.1997 12.8099 18.309 13.6744 17.1149C14.5388 15.9207 15.0043 14.4842 15.0043 13.01C15.0043 11.5358 14.5388 10.0993 13.6744 8.90514C12.8099 7.71103 11.5905 6.82031 10.19 6.36L16 2V0ZM10.94 17.5L8 15.78L5.06 17.5L5.84 14.17L3.25 11.93L6.66 11.64L8 8.5L9.34 11.64L12.75 11.93L10.16 14.17L10.94 17.5Z"
                                     fill="#0056A6" />
@@ -147,7 +149,8 @@
                     <h2 class="cp-title">Создать пост</h2>
 
                     <div class="cp-tabs">
-                        <div class="cp-tab active" data-type="org" onclick="setPostType(this, 'org')">От организации</div>
+                        <div class="cp-tab active" data-type="org" onclick="setPostType(this, 'org')">От организации
+                        </div>
                         <div class="cp-divider"></div>
                         <div class="cp-tab" data-type="dept" onclick="setPostType(this, 'dept')">От отделения</div>
                         <div class="cp-divider"></div>
@@ -156,8 +159,10 @@
                 </div>
 
                 <div class="cp-body">
+
                     <div class="cp-input-wrapper">
-                        <button class="cp-icon-btn emoji-btn"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"
+                        <button class="cp-icon-btn emoji-btn">
+                            <svg width="26" height="26" viewBox="0 0 26 26" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M13 25C19.6274 25 25 19.6274 25 13C25 6.37258 19.6274 1 13 1C6.37258 1 1 6.37258 1 13C1 19.6274 6.37258 25 13 25Z"
@@ -167,40 +172,47 @@
                                     stroke="#0056A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </button>
-
                         <input type="text" id="postText" class="cp-input">
                     </div>
 
-                    <div class="cp-actions">
-                        <input type="file" id="hiddenFileInput" style="display: none;" onchange="handleFileSelect(this)">
-
+                    <div style="position: relative;">
+                        <input type="file" id="hiddenFileInput" style="display: none;"
+                            onchange="handleFileSelect(this)">
                         <button class="cp-icon-btn clip-btn" onclick="document.getElementById('hiddenFileInput').click()">
-                            <svg width="19" height="22" viewBox="0 0 19 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M12.4055 14.5936L12.4204 14.5786L17.0404 9.95863C17.5822 9.41693 18.0119 8.77383 18.305 8.06606C18.5982 7.3583 18.7491 6.59971 18.7491 5.83363C18.7491 5.06755 18.5982 4.30897 18.305 3.6012C18.0119 2.89343 17.5822 2.25033 17.0404 1.70863C16.4987 1.16693 15.8557 0.737226 15.1479 0.444059C14.4401 0.150891 13.6815 0 12.9154 0C11.3683 0 9.88447 0.614613 8.79045 1.70863L4.84545 5.65363L4.83045 5.66863L2.32995 8.16763C0.838108 9.65947 0 11.6828 0 13.7926C0 15.9024 0.838108 17.9258 2.32995 19.4176C3.82179 20.9095 5.84517 21.7476 7.95495 21.7476C10.0647 21.7476 12.0881 20.9095 13.58 19.4176L18.3304 14.6686C18.4378 14.5648 18.5235 14.4406 18.5824 14.3033C18.6413 14.1661 18.6722 14.0184 18.6735 13.869C18.6747 13.7197 18.6462 13.5715 18.5895 13.4333C18.5329 13.2951 18.4493 13.1695 18.3436 13.0639C18.238 12.9584 18.1123 12.8749 17.974 12.8184C17.8357 12.7619 17.6876 12.7335 17.5382 12.7349C17.3888 12.7362 17.2412 12.7673 17.104 12.8263C16.9668 12.8854 16.8427 12.9711 16.739 13.0786L11.99 17.8276C10.92 18.8976 9.46884 19.4987 7.9557 19.4987C6.44256 19.4987 4.9914 18.8976 3.92145 17.8276C2.8515 16.7577 2.25041 15.3065 2.25041 13.7934C2.25041 12.2802 2.8515 10.8291 3.92145 9.75913L5.74545 7.93513L5.76195 7.92013L10.3819 3.29863C11.0592 2.65268 11.9623 2.29719 12.8981 2.30813C13.834 2.31907 14.7285 2.69555 15.3905 3.35716C16.0525 4.01876 16.4295 4.91302 16.441 5.84887C16.4525 6.78473 16.0975 7.68797 15.4519 8.36563L13.757 10.0606L13.739 10.0786L9.24645 14.5696C9.11256 14.7133 8.9511 14.8286 8.7717 14.9085C8.5923 14.9884 8.39864 15.0314 8.20227 15.0349C8.0059 15.0383 7.81084 15.0022 7.62874 14.9287C7.44663 14.8551 7.2812 14.7456 7.14233 14.6068C7.00345 14.4679 6.89397 14.3025 6.82041 14.1203C6.74686 13.9382 6.71073 13.7432 6.7142 13.5468C6.71766 13.3504 6.76064 13.1568 6.84058 12.9774C6.92051 12.798 7.03576 12.6365 7.17945 12.5026L11.6704 8.00863C11.8692 7.79537 11.9774 7.5133 11.9722 7.22185C11.9671 6.93039 11.849 6.65232 11.6429 6.4462C11.4368 6.24008 11.1587 6.12201 10.8672 6.11687C10.5758 6.11173 10.2937 6.21991 10.0805 6.41863L5.58795 10.9096C4.90334 11.6082 4.52207 12.5488 4.52701 13.5269C4.53195 14.505 4.9227 15.4416 5.61433 16.1332C6.30597 16.8249 7.24261 17.2156 8.22072 17.2206C9.19882 17.2255 10.1394 16.8442 10.838 16.1596L12.4055 14.5936Z"
-                                    fill="#0056A6" />
-                            </svg>
-                            <span id="file-indicator" class="file-status"></span>
-                        </button>
-
-                        <button class="cp-send-btn" onclick="handlePublish()">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path
-                                    d="M17.7896 0.0744177C18.8056 -0.280582 19.7816 0.695418 19.4266 1.71142L13.5016 18.6414C13.1166 19.7394 11.5866 19.8014 11.1146 18.7384L8.25561 12.3064L12.2796 8.28142C12.4121 8.13924 12.4842 7.9512 12.4808 7.7569C12.4774 7.5626 12.3986 7.37721 12.2612 7.2398C12.1238 7.10238 11.9384 7.02367 11.7441 7.02024C11.5498 7.01681 11.3618 7.08894 11.2196 7.22142L7.19461 11.2454L0.762611 8.38642C-0.300389 7.91342 -0.23739 6.38442 0.859611 5.99942L17.7896 0.0744177Z"
-                                    fill="#0056A6" />
+                                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                </path>
                             </svg>
-
                         </button>
+                        <div id="file-indicator" class="file-status"></div>
                     </div>
+
+                    <button class="cp-send-btn" onclick="handlePublish()">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M17.7896 0.0744177C18.8056 -0.280582 19.7816 0.695418 19.4266 1.71142L13.5016 18.6414C13.1166 19.7394 11.5866 19.8014 11.1146 18.7384L8.25561 12.3064L12.2796 8.28142C12.4121 8.13924 12.4842 7.9512 12.4808 7.7569C12.4774 7.5626 12.3986 7.37721 12.2612 7.2398C12.1238 7.10238 11.9384 7.02367 11.7441 7.02024C11.5498 7.01681 11.3618 7.08894 11.2196 7.22142L7.19461 11.2454L0.762611 8.38642C-0.300389 7.91342 -0.23739 6.38442 0.859611 5.99942L17.7896 0.0744177Z"
+                                fill="#0056A6" />
+                        </svg>
+                    </button>
+
                 </div>
             </div>
 
             <div id="feed-container" class="feed"></div>
 
             <div class="feed-filters">
-                <button class="filter-tab active" data-filter="all">Все</button>
-                <button class="filter-tab" data-filter="organization">Моя организация</button>
-                <button class="filter-tab" data-filter="department">Отделение</button>
+                <button class="filter-tab active" data-filter="organization">От организации</button>
+
+                <div class="filter-divider"></div>
+
+                <button class="filter-tab" data-filter="department">От отделения</button>
+
+                <div class="filter-divider"></div>
+
+                <button class="filter-tab" data-filter="colleagues">От коллег</button>
             </div>
 
             <div id="newsFeed"></div>
@@ -211,14 +223,16 @@
             <div class="card calendar-card" id="calendar">
                 <div class="calendar-header-nav">
                     <button id="prevBtn" class="nav-arrow">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
                             <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
                     </button>
                     <h3 id="monthYearLabel" class="calendar-title">Январь 2026</h3>
                     <button id="nextBtn" class="nav-arrow">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
@@ -337,7 +351,8 @@
 
             <div class="post-actions">
                 <button class="action-btn like-btn">
-                    <svg width="20" height="18" viewBox="0 0 20 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="20" height="18" viewBox="0 0 20 18" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M0 5.85223C0 10.7152 4.02 13.3062 6.962 15.6262C8 16.4442 9 17.2152 10 17.2152C11 17.2152 12 16.4452 13.038 15.6252C15.981 13.3072 20 10.7152 20 5.85323C20 0.991225 14.5 -2.45977 10 2.21623C5.5 -2.45977 0 0.989226 0 5.85223Z"
                             fill="currentColor" />
@@ -346,7 +361,8 @@
                 </button>
 
                 <button class="action-btn comment-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
                         <path
                             d="M4 18H6V22.081L11.101 18H16C17.103 18 18 17.103 18 16V8C18 6.897 17.103 6 16 6H4C2.897 6 2 6.897 2 8V16C2 17.103 2.897 18 4 18Z"
                             fill="currentColor" />
@@ -362,8 +378,8 @@
                 <div class="comments-list"></div>
                 <div class="comment-input-wrapper">
                     <input type="text" placeholder="Напишите комментарий..." class="comment-input">
-                    <button class="send-comment-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
+                    <button class="send-comment-btn"><svg width="20" height="20" viewBox="0 0 20 20"
+                            fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path
                                 d="M17.7896 0.0744177C18.8056 -0.280582 19.7816 0.695418 19.4266 1.71142L13.5016 18.6414C13.1166 19.7394 11.5866 19.8014 11.1146 18.7384L8.25561 12.3064L12.2796 8.28142C12.4121 8.13924 12.4842 7.9512 12.4808 7.7569C12.4774 7.5626 12.3986 7.37721 12.2612 7.2398C12.1238 7.10238 11.9384 7.02367 11.7441 7.02024C11.5498 7.01681 11.3618 7.08894 11.2196 7.22142L7.19461 11.2454L0.762611 8.38642C-0.300389 7.91342 -0.23739 6.38442 0.859611 5.99942L17.7896 0.0744177Z"
                                 fill="#0056A6" />
