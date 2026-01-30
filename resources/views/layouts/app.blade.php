@@ -7,6 +7,9 @@
     <title>DocHub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    @if (request()->is('lecture/*'))
+    <link rel="stylesheet" href="{{ asset('css/lecture.css') }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght,CRSV@100..900,0&display=swap" rel="stylesheet">
@@ -148,6 +151,9 @@
     <script src="{{ asset('js/verification.js') }}" defer></script>
     <script src="{{ asset('js/verification-admin.js') }}" defer></script>
     <script src="{{ asset('js/feed.js') }}" defer></script>
+    @if (request()->is('lecture/*'))
+    <script src="{{ asset('js/lecture.js') }}" defer></script>
+    @endif
 </body>
 
 </html>

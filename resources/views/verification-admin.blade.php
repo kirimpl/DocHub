@@ -6,6 +6,19 @@
 
 <main class="posts-section">
     <div class="card" style="padding: 24px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 16px;">Создать лекцию</h2>
+        <div style="display:grid; gap:12px; max-width:520px;">
+            <input id="lectureCreateTitle" class="form-input" type="text" placeholder="Тема лекции">
+            <textarea id="lectureCreateDescription" class="form-input" rows="3" placeholder="Описание (необязательно)"></textarea>
+            <label style="font-size:13px; color:#6b7280;">Начало</label>
+            <input id="lectureCreateStarts" class="form-input" type="datetime-local">
+            <label style="font-size:13px; color:#6b7280;">Окончание</label>
+            <input id="lectureCreateEnds" class="form-input" type="datetime-local">
+            <button id="lectureCreateBtn" class="btn-primary" style="width:180px;">Создать</button>
+            <div id="lectureCreateNote" style="color:#6b7280; font-size:12px;"></div>
+        </div>
+    </div>
+    <div class="card" style="padding: 24px; margin-bottom: 20px;">
         <h2 style="margin: 0 0 16px;">Админ панель: заявки на верификацию</h2>
         <div id="adminRequestsList">
             <p style="color:#999;">Загрузка заявок...</p>
@@ -40,6 +53,19 @@
                     <button id="supportChatSend" class="btn-primary">Отправить</button>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="card" style="padding: 24px; margin-top: 20px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 16px;">Жалобы на пользователей</h2>
+        <div id="userReportsList">
+            <p style="color:#999;">Загрузка...</p>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 24px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 16px;">Жалобы на трансляции</h2>
+        <div id="lectureReportsList">
+            <p style="color:#999;">Загрузка...</p>
         </div>
     </div>
 </main>

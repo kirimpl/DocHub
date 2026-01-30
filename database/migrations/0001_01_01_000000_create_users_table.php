@@ -51,6 +51,8 @@ return new class extends Migration
             $table->timestamp('last_seen')->nullable();
             $table->string('verification_status')->default('pending');
             $table->timestamp('verified_at')->nullable();
+            $table->unsignedInteger('report_warnings')->default(0);
+            $table->timestamp('restricted_until')->nullable();
 
             $table->rememberToken();
             $table->timestamps();

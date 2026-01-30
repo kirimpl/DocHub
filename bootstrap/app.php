@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'update.last.seen' => \App\Http\Middleware\UpdateLastSeen::class,
             'verified.doctor' => \App\Http\Middleware\EnsureVerifiedDoctor::class,
+            'not.restricted' => \App\Http\Middleware\EnsureNotRestricted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

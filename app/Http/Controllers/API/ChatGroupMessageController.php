@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ChatGroup;
 use App\Models\ChatGroupMessage;
+use App\Events\ChatGroupMessageSent;
 
 class ChatGroupMessageController extends Controller
 {
@@ -98,7 +99,10 @@ class ChatGroupMessageController extends Controller
             'image_url' => $data['image_url'] ?? null,
         ]);
 
-        return response()->json($message->load(['sender', 'replyTo.sender', 'reactions.user']), 201);
+        $message = $message->load(['sender', 'replyTo.sender', 'reactions.user']);
+        event(new ChatGroupMessageSent($message));
+
+        return response()->json($message, 201);
     }
 
     public function joinNotify(Request $request, $groupId)

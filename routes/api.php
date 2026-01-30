@@ -25,6 +25,7 @@ use App\Http\Controllers\API\VerificationController;
 use App\Http\Controllers\API\AiController;
 use App\Http\Controllers\API\DirectoryController;
 use App\Http\Controllers\API\ProfileController;
+use App\Http\Controllers\API\ReportController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -63,7 +64,7 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::post('verification/{id}/reject', [VerificationController::class, 'reject'])->whereNumber('id');
 });
 
-Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(function () {
+Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.restricted')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     // users
     Route::get('users', function (Request $request) {
@@ -197,6 +198,24 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor')->group(
     Route::post('lectures/{id}/leave', [LectureController::class, 'leave'])->whereNumber('id');
     Route::post('lectures/{id}/end', [LectureController::class, 'end'])->whereNumber('id');
     Route::post('lectures/{id}/admins', [LectureController::class, 'addAdmins'])->whereNumber('id');
+    Route::get('lectures/{id}/participants', [LectureController::class, 'participants'])->whereNumber('id');
+    Route::get('lectures/invites', [LectureController::class, 'myInvites']);
+    Route::post('lectures/{id}/invite', [LectureController::class, 'invite'])->whereNumber('id');
+    Route::post('lectures/{id}/invites/{inviteId}/accept', [LectureController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
+    Route::post('lectures/{id}/invites/{inviteId}/decline', [LectureController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
+    Route::post('lectures/{id}/kick', [LectureController::class, 'kick'])->whereNumber('id');
+    Route::post('lectures/{id}/ban', [LectureController::class, 'ban'])->whereNumber('id');
+    Route::post('lectures/{id}/signal', [LectureController::class, 'signal'])->whereNumber('id');
+
+    // reports
+    Route::post('reports/lectures', [ReportController::class, 'reportLecture']);
+    Route::post('reports/users', [ReportController::class, 'reportUser']);
+    Route::get('reports/lectures', [ReportController::class, 'lectureReports']);
+    Route::get('reports/users', [ReportController::class, 'userReports']);
+    Route::post('reports/lectures/{id}/approve', [ReportController::class, 'approveLectureReport'])->whereNumber('id');
+    Route::post('reports/lectures/{id}/reject', [ReportController::class, 'rejectLectureReport'])->whereNumber('id');
+    Route::post('reports/users/{id}/approve', [ReportController::class, 'approveUserReport'])->whereNumber('id');
+    Route::post('reports/users/{id}/reject', [ReportController::class, 'rejectUserReport'])->whereNumber('id');
 
     // events
     Route::get('events', [EventController::class, 'index']);

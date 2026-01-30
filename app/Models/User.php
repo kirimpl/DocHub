@@ -62,6 +62,8 @@ class User extends Authenticatable
         'pinned_post_id',
         'verification_status',
         'verified_at',
+        'report_warnings',
+        'restricted_until',
     ];
 
     protected $hidden = [
@@ -81,6 +83,7 @@ class User extends Authenticatable
             'show_status' => 'boolean',
             'notifications_enabled' => 'boolean',
             'verified_at' => 'datetime',
+            'restricted_until' => 'datetime',
         ];
     }
 
@@ -184,5 +187,13 @@ class User extends Authenticatable
     public function isVerified(): bool
     {
         return $this->verification_status === 'verified';
+    }
+
+    public function isRestricted(): bool
+    {
+        if (!$this->restricted_until) {
+            return false;
+        }
+        return now()->lt($this->restricted_until);
     }
 }

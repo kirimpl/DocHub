@@ -26,3 +26,6 @@ Route::get('/verification/admin', function () {
 Route::get('/support', function () {
     return view('verification');
 });
+Route::get('/lecture/{id}', function ($id) {
+    return view('lecture', ['lectureId' => $id]);
+});

@@ -8,6 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatSend = document.getElementById('supportChatSend');
     const resolvedList = document.getElementById('supportResolvedList');
     const approvedList = document.getElementById('verificationApprovedList');
+    const userReportsList = document.getElementById('userReportsList');
+    const lectureReportsList = document.getElementById('lectureReportsList');
+    const lectureCreateTitle = document.getElementById('lectureCreateTitle');
+    const lectureCreateDescription = document.getElementById('lectureCreateDescription');
+    const lectureCreateStarts = document.getElementById('lectureCreateStarts');
+    const lectureCreateEnds = document.getElementById('lectureCreateEnds');
+    const lectureCreateBtn = document.getElementById('lectureCreateBtn');
+    const lectureCreateNote = document.getElementById('lectureCreateNote');
 
     if (!adminList && !threadsList) {
         return;
@@ -124,6 +132,52 @@ document.addEventListener('DOMContentLoaded', () => {
         return res.json();
     };
 
+    const fetchUserReports = async (status = 'pending') => {
+        if (!userReportsList) return null;
+        const res = await fetch(`${API_URL}/reports/users?status=${encodeURIComponent(status)}`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const fetchLectureReports = async (status = 'pending') => {
+        if (!lectureReportsList) return null;
+        const res = await fetch(`${API_URL}/reports/lectures?status=${encodeURIComponent(status)}`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const approveUserReport = async (id) => {
+        await fetch(`${API_URL}/reports/users/${id}/approve`, {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+    };
+
+    const rejectUserReport = async (id) => {
+        await fetch(`${API_URL}/reports/users/${id}/reject`, {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+    };
+
+    const approveLectureReport = async (id) => {
+        await fetch(`${API_URL}/reports/lectures/${id}/approve`, {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+    };
+
+    const rejectLectureReport = async (id) => {
+        await fetch(`${API_URL}/reports/lectures/${id}/reject`, {
+            method: 'POST',
+            headers: authHeaders(),
+        });
+    };
+
     const fetchSupportThreadMessages = async (ticketId) => {
         const res = await fetch(`${API_URL}/verification/support/threads/${ticketId}`, {
             headers: authHeaders(),
@@ -220,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size:12px; color:#6b7280;">${thread.email || ''}</div>
                     <div style="font-size:11px; color:#93a3b8;">Статус: ${statusLabel}</div>
                     </button>
-                    ${canDelete ? `<button class="btn-secondary" data-delete="${thread.ticket_id}" title="Delete">🗑️</button>` : ''}
+                    ${canDelete ? `<button class="btn-secondary" data-delete="${thread.ticket_id}" title="Удалить">🗑️</button>` : ''}
                 </div>
             `;
         }).join('');
@@ -237,14 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     event.stopPropagation();
                     const ticketId = btn.dataset.delete;
                     if (!ticketId) return;
-                    if (!confirm('Delete resolved ticket and history?')) return;
+                    if (!confirm('Удалить решенную заявку и историю?')) return;
                     const ok = await deleteSupportTicket(ticketId);
                     if (ok) {
                         if (String(activeThreadId) === String(ticketId)) {
                             activeThreadId = null;
                             activeThreadUserId = null;
                             if (chatMessages) {
-                                chatMessages.innerHTML = '<div style="color:#9ca3af;">Select a dialog.</div>';
+                                chatMessages.innerHTML = '<div style="color:#9ca3af;">Выберите диалог.</div>';
                             }
                         }
                         await refreshThreads();
@@ -287,6 +341,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
+    };
+
+    const renderUserReports = (items) => {
+        if (!userReportsList) return;
+        if (!items || !items.length) {
+            userReportsList.innerHTML = '<p style="color:#999;">Нет жалоб</p>';
+            return;
+        }
+        userReportsList.innerHTML = items.map((report) => `
+            <div style="padding: 12px 0; border-bottom: 1px solid #eef2f7;">
+                <div style="font-weight:600;">${report.reporter?.name || 'Пользователь'} пожаловался на ${report.reported_user?.name || 'пользователя'}</div>
+                <div style="font-size:12px; color:#6b7280;">${report.body || 'Без текста'}</div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <button class="btn-primary" data-user-report-approve="${report.id}">Утвердить</button>
+                    <button class="btn-secondary" data-user-report-reject="${report.id}">Отклонить</button>
+                    <a class="btn-secondary" href="/profile?userId=${report.reported_user_id}" target="_blank">Профиль</a>
+                </div>
+            </div>
+        `).join('');
+
+        userReportsList.querySelectorAll('[data-user-report-approve]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await approveUserReport(btn.dataset.userReportApprove);
+                const reports = await fetchUserReports();
+                renderUserReports(reports);
+            });
+        });
+        userReportsList.querySelectorAll('[data-user-report-reject]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await rejectUserReport(btn.dataset.userReportReject);
+                const reports = await fetchUserReports();
+                renderUserReports(reports);
+            });
+        });
+    };
+
+    const renderLectureReports = (items) => {
+        if (!lectureReportsList) return;
+        if (!items || !items.length) {
+            lectureReportsList.innerHTML = '<p style="color:#999;">Нет жалоб</p>';
+            return;
+        }
+        lectureReportsList.innerHTML = items.map((report) => `
+            <div style="padding: 12px 0; border-bottom: 1px solid #eef2f7;">
+                <div style="font-weight:600;">${report.reporter?.name || 'Пользователь'} пожаловался на лекцию "${report.lecture?.title || 'Лекция'}"</div>
+                <div style="font-size:12px; color:#6b7280;">${report.body || 'Без текста'}</div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <button class="btn-primary" data-lecture-report-approve="${report.id}">Утвердить</button>
+                    <button class="btn-secondary" data-lecture-report-reject="${report.id}">Отклонить</button>
+                    <a class="btn-secondary" href="/lecture/${report.lecture_id}" target="_blank">Перейти</a>
+                </div>
+            </div>
+        `).join('');
+
+        lectureReportsList.querySelectorAll('[data-lecture-report-approve]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await approveLectureReport(btn.dataset.lectureReportApprove);
+                const reports = await fetchLectureReports();
+                renderLectureReports(reports);
+            });
+        });
+        lectureReportsList.querySelectorAll('[data-lecture-report-reject]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                await rejectLectureReport(btn.dataset.lectureReportReject);
+                const reports = await fetchLectureReports();
+                renderLectureReports(reports);
+            });
+        });
     };
 
     const refreshThreads = async () => {
@@ -473,8 +595,61 @@ document.addEventListener('DOMContentLoaded', () => {
             renderApproved(approved);
         }
 
+        const userReports = await fetchUserReports();
+        if (userReports !== null) {
+            renderUserReports(userReports);
+        }
+
+        const lectureReports = await fetchLectureReports();
+        if (lectureReports !== null) {
+            renderLectureReports(lectureReports);
+        }
+
         initEcho();
     };
+
+    if (lectureCreateBtn) {
+        lectureCreateBtn.addEventListener('click', async () => {
+            const title = lectureCreateTitle?.value.trim();
+            if (!title) {
+                if (lectureCreateNote) lectureCreateNote.textContent = 'Укажите тему лекции.';
+                return;
+            }
+            lectureCreateBtn.disabled = true;
+            lectureCreateBtn.textContent = 'Создание...';
+            const payload = {
+                title,
+                description: lectureCreateDescription?.value.trim() || null,
+                starts_at: lectureCreateStarts?.value ? new Date(lectureCreateStarts.value).toISOString() : null,
+                ends_at: lectureCreateEnds?.value ? new Date(lectureCreateEnds.value).toISOString() : null,
+                is_online: true,
+                status: 'live',
+            };
+            const res = await fetch(`${API_URL}/lectures`, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                if (lectureCreateNote) lectureCreateNote.textContent = err.message || 'Ошибка создания лекции.';
+            } else {
+                const data = await res.json();
+                if (lectureCreateNote) {
+                    lectureCreateNote.textContent = `Лекция создана. ID: ${data.lecture?.id}`;
+                }
+                lectureCreateTitle.value = '';
+                lectureCreateDescription.value = '';
+                if (lectureCreateStarts) lectureCreateStarts.value = '';
+                if (lectureCreateEnds) lectureCreateEnds.value = '';
+            }
+            lectureCreateBtn.disabled = false;
+            lectureCreateBtn.textContent = 'Создать';
+        });
+    }
 
     if (chatSend && chatInput) {
         let sending = false;
