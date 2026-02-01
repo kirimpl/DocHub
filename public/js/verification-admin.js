@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const lectureCreateBtn = document.getElementById('lectureCreateBtn');
     const lectureCreateNote = document.getElementById('lectureCreateNote');
     const aiRequestType = document.getElementById('aiRequestType');
+    const aiRequestLecture = document.getElementById('aiRequestLecture');
+    const aiLectureWrap = document.getElementById('aiLectureWrap');
     const aiRequestText = document.getElementById('aiRequestText');
     const aiRequestCount = document.getElementById('aiRequestCount');
     const aiRequestSend = document.getElementById('aiRequestSend');
@@ -33,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let echoReady = false;
     let pusherClient = null;
     const messageCache = new Map();
+    const lectureArchiveCache = new Map();
+    let lectureArchivesLoaded = false;
+    const lectureArchiveTypes = new Set(['lecture_summary', 'key_points', 'lecture_questions']);
 
     const getAuthToken = () => localStorage.getItem('auth_token');
 
@@ -163,6 +168,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (!res.ok) return null;
         return res.json();
+    };
+
+    const fetchLectureArchives = async () => {
+        if (!aiRequestLecture) return null;
+        const res = await fetch(`${API_URL}/lectures/archives`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const renderLectureArchives = (items) => {
+        if (!aiRequestLecture) return;
+        lectureArchiveCache.clear();
+        aiRequestLecture.innerHTML = '<option value="">Выберите лекцию</option>';
+        if (!items || !items.length) return;
+        items.forEach((lecture) => {
+            lectureArchiveCache.set(String(lecture.id), lecture);
+            const starts = lecture.starts_at ? new Date(lecture.starts_at).toLocaleString() : '';
+            const label = starts ? `${lecture.title} · ${starts}` : lecture.title;
+            const option = document.createElement('option');
+            option.value = String(lecture.id);
+            option.textContent = label;
+            aiRequestLecture.appendChild(option);
+        });
     };
 
     const renderAiRequests = (items) => {
@@ -707,7 +737,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const type = aiRequestType.value;
             const text = aiRequestText.value.trim();
             const count = aiRequestCount?.value ? Number(aiRequestCount.value) : null;
-            if (!text) {
+            const useArchive = lectureArchiveTypes.has(type);
+            let selectedLectureId = null;
+            if (useArchive) {
+                selectedLectureId = aiRequestLecture?.value ? String(aiRequestLecture.value) : null;
+                if (!selectedLectureId) {
+                    if (aiRequestResult) aiRequestResult.textContent = 'Выберите лекцию из архива.';
+                    return;
+                }
+            }
+            if (!text && !useArchive) {
                 if (aiRequestResult) aiRequestResult.textContent = 'Введите текст.';
                 return;
             }
@@ -720,6 +759,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 transcript: text,
                 count: Number.isFinite(count) ? count : null,
             };
+            if (useArchive && selectedLectureId) {
+                payload.lecture_id = Number(selectedLectureId);
+                payload.text = '';
+                payload.transcript = '';
+            }
             const res = await fetch(`${API_URL}/admin/ai-requests`, {
                 method: 'POST',
                 headers: {
@@ -735,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (aiRequestResult) {
                     const result = data.result ? String(data.result) : '';
-                    aiRequestResult.textContent = result ? result.slice(0, 800) : 'Готово.';
+                    aiRequestResult.textContent = result || 'Готово.';
                 }
                 const aiRequests = await fetchAiRequests();
                 if (aiRequests !== null) {
@@ -745,6 +789,31 @@ document.addEventListener('DOMContentLoaded', () => {
             aiRequestSend.disabled = false;
             aiRequestSend.textContent = 'Отправить';
         });
+    }
+
+    if (aiRequestType && aiLectureWrap && aiRequestLecture && aiRequestText) {
+        const updateAiArchiveUi = async () => {
+            const type = aiRequestType.value;
+            const useArchive = lectureArchiveTypes.has(type);
+            aiLectureWrap.style.display = useArchive ? 'grid' : 'none';
+            aiRequestText.readOnly = useArchive;
+            if (useArchive) {
+                aiRequestText.value = '';
+                aiRequestText.placeholder = 'Текст будет взят из выбранной лекции.';
+                if (!lectureArchivesLoaded) {
+                    const items = await fetchLectureArchives();
+                    if (items !== null) {
+                        renderLectureArchives(items);
+                        lectureArchivesLoaded = true;
+                    }
+                }
+            } else {
+                aiRequestText.placeholder = 'Текст или расшифровка лекции';
+            }
+        };
+
+        aiRequestType.addEventListener('change', updateAiArchiveUi);
+        updateAiArchiveUi();
     }
 
     if (chatSend && chatInput) {

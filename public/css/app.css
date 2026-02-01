@@ -1821,3 +1821,103 @@ body {
     text-decoration: none;
     color: var(--sec-text-color);
 }
+
+/* Admin panel */
+.admin-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.admin-panel .admin-card {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    border-radius: 20px;
+    box-shadow: 0px 7px 30px 0px #003cff0d;
+    border: 1px solid #e6f0ff;
+}
+
+.admin-panel .admin-card h2 {
+    color: var(--pr-text-color);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.admin-panel .form-input,
+.admin-panel textarea,
+.admin-panel select {
+    background: #ffffff;
+    border: 1px solid #e3f0ff;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--pr-text-color);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.admin-panel .form-input:focus,
+.admin-panel textarea:focus,
+.admin-panel select:focus {
+    border-color: #9ec5ff;
+    box-shadow: 0 0 0 3px rgba(0, 86, 166, 0.08);
+}
+
+.admin-panel .btn-primary,
+.admin-panel .btn-secondary {
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 6px 15px rgba(0, 59, 115, 0.08);
+}
+
+.admin-support-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+}
+
+.admin-subcard {
+    border: 1px solid #e6f0ff;
+    border-radius: 14px;
+    padding: 14px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 59, 115, 0.06);
+}
+
+.admin-panel #supportChatMessages {
+    background: #f8fbff;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid #e6f0ff;
+}
+
+.admin-panel #aiRequestsList > div,
+.admin-panel #adminRequestsList > div,
+.admin-panel #verificationApprovedList > div,
+.admin-panel #userReportsList > div,
+.admin-panel #lectureReportsList > div {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 12px;
+    border: 1px solid #e6f0ff;
+    box-shadow: 0 4px 12px rgba(0, 59, 115, 0.06);
+}
+
+.admin-panel #aiRequestResult {
+    background: #f8fbff;
+    border: 1px solid #e6f0ff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    min-height: 44px;
+    color: #1f3b64;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.admin-panel #aiRequestResult.is-error {
+    border-color: #fecaca;
+    color: #b91c1c;
+    background: #fff5f5;
+}

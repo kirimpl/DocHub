@@ -24,6 +24,25 @@ class LectureController extends Controller
             ->get();
     }
 
+    public function archives(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $lectures = Lecture::query()
+            ->select(['id', 'title', 'description', 'starts_at', 'ends_at', 'status'])
+            ->withCount('recordings')
+            ->where('status', 'archived')
+            ->orWhereHas('recordings')
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json($lectures);
+    }
+
     public function show(Request $request, $id)
     {
         $lecture = Lecture::with('creator:id,name,avatar', 'chatGroup:id,lecture_id,name')->findOrFail($id);

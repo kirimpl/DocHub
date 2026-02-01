@@ -196,6 +196,7 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
 
     // lectures
     Route::get('lectures', [LectureController::class, 'index']);
+    Route::get('lectures/archives', [LectureController::class, 'archives']);
     Route::post('lectures', [LectureController::class, 'store']);
     Route::get('lectures/{id}', [LectureController::class, 'show'])->whereNumber('id');
     Route::patch('lectures/{id}', [LectureController::class, 'update'])->whereNumber('id');
