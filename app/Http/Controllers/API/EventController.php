@@ -122,7 +122,7 @@ class EventController extends Controller
     public function meetings(Request $request)
     {
         $user = $request->user();
-        if (!$user || !$user->work_place) {
+        if (!$user) {
             return response()->json([]);
         }
 
@@ -131,9 +131,20 @@ class EventController extends Controller
         $events = Event::query()
             ->with('creator:id,name,avatar')
             ->where('type', 'meeting')
-            ->where('organization_name', $user->work_place)
+            ->when(!$user->isGlobalAdmin(), function ($query) use ($user) {
+                if (!$user->work_place) {
+                    $query->whereRaw('1=0');
+                    return;
+                }
+                $query->where('organization_name', $user->work_place);
+            })
             ->where(function ($query) use ($now) {
                 $query->where('status', 'live')
+                    ->orWhere(function ($sub) use ($now) {
+                        $sub->whereNotNull('starts_at')
+                            ->where('starts_at', '>=', $now)
+                            ->whereIn('status', ['scheduled', 'live']);
+                    })
                     ->orWhere(function ($sub) use ($now) {
                         $sub->whereNotNull('starts_at')
                             ->where('starts_at', '<=', $now)
@@ -146,6 +157,24 @@ class EventController extends Controller
             ->orderByRaw('CASE WHEN starts_at IS NULL THEN 1 ELSE 0 END')
             ->orderBy('starts_at')
             ->get();
+
+        $workPlacesByCity = config('directories.work_places_by_city', []);
+        $events->transform(function ($event) use ($workPlacesByCity) {
+            $city = null;
+            if ($event->organization_name && $workPlacesByCity) {
+                foreach ($workPlacesByCity as $cityName => $places) {
+                    if (in_array($event->organization_name, $places, true)) {
+                        $city = $cityName;
+                        break;
+                    }
+                }
+            }
+            if (!$city && $event->creator && $event->creator->city) {
+                $city = $event->creator->city;
+            }
+            $event->city = $city;
+            return $event;
+        });
 
         return response()->json($events);
     }

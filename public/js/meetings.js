@@ -51,6 +51,8 @@
             .map((meeting) => {
                 const creatorName = meeting.creator?.name || 'Неизвестно';
                 const creatorAvatar = meeting.creator?.avatar || '/images/avatar.png';
+                const cityName = meeting.city || meeting.creator?.city || '—';
+                const orgName = meeting.organization_name || '—';
                 const joined = state.joined.has(meeting.id);
                 const statusLabel = meeting.status === 'live' ? 'Сейчас идёт' : 'Запланировано';
                 const statusClass = meeting.status === 'live' ? 'live' : 'scheduled';
@@ -83,6 +85,14 @@
                             <div>
                                 <span>Отделение</span>
                                 <strong>${meeting.department_name || '—'}</strong>
+                            </div>
+                            <div>
+                                <span>Город</span>
+                                <strong>${cityName}</strong>
+                            </div>
+                            <div>
+                                <span>Организация</span>
+                                <strong>${orgName}</strong>
                             </div>
                         </div>
                         <div class="meeting-actions">
