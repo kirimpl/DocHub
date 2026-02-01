@@ -256,9 +256,11 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::patch('notes/{id}', [NoteController::class, 'update'])->whereNumber('id');
     Route::delete('notes/{id}', [NoteController::class, 'destroy'])->whereNumber('id');
     //avatar
-    
 
-    Route::post('profile/cover', [ProfileController::class, 'updateCover'])->middleware('auth:sanctum');
-    Route::middleware('auth:sanctum')->post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+
+  Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+    Route::post('/profile/cover', [ProfileController::class, 'updateCover']);
+    Route::get('/profile', [ProfileController::class, 'profile']);
 });
-    
+});
