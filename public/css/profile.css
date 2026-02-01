@@ -39,6 +39,8 @@ body, p, span, .profile-meta, .detail-item span, .profile-username {
     vertical-align: middle;
 }
 
+
+
 /* Основной контейнер */
 .main-app-container {
     display: grid;
@@ -240,28 +242,31 @@ body, p, span, .profile-meta, .detail-item span, .profile-username {
 .detail-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-size: 14px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
-.detail-item i {
-    color: var(--accent);
-    width: 20px;
-    min-width: 20px;
-    text-align: center;
+
+.detail-item svg {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
     flex-shrink: 0;
+    color: var(--accent);
+    display: block;
 }
+
 
 .detail-item span {
     color: var(--text-main);
-    font-weight: 700;
-    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
 }
+
 
 .detail-item b {
     color: var(--text-title);
-    margin-left: 4px;
+    font-weight: 500;
 }
 
 .card-title {
