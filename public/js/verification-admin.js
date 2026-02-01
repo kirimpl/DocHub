@@ -16,6 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const lectureCreateEnds = document.getElementById('lectureCreateEnds');
     const lectureCreateBtn = document.getElementById('lectureCreateBtn');
     const lectureCreateNote = document.getElementById('lectureCreateNote');
+    const aiRequestType = document.getElementById('aiRequestType');
+    const aiRequestText = document.getElementById('aiRequestText');
+    const aiRequestCount = document.getElementById('aiRequestCount');
+    const aiRequestSend = document.getElementById('aiRequestSend');
+    const aiRequestResult = document.getElementById('aiRequestResult');
+    const aiRequestsList = document.getElementById('aiRequestsList');
 
     if (!adminList && !threadsList) {
         return;
@@ -148,6 +154,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (!res.ok) return null;
         return res.json();
+    };
+
+    const fetchAiRequests = async () => {
+        if (!aiRequestsList) return null;
+        const res = await fetch(`${API_URL}/admin/ai-requests`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const renderAiRequests = (items) => {
+        if (!aiRequestsList) return;
+        if (!items || !items.length) {
+            aiRequestsList.innerHTML = '<div>Нет запросов.</div>';
+            return;
+        }
+        const typeLabels = {
+            improve: 'Улучшение текста',
+            lecture_summary: 'Краткое содержание лекции',
+            key_points: 'Ключевые пункты',
+            lecture_outline: 'План лекции',
+            lecture_questions: 'Вопросы по лекции',
+        };
+        aiRequestsList.innerHTML = items.map((item) => {
+            const name = item.user ? [item.user.name, item.user.last_name].filter(Boolean).join(' ') : 'Админ';
+            const created = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+            const status = item.status || 'success';
+            const statusColor = status === 'failed' ? '#ef4444' : '#10b981';
+            const output = item.output ? String(item.output).slice(0, 300) : '';
+            return `
+                <div style="padding: 10px 0; border-bottom: 1px solid #eef2f7;">
+                    <div style="font-weight:600;">${typeLabels[item.type] || item.type}</div>
+                    <div style="font-size:12px; color:#6b7280;">${name} · ${created}</div>
+                    <div style="font-size:12px; color:${statusColor};">Статус: ${status}</div>
+                    ${item.error ? `<div style="font-size:12px; color:#ef4444;">${item.error}</div>` : ''}
+                    ${output ? `<div style="font-size:12px; color:#6b7280; margin-top:6px;">${output}</div>` : ''}
+                </div>
+            `;
+        }).join('');
     };
 
     const approveUserReport = async (id) => {
@@ -605,6 +651,11 @@ document.addEventListener('DOMContentLoaded', () => {
             renderLectureReports(lectureReports);
         }
 
+        const aiRequests = await fetchAiRequests();
+        if (aiRequests !== null) {
+            renderAiRequests(aiRequests);
+        }
+
         initEcho();
     };
 
@@ -648,6 +699,51 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             lectureCreateBtn.disabled = false;
             lectureCreateBtn.textContent = 'Создать';
+        });
+    }
+
+    if (aiRequestSend && aiRequestText && aiRequestType) {
+        aiRequestSend.addEventListener('click', async () => {
+            const type = aiRequestType.value;
+            const text = aiRequestText.value.trim();
+            const count = aiRequestCount?.value ? Number(aiRequestCount.value) : null;
+            if (!text) {
+                if (aiRequestResult) aiRequestResult.textContent = 'Введите текст.';
+                return;
+            }
+            aiRequestSend.disabled = true;
+            aiRequestSend.textContent = 'Отправка...';
+            if (aiRequestResult) aiRequestResult.textContent = '';
+            const payload = {
+                type,
+                text,
+                transcript: text,
+                count: Number.isFinite(count) ? count : null,
+            };
+            const res = await fetch(`${API_URL}/admin/ai-requests`, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                if (aiRequestResult) aiRequestResult.textContent = err.message || 'Ошибка запроса.';
+            } else {
+                const data = await res.json();
+                if (aiRequestResult) {
+                    const result = data.result ? String(data.result) : '';
+                    aiRequestResult.textContent = result ? result.slice(0, 800) : 'Готово.';
+                }
+                const aiRequests = await fetchAiRequests();
+                if (aiRequests !== null) {
+                    renderAiRequests(aiRequests);
+                }
+            }
+            aiRequestSend.disabled = false;
+            aiRequestSend.textContent = 'Отправить';
         });
     }
 

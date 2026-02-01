@@ -8,6 +8,8 @@
     const sections = document.querySelectorAll('.search-section');
 
     const token = localStorage.getItem('auth_token');
+    let friendIds = new Set();
+    let sentRequestIds = new Set();
 
     const setActiveTab = (tabName) => {
         tabs.forEach((tab) => {
@@ -72,10 +74,15 @@
             return;
         }
         users.forEach((user) => {
+            if (user.id && token && Number(user.id) === Number(window.__meId)) {
+                return;
+            }
             const card = document.createElement('div');
             card.className = 'search-user-card';
             const avatar = user.avatar || '/images/avatar.png';
             const name = [user.name, user.last_name].filter(Boolean).join(' ');
+            const isFriend = friendIds.has(String(user.id));
+            const isSent = sentRequestIds.has(String(user.id));
             card.innerHTML = `
                 <div class="search-user-header">
                     <img class="search-avatar" src="${avatar}" alt="">
@@ -86,6 +93,11 @@
                 </div>
                 <div class="search-actions">
                     <a class="search-btn" href="/profile?user=${user.id}">Открыть профиль</a>
+                    ${token ? `
+                        <button class="search-btn ${isFriend ? 'is-disabled' : ''}" data-add-friend="${user.id}" ${isFriend || isSent ? 'disabled' : ''}>
+                            ${isFriend ? 'В друзьях' : (isSent ? 'Заявка отправлена' : 'Добавить в друзья')}
+                        </button>
+                    ` : ''}
                 </div>
             `;
             usersContainer.appendChild(card);
@@ -120,11 +132,49 @@
         });
     };
 
+    const loadFriendData = async () => {
+        if (!token) return;
+        try {
+            const [friendsRes, sentRes, meRes] = await Promise.all([
+                fetch('/api/friends', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/friends/requests/sent', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/me', { headers: { Authorization: `Bearer ${token}` } }),
+            ]);
+            if (friendsRes.ok) {
+                const friends = await friendsRes.json();
+                friendIds = new Set((friends || []).map((f) => String(f.id)));
+            }
+            if (sentRes.ok) {
+                const sent = await sentRes.json();
+                sentRequestIds = new Set((sent || []).map((r) => String(r.recipient?.id)));
+            }
+            if (meRes.ok) {
+                const me = await meRes.json();
+                window.__meId = me?.id;
+            }
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    const sendFriendRequest = async (userId) => {
+        if (!token) return false;
+        const res = await fetch('/api/friends/request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ recipient_id: userId }),
+        });
+        return res.ok;
+    };
+
     const loadResults = async () => {
         const params = new URLSearchParams(window.location.search);
         const query = (params.get('q') || '').trim();
         if (!query) {
-            queryLabel.textContent = '—';
+            queryLabel.textContent = '-';
             metaLabel.textContent = 'Введите запрос в поиск.';
             renderPosts([]);
             renderUsers([]);
@@ -136,6 +186,7 @@
         metaLabel.textContent = 'Ищем совпадения...';
 
         try {
+            await loadFriendData();
             const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
@@ -158,6 +209,20 @@
             renderLectures([]);
         }
     };
+
+    usersContainer?.addEventListener('click', async (event) => {
+        const btn = event.target.closest('[data-add-friend]');
+        if (!btn || btn.disabled) return;
+        const userId = btn.dataset.addFriend;
+        if (!userId) return;
+        const ok = await sendFriendRequest(Number(userId));
+        if (ok) {
+            sentRequestIds.add(String(userId));
+            btn.textContent = 'Заявка отправлена';
+            btn.disabled = true;
+            btn.classList.add('is-disabled');
+        }
+    });
 
     loadResults();
 })();

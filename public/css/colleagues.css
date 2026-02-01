@@ -3,13 +3,15 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    max-width: 1080px;
+    margin: 0 auto;
 }
 
 .colleagues-panel {
-    background: #f3f8ff;
+    background: transparent;
     border-radius: 16px;
-    padding: 18px;
-    box-shadow: 0 6px 18px rgba(0, 60, 255, 0.08);
+    padding: 0;
+    box-shadow: none;
 }
 
 .colleagues-panel-header {
@@ -17,9 +19,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 4px 8px 14px;
+    padding: 18px 24px;
     font-weight: 600;
     color: #0b4a86;
+    background: #f5f9ff;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0, 60, 255, 0.08);
+    width: 1080px;
 }
 
 .colleagues-panel-header h2 {
@@ -51,10 +57,16 @@
     box-shadow: 0 6px 14px rgba(0, 60, 255, 0.2);
 }
 
+.requests-panel .colleagues-requests,
+.sent-panel .colleagues-requests,
+.friends-panel .colleagues-friends {
+    margin-top: 16px;
+}
+
 .colleagues-requests,
 .colleagues-friends {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
 }
 
@@ -66,6 +78,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 140px;
 }
 
 .colleague-card-header {
@@ -75,8 +88,8 @@
 }
 
 .colleague-avatar {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     object-fit: cover;
     box-shadow: 0 6px 12px rgba(0, 60, 255, 0.12);
@@ -94,7 +107,7 @@
 }
 
 .colleague-info {
-    font-size: 12px;
+    font-size: 14px;
     color: #6a8db8;
     display: grid;
     gap: 6px;
@@ -106,8 +119,29 @@
     gap: 6px;
 }
 
-.colleague-info .row i {
+.colleague-info .icon svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+}
+
+.colleague-info .label {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.05em;
     color: #0b5eb5;
+    white-space: nowrap;
+}
+
+.colleague-info .value {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.05em;
+    color: #7fa1c8;
 }
 
 .colleague-actions {
@@ -117,8 +151,8 @@
 }
 
 .colleague-actions button {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 10px;
     border: none;
     cursor: pointer;
@@ -142,10 +176,136 @@
     color: #0b5eb5;
 }
 
+.colleagues-requests .colleague-card {
+    background: #f5f9ff;
+    padding: 18px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 60, 255, 0.08);
+}
+
+.colleagues-requests .colleague-avatar {
+    width: 50px;
+    height: 50px;
+}
+
+.colleagues-requests .colleague-actions {
+    margin-left: auto;
+}
+
+.colleagues-requests .colleague-actions button {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0, 60, 255, 0.12);
+}
+
+.colleagues-requests .colleague-actions .accept {
+    background: #e9f9ef;
+    color: #16a34a;
+}
+
+.colleagues-requests .colleague-actions .decline {
+    background: #feecec;
+    color: #ef4444;
+}
+
+.colleagues-requests .colleague-info {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #d6e6ff;
+    gap: 8px;
+}
+
+.colleagues-requests .colleague-info .label {
+    color: #0b5eb5;
+    font-weight: 600;
+}
+
+.colleagues-requests .colleague-info .value {
+    color: #7fa1c8;
+}
+
+.friends-panel .colleague-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 20px 18px;
+    min-height: 110px;
+}
+
+.friends-panel .colleague-card-header {
+    flex: 1;
+    gap: 16px;
+    align-items: center;
+}
+
+.friends-panel .colleague-avatar {
+    width: 72px;
+    height: 72px;
+}
+
+.friends-panel .colleague-meta h3 {
+    font-size: 16px;
+    color: #0b5eb5;
+    margin-bottom: 4px;
+}
+
+.friends-panel .colleague-meta span {
+    font-size: 13px;
+    color: #9bb6d8;
+}
+
+.friends-panel .colleague-meta .colleague-divider {
+    height: 1px;
+    background: #dbe9ff;
+    margin-top: 10px;
+    width: 140px;
+}
+
+.friends-panel .colleague-actions {
+    justify-content: flex-start;
+    gap: 12px;
+    margin-left: 92px;
+    margin-top: 8px;
+    align-self: flex-start;
+}
+
+.friends-panel .colleague-actions button {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.friends-panel .colleague-actions button svg {
+    width: 20px;
+    height: 20px;
+}
+
 .colleagues-empty {
     grid-column: 1 / -1;
     text-align: center;
     color: #7c9ac2;
     padding: 24px 0;
     font-size: 14px;
+}
+
+@media (max-width: 1100px) {
+    .colleagues-requests,
+    .colleagues-friends {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .colleagues-requests,
+    .colleagues-friends {
+        grid-template-columns: 1fr;
+    }
+
+    .colleagues-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

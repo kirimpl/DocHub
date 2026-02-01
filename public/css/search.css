@@ -154,6 +154,8 @@
 }
 
 .search-btn {
+    font-family: "Geologica", sans-serif;
+    font-size:16px;
     border: none;
     border-radius: 12px;
     padding: 8px 14px;
@@ -169,6 +171,14 @@
 .search-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 14px rgba(0, 60, 255, 0.15);
+}
+
+.search-btn.is-disabled,
+.search-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+    box-shadow: none;
+    transform: none;
 }
 
 .search-user-details,

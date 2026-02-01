@@ -28,6 +28,7 @@ use App\Http\Controllers\API\DirectoryController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
 use App\Http\Controllers\API\NoteController;
+use App\Http\Controllers\API\AdminAiController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -105,6 +106,8 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('ai/key-points', [AiController::class, 'keyPoints']);
     Route::post('ai/lecture/outline', [AiController::class, 'lectureOutline']);
     Route::post('ai/lecture/questions', [AiController::class, 'quizQuestions']);
+    Route::get('admin/ai-requests', [AdminAiController::class, 'index']);
+    Route::post('admin/ai-requests', [AdminAiController::class, 'store']);
     // feed
     Route::get('feed', [FeedController::class, 'index']);
     Route::get('feed/global', [FeedController::class, 'global']);

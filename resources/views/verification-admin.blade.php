@@ -19,6 +19,28 @@
         </div>
     </div>
     <div class="card" style="padding: 24px; margin-bottom: 20px;">
+        <h2 style="margin: 0 0 16px;">AI запросы</h2>
+        <div style="display:grid; gap:12px; max-width:720px;">
+            <select id="aiRequestType" class="form-input">
+                <option value="improve">Улучшение текста</option>
+                <option value="lecture_summary">Краткое содержание лекции</option>
+                <option value="key_points">Ключевые пункты</option>
+                <option value="lecture_outline">План лекции</option>
+                <option value="lecture_questions">Вопросы по лекции</option>
+            </select>
+            <textarea id="aiRequestText" class="form-input" rows="5" placeholder="Текст или расшифровка лекции"></textarea>
+            <input id="aiRequestCount" class="form-input" type="number" min="1" max="10" placeholder="Количество (опционально)">
+            <button id="aiRequestSend" class="btn-primary" style="width:180px;">Отправить</button>
+            <div id="aiRequestResult" style="color:#6b7280; font-size:12px;"></div>
+        </div>
+        <div style="margin-top: 16px;">
+            <div style="font-weight: 600; margin-bottom: 8px;">История запросов</div>
+            <div id="aiRequestsList" style="display:grid; gap: 10px; color: #6b7280;">
+                <div>Загрузка...</div>
+            </div>
+        </div>
+    </div>
+    <div class="card" style="padding: 24px; margin-bottom: 20px;">
         <h2 style="margin: 0 0 16px;">Админ панель: заявки на верификацию</h2>
         <div id="adminRequestsList">
             <p style="color:#999;">Загрузка заявок...</p>
