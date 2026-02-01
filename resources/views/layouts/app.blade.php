@@ -10,6 +10,9 @@
     @if (request()->is('lecture/*'))
     <link rel="stylesheet" href="{{ asset('css/lecture.css') }}">
     @endif
+    @if (request()->is('lecture-archives'))
+    <link rel="stylesheet" href="{{ asset('css/lecture-archives.css') }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght,CRSV@100..900,0&display=swap" rel="stylesheet">
@@ -153,6 +156,9 @@
     <script src="{{ asset('js/feed.js') }}" defer></script>
     @if (request()->is('lecture/*'))
     <script src="{{ asset('js/lecture.js') }}" defer></script>
+    @endif
+    @if (request()->is('lecture-archives'))
+    <script src="{{ asset('js/lecture-archives.js') }}" defer></script>
     @endif
 </body>
 

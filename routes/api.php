@@ -19,6 +19,7 @@ use App\Http\Controllers\API\BlockController;
 use App\Http\Controllers\API\OrganizationController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\LectureController;
+use App\Http\Controllers\API\LectureRecordingController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\VoiceRoomController;
 use App\Http\Controllers\API\VerificationController;
@@ -206,6 +207,9 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('lectures/{id}/kick', [LectureController::class, 'kick'])->whereNumber('id');
     Route::post('lectures/{id}/ban', [LectureController::class, 'ban'])->whereNumber('id');
     Route::post('lectures/{id}/signal', [LectureController::class, 'signal'])->whereNumber('id');
+    Route::get('lectures/{id}/recordings', [LectureRecordingController::class, 'index'])->whereNumber('id');
+    Route::post('lectures/{id}/recordings', [LectureRecordingController::class, 'store'])->whereNumber('id');
+    Route::get('lectures/{id}/recordings/{recordingId}/download', [LectureRecordingController::class, 'download'])->whereNumber('id')->whereNumber('recordingId');
 
     // reports
     Route::post('reports/lectures', [ReportController::class, 'reportLecture']);

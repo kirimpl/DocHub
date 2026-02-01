@@ -29,3 +29,6 @@ Route::get('/support', function () {
 Route::get('/lecture/{id}', function ($id) {
     return view('lecture', ['lectureId' => $id]);
 });
+Route::get('/lecture-archives', function () {
+    return view('lecture-archives');
+});
