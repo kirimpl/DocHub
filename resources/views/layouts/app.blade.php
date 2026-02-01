@@ -43,18 +43,18 @@
                     </button>
                     <div class="sidecard-line"></div>
                     <nav class="sidecard-nav" id="menu">
-                        <a href="profile" class="sidecard-item" title="Profile">
+                        <a href="/profile" class="sidecard-item {{ request()->is('profile') ? 'active' : '' }}" title="Profile">
                             <svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd" clip-rule="evenodd" d="M0 17.9444V17.2214C0 16.4983 0.498 15.656 1.114 15.3383L6.774 12.4228C7.595 12.0006 7.786 11.0633 7.194 10.3223L6.832 9.86944C6.096 8.949 5.5 7.23056 5.5 6.02722V4.22222C5.5 3.10242 5.92143 2.02848 6.67157 1.23666C7.42172 0.44484 8.43913 0 9.5 0C10.5609 0 11.5783 0.44484 12.3284 1.23666C13.0786 2.02848 13.5 3.10242 13.5 4.22222V6.02722C13.5 7.23056 12.9 8.95428 12.168 9.87156L11.807 10.3233C11.217 11.0612 11.401 11.9996 12.226 12.4239L17.886 15.3393C18.501 15.656 19 16.4931 19 17.2214V17.9444C19 18.2244 18.8946 18.4929 18.7071 18.6908C18.5196 18.8888 18.2652 19 18 19H1C0.734784 19 0.48043 18.8888 0.292893 18.6908C0.105357 18.4929 0 18.2244 0 17.9444Z" fill="#75ABDF"/>
                             </svg>
                         </a>
-                        <a href="#" class="sidecard-item active" title="News">
+                        <a href="/news" class="sidecard-item {{ request()->is('news') ? 'active' : '' }}" title="News">
                             <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd" clip-rule="evenodd" d="M0 2.1C0 1.54305 0.221249 1.0089 0.615076 0.615076C1.0089 0.221249 1.54305 0 2.1 0H14.7C15.257 0 15.7911 0.221249 16.1849 0.615076C16.5787 1.0089 16.8 1.54305 16.8 2.1V18.55C16.8 19.5711 17.2056 20.5503 17.9276 21.2724C18.6497 21.9944 19.6289 22.4 20.65 22.4H3.85C2.82892 22.4 1.84965 21.9944 1.12764 21.2724C0.405624 20.5503 0 19.5711 0 18.55V2.1ZM5.25 11.9C4.97152 11.9 4.70445 12.0106 4.50754 12.2075C4.31062 12.4045 4.2 12.6715 4.2 12.95C4.2 13.2285 4.31062 13.4955 4.50754 13.6925C4.70445 13.8894 4.97152 14 5.25 14H11.55C11.8285 14 12.0955 13.8894 12.2925 13.6925C12.4894 13.4955 12.6 13.2285 12.6 12.95C12.6 12.6715 12.4894 12.4045 12.2925 12.2075C12.0955 12.0106 11.8285 11.9 11.55 11.9H5.25ZM5.25 16.1C4.97152 16.1 4.70445 16.2106 4.50754 16.4075C4.31062 16.6045 4.2 16.8715 4.2 17.15C4.2 17.4285 4.31062 17.6955 4.50754 17.8925C4.70445 18.0894 4.97152 18.2 5.25 18.2H11.55C11.8285 18.2 12.0955 18.0894 12.2925 17.8925C12.4894 17.6955 12.6 17.4285 12.6 17.15C12.6 16.8715 12.4894 16.6045 12.2925 16.4075C12.0955 16.2106 11.8285 16.1 11.55 16.1H5.25ZM4.2 5.25C4.2 4.97152 4.31062 4.70445 4.50754 4.50754C4.70445 4.31062 4.97152 4.2 5.25 4.2H11.55C11.8285 4.2 12.0955 4.31062 12.2925 4.50754C12.4894 4.70445 12.6 4.97152 12.6 5.25V8.75C12.6 9.02848 12.4894 9.29555 12.2925 9.49246C12.0955 9.68937 11.8285 9.8 11.55 9.8H5.25C4.97152 9.8 4.70445 9.68937 4.50754 9.49246C4.31062 9.29555 4.2 9.02848 4.2 8.75V5.25Z" fill="white"/>
                                 <path d="M20.3 6.30005H18.9V18.55C18.9 19.0142 19.0844 19.4593 19.4126 19.7875C19.7407 20.1157 20.1859 20.3 20.65 20.3C21.1141 20.3 21.5592 20.1157 21.8874 19.7875C22.2156 19.4593 22.4 19.0142 22.4 18.55V8.40005C22.4 7.84309 22.1787 7.30895 21.7849 6.91512C21.3911 6.5213 20.8569 6.30005 20.3 6.30005Z" fill="white"/>
                             </svg>
                         </a>
-                        <a href="#" class="sidecard-item" title="Colleagues">
+                        <a href="/colleagues" class="sidecard-item {{ request()->is('colleagues') ? 'active' : '' }}" title="Colleagues">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M7.125 12C8.98896 12 10.5 10.489 10.5 8.625C10.5 6.76104 8.98896 5.25 7.125 5.25C5.26104 5.25 3.75 6.76104 3.75 8.625C3.75 10.489 5.26104 12 7.125 12Z" fill="#75ABDF"/>
                                 <path d="M10.9688 13.875C9.64875 13.2047 8.19187 12.9375 7.125 12.9375C5.03531 12.9375 0.75 14.2191 0.75 16.7812V18.75H7.78125V17.9967C7.78125 17.1061 8.15625 16.2131 8.8125 15.4688C9.33609 14.8744 10.0692 14.3227 10.9688 13.875Z" fill="#75ABDF"/>
@@ -62,16 +62,16 @@
                                 <path d="M15.9375 12C18.2157 12 20.0625 10.1532 20.0625 7.875C20.0625 5.59683 18.2157 3.75 15.9375 3.75C13.6593 3.75 11.8125 5.59683 11.8125 7.875C11.8125 10.1532 13.6593 12 15.9375 12Z" fill="#75ABDF"/>
                             </svg>
                         </a>
-                        <a href="messenger" class="sidecard-item" title="Messages">
+                        <a href="/messenger" class="sidecard-item {{ request()->is('messenger') ? 'active' : '' }}" title="Messages">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M4 18H6V22.081L11.101 18H16C17.103 18 18 17.103 18 16V8C18 6.897 17.103 6 16 6H4C2.897 6 2 6.897 2 8V16C2 17.103 2.897 18 4 18Z" fill="#75ABDF"/>
                                 <path d="M20 2H8C6.897 2 6 2.897 6 4H18C19.103 4 20 4.897 20 6V14C21.103 14 22 13.103 22 12V4C22 2.897 21.103 2 20 2Z" fill="#75ABDF"/>
                             </svg>
                         </a>
-                        <a href="#" class="sidecard-item" title="Meetings">
+                        <a href="/meetings" class="sidecard-item {{ request()->is('meetings') ? 'active' : '' }}" title="Meetings">
                             <i class="fa-solid fa-microphone"></i>
                         </a>
-                        <a href="#" class="sidecard-item" title="Notes">
+                        <a href="/notes" class="sidecard-item {{ request()->is('notes') ? 'active' : '' }}" title="Notes">
                             <i class="fa-solid fa-calendar"></i>
                         </a>
                         <a href="/verification/admin" class="sidecard-item" id="adminPanelLink" style="display: none;" title="Admin">
@@ -89,12 +89,12 @@
                         </button>
                         <div class="notification-popup" id="notifPopup">
                             <div class="popup-header">
-                                <span>РЈРІРµРґРѕРјР»РµРЅРёСЏ</span>
-                                <a href="#" id="clearNotifsBtn" style="font-size:12px; text-decoration:none;">РћС‡РёСЃС‚РёС‚СЊ</a>
+                                <span>Уведомления</span>
+                                <a href="#" id="clearNotifsBtn" style="font-size:12px; text-decoration:none;">Очистить</a>
                             </div>
                             <div class="popup-list" id="notifList">
                                 <div class="notify-item"
-                                    style="cursor:default; text-align:center; color:#999; padding:15px;">Р—Р°РіСЂСѓР·РєР°...</div>
+                                    style="cursor:default; text-align:center; color:#999; padding:15px;">Загрузка...</div>
                             </div>
                         </div>
                     </div>
@@ -106,13 +106,13 @@
                             <ul class="settings-list">
                                 <li>
                                     <a href="/profile" class="settings-link">
-                                        <span class="icon">вњЏпёЏ</span> Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РїСЂРѕС„РёР»СЊ
+                                        <span class="icon">✏️</span> Редактировать профиль
                                     </a>
                                 </li>
                                 <li class="divider"></li>
                                 <li>
                                     <a href="#" id="logoutBtn" class="settings-link text-danger">
-                                        <span class="icon">рџљЄ</span> Р’С‹Р№С‚Рё
+                                        <span class="icon">🚪</span> Выйти
                                     </a>
                                 </li>
                             </ul>
