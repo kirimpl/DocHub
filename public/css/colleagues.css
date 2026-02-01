@@ -1,0 +1,151 @@
+.colleagues-page {
+    padding: 24px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.colleagues-panel {
+    background: #f3f8ff;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 6px 18px rgba(0, 60, 255, 0.08);
+}
+
+.colleagues-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 8px 14px;
+    font-weight: 600;
+    color: #0b4a86;
+}
+
+.colleagues-panel-header h2 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.colleagues-panel-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.colleagues-panel-actions button {
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.colleagues-panel-actions .ghost {
+    background: transparent;
+    color: #6c94c8;
+}
+
+.colleagues-panel-actions .primary {
+    background: #0b5eb5;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(0, 60, 255, 0.2);
+}
+
+.colleagues-requests,
+.colleagues-friends {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.colleague-card {
+    background: #f5faff;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 6px 16px rgba(0, 60, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.colleague-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.colleague-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 6px 12px rgba(0, 60, 255, 0.12);
+}
+
+.colleague-meta h3 {
+    margin: 0;
+    font-size: 15px;
+    color: #0b5eb5;
+}
+
+.colleague-meta span {
+    font-size: 12px;
+    color: #85a4c8;
+}
+
+.colleague-info {
+    font-size: 12px;
+    color: #6a8db8;
+    display: grid;
+    gap: 6px;
+}
+
+.colleague-info .row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.colleague-info .row i {
+    color: #0b5eb5;
+}
+
+.colleague-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.colleague-actions button {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0, 60, 255, 0.12);
+    font-size: 14px;
+}
+
+.colleague-actions .accept {
+    color: #17a34a;
+}
+
+.colleague-actions .decline,
+.colleague-actions .remove {
+    color: #ef4444;
+}
+
+.colleague-actions .chat {
+    color: #0b5eb5;
+}
+
+.colleagues-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #7c9ac2;
+    padding: 24px 0;
+    font-size: 14px;
+}
