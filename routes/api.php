@@ -27,6 +27,7 @@ use App\Http\Controllers\API\AiController;
 use App\Http\Controllers\API\DirectoryController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\NoteController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -247,6 +248,12 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('voice-rooms/{id}/invite', [VoiceRoomController::class, 'invite'])->whereNumber('id');
     Route::post('voice-rooms/{id}/invites/{inviteId}/accept', [VoiceRoomController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
     Route::post('voice-rooms/{id}/invites/{inviteId}/decline', [VoiceRoomController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
+
+    // notes
+    Route::get('notes', [NoteController::class, 'index']);
+    Route::post('notes', [NoteController::class, 'store']);
+    Route::patch('notes/{id}', [NoteController::class, 'update'])->whereNumber('id');
+    Route::delete('notes/{id}', [NoteController::class, 'destroy'])->whereNumber('id');
     //avatar
     
 

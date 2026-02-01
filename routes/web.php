@@ -32,3 +32,6 @@ Route::get('/lecture/{id}', function ($id) {
 Route::get('/lecture-archives', function () {
     return view('lecture-archives');
 });
+Route::get('/notes', function () {
+    return view('notes');
+});
