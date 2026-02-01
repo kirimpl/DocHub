@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChatGroup;
 use App\Models\Event;
 use App\Models\EventInvitation;
+use App\Models\Lecture;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -179,6 +182,24 @@ class EventController extends Controller
         return response()->json($events);
     }
 
+    public function room(Request $request, $id)
+    {
+        $user = $request->user();
+        $event = Event::with('creator')->findOrFail($id);
+
+        if (!$user->isGlobalAdmin()) {
+            if (!$event->organization_name || $event->organization_name !== $user->work_place) {
+                return response()->json(['message' => 'Access denied.'], 403);
+            }
+        }
+
+        $lecture = $this->ensureLectureForEvent($event);
+
+        return response()->json([
+            'lecture_id' => $lecture->id,
+        ]);
+    }
+
     public function join(Request $request, $id)
     {
         $user = $request->user();
@@ -270,5 +291,53 @@ class EventController extends Controller
             ->get();
 
         return response()->json($invites);
+    }
+
+    private function ensureLectureForEvent(Event $event): Lecture
+    {
+        $lecture = Lecture::where('event_id', $event->id)->first();
+        if ($lecture) {
+            return $lecture;
+        }
+
+        $lecture = Lecture::create([
+            'title' => $event->title,
+            'description' => $event->description,
+            'starts_at' => $event->starts_at,
+            'ends_at' => $event->ends_at,
+            'is_online' => true,
+            'status' => $event->status ?? 'scheduled',
+            'creator_id' => $event->creator_id,
+            'event_id' => $event->id,
+        ]);
+
+        $lecture->participants()->syncWithoutDetaching([
+            $event->creator_id => ['role' => 'admin'],
+        ]);
+
+        if ($lecture->is_online && $lecture->status !== 'archived') {
+            $group = $lecture->chatGroup()->create([
+                'name' => $lecture->title,
+                'owner_id' => $event->creator_id,
+                'type' => 'lecture',
+                'is_system' => true,
+            ]);
+
+            $group->members()->syncWithoutDetaching([
+                $event->creator_id => ['role' => 'admin'],
+            ]);
+
+            $globalAdmins = User::where('global_role', 'admin')->pluck('id')->all();
+            if ($globalAdmins) {
+                $payload = [];
+                foreach ($globalAdmins as $adminId) {
+                    $payload[$adminId] = ['role' => 'admin'];
+                }
+                $group->members()->syncWithoutDetaching($payload);
+                $lecture->participants()->syncWithoutDetaching($payload);
+            }
+        }
+
+        return $lecture;
     }
 }

@@ -231,6 +231,7 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::get('events/{id}', [EventController::class, 'show'])->whereNumber('id');
     Route::patch('events/{id}', [EventController::class, 'update'])->whereNumber('id');
     Route::delete('events/{id}', [EventController::class, 'destroy'])->whereNumber('id');
+    Route::get('events/{id}/room', [EventController::class, 'room'])->whereNumber('id');
     Route::post('events/{id}/join', [EventController::class, 'join'])->whereNumber('id');
     Route::post('events/{id}/leave', [EventController::class, 'leave'])->whereNumber('id');
     Route::post('events/{id}/invite', [EventController::class, 'invite'])->whereNumber('id');

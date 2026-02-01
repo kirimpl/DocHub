@@ -31,6 +31,14 @@
         До завершения лекции осталось 5 минут.
     </div>
 
+    <div class="lecture-modal" id="lectureStartModal" hidden>
+        <div class="lecture-modal-card">
+            <h3>Это собрание еще не началось</h3>
+            <p>Начало через <span id="lectureStartCountdown">--:--</span></p>
+            <button type="button" id="lectureStartDismiss">Выйти</button>
+        </div>
+    </div>
+
     <section class="lecture-stage">
         <div class="lecture-main" id="lectureMainTile">
             <div class="lecture-video-shell">
@@ -55,7 +63,7 @@
         <div class="lecture-panel" id="lectureParticipantsPanel" hidden>
             <div class="lecture-panel-header">
                 <span>Участники лекции</span>
-                <button class="lecture-panel-close" id="lectureParticipantsClose">✕</button>
+                <button class="lecture-panel-close" id="lectureParticipantsClose">×</button>
             </div>
             <div class="lecture-panel-list" id="lectureParticipantsList"></div>
         </div>
@@ -63,7 +71,7 @@
         <div class="lecture-panel" id="lectureChatPanel" hidden>
             <div class="lecture-panel-header">
                 <span>Чат лекции</span>
-                <button class="lecture-panel-close" id="lectureChatClose">✕</button>
+                <button class="lecture-panel-close" id="lectureChatClose">×</button>
             </div>
             <div class="lecture-chat-messages" id="lectureChatMessages"></div>
             <div class="lecture-chat-input">
