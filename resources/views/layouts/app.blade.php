@@ -22,6 +22,9 @@
     @if (request()->is('search'))
     <link rel="stylesheet" href="{{ asset('css/search.css') }}">
     @endif
+    @if (request()->is('colleagues'))
+    <link rel="stylesheet" href="{{ asset('css/colleagues.css') }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght,CRSV@100..900,0&display=swap" rel="stylesheet">
@@ -219,6 +222,9 @@
     @endif
     @if (request()->is('search'))
     <script src="{{ asset('js/search.js') }}" defer></script>
+    @endif
+    @if (request()->is('colleagues'))
+    <script src="{{ asset('js/colleagues.js') }}" defer></script>
     @endif
 </body>
 

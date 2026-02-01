@@ -54,7 +54,7 @@
                 const cityName = meeting.city || meeting.creator?.city || '—';
                 const orgName = meeting.organization_name || '—';
                 const joined = state.joined.has(meeting.id);
-                const statusLabel = meeting.status === 'live' ? 'Сейчас идёт' : 'Запланировано';
+                const statusLabel = meeting.status === 'live' ? 'Сейчас идет' : 'Запланировано';
                 const statusClass = meeting.status === 'live' ? 'live' : 'scheduled';
 
                 return `
@@ -125,11 +125,19 @@
         if (state.joined.has(Number(id))) return;
 
         try {
+            target.disabled = true;
             await api(`/events/${id}/join`, { method: 'POST' });
+            const room = await api(`/events/${id}/room`);
+            if (room?.lecture_id) {
+                window.location.href = `/lecture/${room.lecture_id}`;
+                return;
+            }
             state.joined.add(Number(id));
             render();
         } catch (error) {
             console.error(error);
+        } finally {
+            target.disabled = false;
         }
     });
 

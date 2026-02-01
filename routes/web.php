@@ -41,3 +41,6 @@ Route::get('/meetings', function () {
 Route::get('/search', function () {
     return view('search');
 });
+Route::get('/colleagues', function () {
+    return view('colleagues');
+});

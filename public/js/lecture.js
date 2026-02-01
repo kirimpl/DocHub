@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         audioMix: null,
         viewMode: 'grid',
+        startModalDismissed: false,
     };
     const audioAnalysers = new Map();
     const keyFor = (id) => String(id);
@@ -74,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('lectureChatInput');
     const chatSend = document.getElementById('lectureChatSend');
     const chatInputWrapper = document.querySelector('.lecture-chat-input');
+    const startModal = document.getElementById('lectureStartModal');
+    const startCountdown = document.getElementById('lectureStartCountdown');
+    const startDismiss = document.getElementById('lectureStartDismiss');
 
     const backBtn = document.getElementById('lectureBackBtn');
     const shareBtn = document.getElementById('lectureShareBtn');
@@ -105,6 +109,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const minutes = String(Math.floor(total / 60)).padStart(2, '0');
         const seconds = String(total % 60).padStart(2, '0');
         return `${minutes}:${seconds}`;
+    };
+
+    const updateStartModal = () => {
+        if (!startModal) return;
+        const startsAt = state.lecture?.starts_at;
+        if (!startsAt) {
+            startModal.hidden = true;
+            return;
+        }
+        const diff = Math.floor((new Date(startsAt).getTime() - Date.now()) / 1000);
+        if (diff > 0 && !state.startModalDismissed) {
+            startModal.hidden = false;
+            if (startCountdown) {
+                startCountdown.textContent = formatTime(diff);
+            }
+        } else {
+            startModal.hidden = true;
+        }
     };
 
     const getFullName = (user) => {
@@ -797,6 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateTimer = () => {
+        updateStartModal();
         if (!state.lecture?.ends_at) return;
         const now = new Date();
         const ends = new Date(state.lecture.ends_at);
@@ -1191,6 +1214,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         emojiBtn?.addEventListener('click', () => {
             alert('Эмодзи будут добавлены позже.');
+        });
+
+        startDismiss?.addEventListener('click', async () => {
+            await fetch(`${API_URL}/lectures/${lectureId}/leave`, {
+                method: 'POST',
+                headers: authHeaders(),
+            });
+            window.location.href = '/meetings';
         });
     };
 
