@@ -438,6 +438,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     let currentUserId = null;
+    let currentUser = null;
     let currentNotifications = [];
     const notifBtn = document.getElementById("h_btn1");
     const notifPopup = document.getElementById("notifPopup");
@@ -461,16 +462,194 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const data = await res.json();
                 const userData = data.data || data;
                 currentUserId = userData.id;
+                currentUser = userData;
 
                 const nameEl = document.getElementById("profile-name");
                 const avatarEl = document.getElementById("profile-avatar");
                 if (nameEl) nameEl.textContent = userData.name;
                 if (avatarEl && userData.avatar) avatarEl.src = userData.avatar;
 
+                initMeetingControls(userData);
                 initRealtime();
                 loadNotifications();
             }
         } catch (e) { console.error(e); }
+    }
+
+    const createMeetingBtn = document.getElementById("createMeetingBtn");
+    const meetingModal = document.getElementById("meetingModal");
+    const closeMeetingBtn = document.getElementById("closeMeetingBtn");
+    const cancelMeetingBtn = document.getElementById("cancelMeetingBtn");
+    const saveMeetingBtn = document.getElementById("saveMeetingBtn");
+    const meetingTitleInput = document.getElementById("meetingTitle");
+    const meetingDescInput = document.getElementById("meetingDescription");
+    const meetingStartsInput = document.getElementById("meetingStartsAt");
+    const meetingEndsInput = document.getElementById("meetingEndsAt");
+    const meetingAdminFields = document.getElementById("meetingAdminFields");
+    const meetingOrgSelect = document.getElementById("meetingOrgSelect");
+    const meetingDeptSelect = document.getElementById("meetingDeptSelect");
+
+    let canCreateMeeting = false;
+    let isMeetingAdmin = false;
+    let meetingDirectoriesLoaded = false;
+
+    function resolveCanCreateMeeting(user) {
+        if (!user) return false;
+        if (user.global_role === "admin") return true;
+        if (user.department_role === "head") return true;
+        if (user.organization_role === "chief" || user.organization_role === "deputy") return true;
+        return false;
+    }
+
+    function normalizeDateTime(value) {
+        if (!value) return null;
+        const normalized = value.replace("T", " ");
+        return normalized.length === 16 ? `${normalized}:00` : normalized;
+    }
+
+    async function loadMeetingDirectories() {
+        if (meetingDirectoriesLoaded || !meetingOrgSelect || !meetingDeptSelect) return;
+        meetingDirectoriesLoaded = true;
+
+        try {
+            const orgRes = await fetch(`${API_URL}/directory/organizations`, { headers: { Authorization: `Bearer ${token}` } });
+            if (orgRes.ok) {
+                const orgData = await orgRes.json();
+                const orgs = Array.isArray(orgData) ? orgData : orgData.data || [];
+                meetingOrgSelect.innerHTML = "<option value=\"\">Выберите организацию</option>";
+                orgs.forEach((org) => {
+                    const opt = document.createElement("option");
+                    opt.value = org.name || org.title || org;
+                    opt.textContent = org.name || org.title || org;
+                    meetingOrgSelect.appendChild(opt);
+                });
+            }
+        } catch (e) { console.error(e); }
+
+        try {
+            const deptRes = await fetch(`${API_URL}/directory/departments`, { headers: { Authorization: `Bearer ${token}` } });
+            if (deptRes.ok) {
+                const deptData = await deptRes.json();
+                const depts = Array.isArray(deptData) ? deptData : deptData.data || [];
+                meetingDeptSelect.innerHTML = "<option value=\"\">Выберите отделение</option>";
+                depts.forEach((dept) => {
+                    const opt = document.createElement("option");
+                    opt.value = dept.name || dept.title || dept;
+                    opt.textContent = dept.name || dept.title || dept;
+                    meetingDeptSelect.appendChild(opt);
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function openMeetingModal() {
+        if (!meetingModal) return;
+        meetingModal.classList.add("active");
+        if (meetingTitleInput) meetingTitleInput.value = "";
+        if (meetingDescInput) meetingDescInput.value = "";
+        if (meetingStartsInput) meetingStartsInput.value = "";
+        if (meetingEndsInput) meetingEndsInput.value = "";
+
+        if (isMeetingAdmin) {
+            if (meetingAdminFields) meetingAdminFields.style.display = "block";
+            loadMeetingDirectories();
+        } else {
+            if (meetingAdminFields) meetingAdminFields.style.display = "none";
+        }
+    }
+
+    function closeMeetingModal() {
+        if (meetingModal) meetingModal.classList.remove("active");
+    }
+
+    async function saveMeeting() {
+        if (!meetingTitleInput || !meetingStartsInput) return;
+        const title = meetingTitleInput.value.trim();
+        const startsAt = normalizeDateTime(meetingStartsInput.value);
+        const endsAt = normalizeDateTime(meetingEndsInput ? meetingEndsInput.value : "");
+        const description = meetingDescInput ? meetingDescInput.value.trim() : "";
+
+        if (!title) {
+            alert("Введите тему собрания");
+            return;
+        }
+        if (!startsAt) {
+            alert("Укажите время начала");
+            return;
+        }
+
+        let organizationName = null;
+        let departmentName = null;
+
+        if (isMeetingAdmin) {
+            organizationName = meetingOrgSelect ? meetingOrgSelect.value : null;
+            departmentName = meetingDeptSelect ? meetingDeptSelect.value : null;
+        } else if (currentUser) {
+            organizationName = currentUser.work_place || currentUser.organization_name || null;
+            departmentName = currentUser.speciality || currentUser.department_name || null;
+        }
+
+        const payload = {
+            title,
+            description,
+            type: "meeting",
+            status: "scheduled",
+            is_online: true,
+            starts_at: startsAt,
+            ends_at: endsAt || null,
+        };
+
+        if (organizationName) payload.organization_name = organizationName;
+        if (departmentName) payload.department_name = departmentName;
+
+        saveMeetingBtn.disabled = true;
+        saveMeetingBtn.textContent = "Создание...";
+        try {
+            const res = await fetch(`${API_URL}/events`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.message || "Ошибка создания собрания");
+            }
+            closeMeetingModal();
+            await loadEventsFromBackend();
+        } catch (e) {
+            console.error(e);
+            alert(e.message || "Ошибка создания собрания");
+        } finally {
+            saveMeetingBtn.disabled = false;
+            saveMeetingBtn.textContent = "Создать";
+        }
+    }
+
+    function initMeetingControls(user) {
+        if (!createMeetingBtn) return;
+        canCreateMeeting = resolveCanCreateMeeting(user);
+        isMeetingAdmin = user && user.global_role === "admin";
+
+        if (!canCreateMeeting) {
+            createMeetingBtn.style.display = "none";
+            return;
+        }
+
+        createMeetingBtn.style.display = "inline-flex";
+        createMeetingBtn.addEventListener("click", openMeetingModal);
+        if (closeMeetingBtn) closeMeetingBtn.addEventListener("click", closeMeetingModal);
+        if (cancelMeetingBtn) cancelMeetingBtn.addEventListener("click", closeMeetingModal);
+        if (saveMeetingBtn) saveMeetingBtn.addEventListener("click", saveMeeting);
+
+        if (meetingModal) {
+            meetingModal.addEventListener("click", (e) => {
+                if (e.target === meetingModal) closeMeetingModal();
+            });
+        }
     }
 
     function initRealtime() {

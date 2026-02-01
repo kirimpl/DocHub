@@ -224,6 +224,7 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
 
     // events
     Route::get('events', [EventController::class, 'index']);
+    Route::get('events/meetings', [EventController::class, 'meetings']);
     Route::get('events/calendar', [EventController::class, 'calendar']);
     Route::get('events/invites', [EventController::class, 'myInvites']);
     Route::post('events', [EventController::class, 'store']);

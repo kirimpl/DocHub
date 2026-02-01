@@ -35,3 +35,6 @@ Route::get('/lecture-archives', function () {
 Route::get('/notes', function () {
     return view('notes');
 });
+Route::get('/meetings', function () {
+    return view('meetings');
+});

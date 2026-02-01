@@ -119,6 +119,37 @@ class EventController extends Controller
         return response()->json($events);
     }
 
+    public function meetings(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->work_place) {
+            return response()->json([]);
+        }
+
+        $now = now();
+
+        $events = Event::query()
+            ->with('creator:id,name,avatar')
+            ->where('type', 'meeting')
+            ->where('organization_name', $user->work_place)
+            ->where(function ($query) use ($now) {
+                $query->where('status', 'live')
+                    ->orWhere(function ($sub) use ($now) {
+                        $sub->whereNotNull('starts_at')
+                            ->where('starts_at', '<=', $now)
+                            ->where(function ($end) use ($now) {
+                                $end->whereNull('ends_at')
+                                    ->orWhere('ends_at', '>=', $now);
+                            });
+                    });
+            })
+            ->orderByRaw('CASE WHEN starts_at IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('starts_at')
+            ->get();
+
+        return response()->json($events);
+    }
+
     public function join(Request $request, $id)
     {
         $user = $request->user();

@@ -31,6 +31,9 @@
                         <span class="archive-text">Архив лекций</span>
                     </div>
                 </div>
+                <div class="lecture-actions">
+                    <button class="create-meeting-btn" id="createMeetingBtn" type="button">Создать собрание</button>
+                </div>
             </div>
 
             <div class="create-post-card">
@@ -222,6 +225,46 @@
                 <div class="modal-actions">
                     <button id="closeViewBtn" class="btn-secondary">Закрыть</button>
                     <button id="addMoreBtn" class="btn-primary">Добавить еще</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="meetingModal" class="modal-overlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h3>Создать собрание</h3>
+                <button class="close-modal-btn" id="closeMeetingBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-date-label">Тема собрания</p>
+                <input type="text" id="meetingTitle" class="modal-input" placeholder="Например: Обсуждение отделения">
+
+                <p class="modal-date-label">Описание</p>
+                <textarea id="meetingDescription" class="modal-input modal-textarea" rows="3" placeholder="Краткое описание"></textarea>
+
+                <div class="meeting-dates">
+                    <div>
+                        <p class="modal-date-label">Начало</p>
+                        <input type="datetime-local" id="meetingStartsAt" class="modal-input">
+                    </div>
+                    <div>
+                        <p class="modal-date-label">Окончание</p>
+                        <input type="datetime-local" id="meetingEndsAt" class="modal-input">
+                    </div>
+                </div>
+
+                <div id="meetingAdminFields" class="meeting-admin-fields">
+                    <p class="modal-date-label">Организация</p>
+                    <select id="meetingOrgSelect" class="modal-input"></select>
+
+                    <p class="modal-date-label">Отделение</p>
+                    <select id="meetingDeptSelect" class="modal-input"></select>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="cancelMeetingBtn" class="btn-secondary">Отмена</button>
+                    <button id="saveMeetingBtn" class="btn-primary">Создать</button>
                 </div>
             </div>
         </div>
