@@ -19,6 +19,9 @@
     @if (request()->is('meetings'))
     <link rel="stylesheet" href="{{ asset('css/meetings.css') }}">
     @endif
+    @if (request()->is('search'))
+    <link rel="stylesheet" href="{{ asset('css/search.css') }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geologica:wght,CRSV@100..900,0&display=swap" rel="stylesheet">
@@ -41,12 +44,16 @@
                     <img src="{{ auth()->user() && auth()->user()->avatar ? auth()->user()->avatar : asset('images/avatar.png') }}" alt="" class="sidecard-avatar-img" id="profile-avatar">
                 </div>
                 <div class="sidecard-nav-wrap">
-                    <button class="sidecard-icon sidecard-search" type="button" title="Search">
+                    <button class="sidecard-icon sidecard-search {{ request()->is('search') ? 'active' : '' }}" type="button" title="Search">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M5.36999 5.36995C4.75038 5.98131 4.25782 6.70919 3.92068 7.5117C3.58354 8.3142 3.40847 9.17547 3.40555 10.0459C3.40264 10.9163 3.57193 11.7788 3.90369 12.5835C4.23545 13.3883 4.72311 14.1194 5.33861 14.7349C5.95411 15.3504 6.68528 15.8381 7.49002 16.1698C8.29477 16.5016 9.15719 16.6709 10.0276 16.668C10.8981 16.6651 11.7593 16.49 12.5618 16.1529C13.3643 15.8157 14.0922 15.3232 14.7036 14.7035C15.9276 13.463 16.6113 11.7887 16.6055 10.0459C16.5996 8.30315 15.9047 6.63344 14.6724 5.40111C13.4401 4.16879 11.7704 3.47389 10.0276 3.46805C8.28487 3.46222 6.61054 4.14591 5.36999 5.36995ZM13.0068 13.0067C12.6168 13.3968 12.1537 13.7062 11.6441 13.9172C11.1345 14.1283 10.5884 14.237 10.0368 14.237C9.48521 14.237 8.93903 14.1283 8.42943 13.9172C7.91984 13.7062 7.45681 13.3968 7.06679 13.0067C6.67676 12.6167 6.36738 12.1537 6.15629 11.6441C5.94521 11.1345 5.83657 10.5883 5.83657 10.0367C5.83657 9.48517 5.94521 8.93899 6.15629 8.4294C6.36738 7.9198 6.67676 7.45677 7.06679 7.06675C7.85448 6.27906 8.92282 5.83653 10.0368 5.83653C11.1508 5.83653 12.2191 6.27906 13.0068 7.06675C13.7945 7.85444 14.237 8.92278 14.237 10.0367C14.237 11.1507 13.7945 12.2191 13.0068 13.0067Z" fill="#75ABDF"/>
                             <path d="M13.4304 15.9767C13.2632 15.8095 13.1306 15.611 13.0401 15.3926C12.9496 15.1741 12.903 14.94 12.903 14.7035C12.903 14.4671 12.9496 14.2329 13.0401 14.0145C13.1306 13.796 13.2632 13.5975 13.4304 13.4303C13.5976 13.2631 13.7961 13.1305 14.0145 13.04C14.233 12.9495 14.4671 12.903 14.7036 12.903C14.94 12.903 15.1742 12.9495 15.3926 13.04C15.6111 13.1305 15.8096 13.2631 15.9768 13.4303L20.2188 17.6735C20.3907 17.8396 20.5278 18.0382 20.6222 18.2578C20.7165 18.4774 20.7662 18.7136 20.7682 18.9526C20.7703 19.1916 20.7248 19.4286 20.6343 19.6498C20.5438 19.8711 20.4101 20.072 20.2411 20.241C20.0721 20.41 19.8711 20.5437 19.6499 20.6342C19.4287 20.7247 19.1917 20.7703 18.9527 20.7682C18.7137 20.7661 18.4775 20.7164 18.2579 20.6221C18.0383 20.5278 17.8396 20.3907 17.6736 20.2187L13.4304 15.9767Z" fill="#75ABDF"/>
                         </svg>
                     </button>
+                    <div class="sidecard-search-panel" id="sidecardSearchPanel" aria-hidden="true">
+                        <input type="text" id="sidecardSearchInput" placeholder="Поиск" autocomplete="off">
+                        <button type="button" class="sidecard-search-close" id="sidecardSearchClose" aria-label="Закрыть">×</button>
+                    </div>
                     <div class="sidecard-line"></div>
                     <nav class="sidecard-nav" id="menu">
                         <a href="/profile" class="sidecard-item {{ request()->is('profile') ? 'active' : '' }}" title="Profile">
@@ -197,6 +204,7 @@
     <script src="{{ asset('js/verification.js') }}" defer></script>
     <script src="{{ asset('js/verification-admin.js') }}" defer></script>
     <script src="{{ asset('js/feed.js') }}" defer></script>
+    <script src="{{ asset('js/search-ui.js') }}" defer></script>
     @if (request()->is('lecture/*'))
     <script src="{{ asset('js/lecture.js') }}" defer></script>
     @endif
@@ -208,6 +216,9 @@
     @endif
     @if (request()->is('meetings'))
     <script src="{{ asset('js/meetings.js') }}" defer></script>
+    @endif
+    @if (request()->is('search'))
+    <script src="{{ asset('js/search.js') }}" defer></script>
     @endif
 </body>
 

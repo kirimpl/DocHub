@@ -38,3 +38,6 @@ Route::get('/notes', function () {
 Route::get('/meetings', function () {
     return view('meetings');
 });
+Route::get('/search', function () {
+    return view('search');
+});

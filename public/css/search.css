@@ -1,0 +1,178 @@
+.search-page {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 30px;
+    font-family: "Geologica", sans-serif;
+}
+
+.search-header-card {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    box-shadow: 0px 7px 30px 0px #003cff0d;
+    border-radius: 20px;
+    padding: 20px 24px;
+}
+
+.search-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.search-title h2 {
+    margin: 0 0 6px 0;
+    color: #0056a6;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.search-title span {
+    color: #0056a6;
+}
+
+.search-title p {
+    margin: 0;
+    color: #7fa0c8;
+    font-size: 14px;
+}
+
+.search-tabs {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #eef5ff;
+    border-radius: 20px;
+    padding: 8px 12px;
+}
+
+.search-tab {
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #7fa0c8;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 10px;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.search-tab.active {
+    color: #0056a6;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(0, 60, 255, 0.1);
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.search-section {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.search-section.active {
+    display: flex;
+}
+
+.search-section-title {
+    font-size: 16px;
+    color: #0056a6;
+    font-weight: 700;
+}
+
+.search-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.search-empty {
+    background: #f8fbff;
+    border-radius: 16px;
+    padding: 18px;
+    color: #7fa0c8;
+    text-align: center;
+    font-size: 14px;
+}
+
+.search-post-card,
+.search-user-card,
+.search-lecture-card {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+    border-radius: 20px;
+    box-shadow: 0px 7px 20px 0px #003cff0d;
+    padding: 18px 20px;
+}
+
+.search-post-header,
+.search-lecture-header,
+.search-user-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.search-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.search-name {
+    font-weight: 700;
+    color: #0056a6;
+    margin: 0;
+    font-size: 15px;
+}
+
+.search-meta {
+    font-size: 12px;
+    color: #7fa0c8;
+}
+
+.search-post-content {
+    color: #003b73;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.search-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.search-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 8px 14px;
+    background: #ffffff;
+    color: #0056a6;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 60, 255, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+}
+
+.search-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0, 60, 255, 0.15);
+}
+
+.search-user-details,
+.search-lecture-details {
+    font-size: 13px;
+    color: #7fa0c8;
+}
