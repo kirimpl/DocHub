@@ -55,24 +55,42 @@ document.addEventListener("DOMContentLoaded", async () => {
             return await res.json();
         },
 
-        async getPosts() {
-            const res = await fetch(
-                `${API_URL}/posts?t=${new Date().getTime()}`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            if (!res.ok) throw new Error("Ошибка получения постов");
+        async getPosts(scope = "all") {
+            const res = await fetch(`${API_URL}/feed?scope=${scope}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error("Ошибка получения ленты");
             return await res.json();
         },
 
         async deletePost(id) {
             const res = await fetch(`${API_URL}/posts/${id}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                },
             });
-            if (!res.ok) throw new Error("Ошибка удаления поста");
-            return true;
+
+            let data = null;
+            try {
+                data = await res.json();
+            } catch (_) { }
+
+            if (!res.ok) {
+                const message =
+                    data?.message ||
+                    (res.status === 403
+                        ? "Нет прав на удаление поста"
+                        : "Ошибка удаления поста");
+
+                const error = new Error(message);
+                error.status = res.status;
+                error.data = data;
+                throw error;
+            }
+
+            return data;
         },
 
         async likePost(id) {
@@ -175,9 +193,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 imageUrl = uploadRes.url || uploadRes.data?.url || null;
             }
             let author_type = "user";
-            let author_name = `${currentUser.name} ${
-                currentUser.last_name || ""
-            }`.trim();
+            let author_name = `${currentUser.name} ${currentUser.last_name || ""
+                }`.trim();
             let is_global = false;
             let department_id = null;
             let department_name = null;
@@ -201,19 +218,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const postData = {
                 content,
-                image: imageUrl,
-
-                author_type,
-                author_name,
-
+                image: imageUrl || null,
                 is_global,
                 is_public: true,
-
-                organization_id: currentUser.organization_id,
-                organization_name: currentUser.organization_name,
-
-                department_id,
-                department_name,
                 department_tags,
             };
 
@@ -242,38 +249,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     const filterTabs = document.querySelectorAll(".filter-tab");
 
     async function loadFeed(filter = "all") {
-        if (!feedContainer || !template) return;
-        currentFilter = filter;
+    if (!feedContainer || !template) return;
 
-        try {
-            const response = await postsApi.getPosts();
-            const posts = Array.isArray(response)
-                ? response
-                : response.data || [];
+    currentFilter = filter;
 
-            const filteredPosts = posts.filter((post) => {
-                if (filter === "organization") {
-                    return post.is_global === true;
-                }
-                if (filter === "department") {
-                    return post.is_global === false;
-                }
-                if (filter === "colleagues") {
-                    return post.user_id && post.user_id !== currentUserId;
-                }
-
-                return true;
-            });
-
-            const newFeedData = JSON.stringify(filteredPosts);
-            if (newFeedData === lastFeedData) return;
-
-            lastFeedData = newFeedData;
-            renderFeed(filteredPosts);
-        } catch (e) {
-            console.error(e);
+    try {
+        let scope = filter;
+        if (filter === "department") {
+            scope = "local";
         }
+        const response = await postsApi.getPosts(scope);
+        let posts = Array.isArray(response)
+            ? response
+            : response.data || [];
+        if (filter === "department") {
+            const myDepartments = currentUser?.departments?.map(d => d.name) || [];
+
+            posts = posts.filter(post =>
+                post.department_tags?.some(tag =>
+                    myDepartments.includes(tag)
+                )
+            );
+        }
+        renderFeed(posts);
+    } catch (e) {
+        console.error("Ошибка загрузки ленты:", e);
     }
+}
+
 
     async function handleEditPost(post) {
         const newContent = prompt(
@@ -307,10 +310,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             lastFeedData = "";
             loadFeed(currentFilter);
         } catch (e) {
-            console.error(e);
-            alert("Ошибка удаления поста");
+            console.error("DELETE failed:", e);
+            alert(e.message);
         }
     }
+
 
     async function handleSharePost(post) {
         const url = `${window.location.origin}/posts/${post.id}`;
@@ -322,7 +326,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     text: post.content || "",
                     url,
                 });
-            } catch (_) {}
+            } catch (_) { }
         } else {
             await navigator.clipboard.writeText(url);
             alert("Ссылка на пост скопирована");
@@ -360,27 +364,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 switch (resolvedAuthorType) {
                     case "organization": {
-                        displayAuthor =
-                            post.organization_name ||
-                            post.organization?.name ||
-                            post.organization_title ||
-                            post.organization?.title ||
-                            "Организация";
-
+                        displayAuthor = post.organization?.name;
                         authorBadge = "🏢 Организация";
                         avatarSrc = "/assets/org-avatar.png";
                         break;
                     }
 
                     case "department":
-                        displayAuthor = post.department_name || "Отделение";
+                        displayAuthor = post.department?.name;
                         authorBadge = "🏥 Отделение";
                         avatarSrc = "/assets/dept-avatar.png";
                         break;
 
                     default:
-                        displayAuthor =
-                            post.user?.name || post.author_name || "Сотрудник";
+                        displayAuthor = post.user?.name;
                         authorBadge = "👤 Сотрудник";
                         avatarSrc = post.user?.avatar || null;
                 }
@@ -413,9 +410,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
         </div>
 
-        ${
-            isAuthor
-                ? `
+        ${isAuthor
+                            ? `
             <div class="post-options-container">
                 <button class="btn-header-action btn-edit-menu">⋮</button>
                 <div class="options-dropdown">
@@ -425,8 +421,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
             </div>
         `
-                : ""
-        }
+                            : ""
+                        }
     </div>
     `;
                 }
@@ -1057,11 +1053,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ev.starts_at && ev.starts_at.length > 15
                     ? ev.starts_at.substring(11, 16)
                     : "--:--";
-            card.innerHTML = `<div style="font-size:12px; color:#0056A6; font-weight:bold;">${timeStr}</div><h4 style="margin:0 0 5px; color:#333;">${
-                ev.title || "Без названия"
-            }</h4><p style="margin:0; font-size:13px; color:#666;">${
-                ev.description || ""
-            }</p>`;
+            card.innerHTML = `<div style="font-size:12px; color:#0056A6; font-weight:bold;">${timeStr}</div><h4 style="margin:0 0 5px; color:#333;">${ev.title || "Без названия"
+                }</h4><p style="margin:0; font-size:13px; color:#666;">${ev.description || ""
+                }</p>`;
             eventsListWrapper.appendChild(card);
         });
         viewModal.classList.add("active");
@@ -1166,5 +1160,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     setInterval(() => {
         loadFeed(currentFilter);
-    }, 5000);
+    }, 10000);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".filter-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".filter-tab")
+                .forEach(t => t.classList.remove("active"));
+
+            tab.classList.add("active");
+
+            loadFeed(tab.dataset.filter);
+        });
+    });
+
+    loadFeed("all");
 });

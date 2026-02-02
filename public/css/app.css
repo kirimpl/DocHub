@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Geologica:wght@500;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geologica:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
 
 :root {
     --bg-color: #d9eeff;
@@ -10,11 +10,21 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: #f5f5f5;
-    font-family: "Inter", sans-serif;
+    background-color: var(--bg-color);
+    font-family: "Montserrat", sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Geologica", sans-serif;
+    margin: 0;
 }
 
 .header-shelf {
@@ -72,6 +82,7 @@ body {
     outline: none;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
     box-sizing: border-box;
+    font-family: "Montserrat", sans-serif;
 }
 
 .search-container input:focus {
@@ -149,6 +160,7 @@ body {
     justify-content: space-between;
     font-weight: bold;
     font-size: 14px;
+    font-family: "Geologica", sans-serif;
 }
 
 .popup-list {
@@ -220,7 +232,6 @@ body {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     padding: 8px 0;
-
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
@@ -248,6 +259,7 @@ body {
     display: flex;
     align-items: center;
     transition: background 0.2s;
+    font-family: "Montserrat", sans-serif;
 }
 
 .settings-link:hover {
@@ -652,8 +664,8 @@ body {
     font-size: 18px;
     color: var(--pr-text-color);
     font-weight: 500;
-    style: medium;
     letter-spacing: 1px;
+    font-family: "Geologica", sans-serif;
 }
 
 .profile-role {
@@ -708,6 +720,7 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     transition: 0.2s;
     font-size: 14px;
+    font-family: "Montserrat", sans-serif;
 }
 
 .btn-profile:hover {
@@ -789,6 +802,7 @@ body {
     color: var(--text-dark);
     margin: 0;
     white-space: nowrap;
+    font-family: "Geologica", sans-serif;
 }
 
 .cp-tabs {
@@ -799,6 +813,7 @@ body {
 
 .cp-tab {
     font-family: "Inter", sans-serif;
+    font-family: "Montserrat", sans-serif;
     font-size: 14px;
     font-weight: 500;
     color: var(--text-light);
@@ -807,7 +822,8 @@ body {
     padding: 5px 0;
 }
 
-.cp-tab:hover, .cp-tab.active {
+.cp-tab:hover,
+.cp-tab.active {
     color: var(--accent-blue);
     font-weight: 700;
 }
@@ -851,7 +867,7 @@ body {
     color: #333;
     margin-left: 10px;
     background: transparent;
-    font-family: "Inter", sans-serif;
+    font-family: "Montserrat", sans-serif;
 }
 
 .clip-btn,
@@ -881,7 +897,8 @@ body {
     height: 24px;
 }
 
-.clip-btn:hover, .cp-send-btn:hover {
+.clip-btn:hover,
+.cp-send-btn:hover {
     background-color: #ffffff;
     box-shadow: 0 4px 10px rgba(0, 86, 179, 0.15);
     transform: translateY(-2px);
@@ -938,6 +955,7 @@ body {
     font-size: 18px;
     color: var(--pr-text-color);
     font-weight: 700;
+    font-family: "Geologica", sans-serif;
 }
 
 .lectures-title-group p {
@@ -1049,6 +1067,7 @@ body {
     color: var(--pr-text-color);
     font-weight: 600;
     text-align: center;
+    font-family: "Geologica", sans-serif;
 }
 
 .archive-box {
@@ -1065,10 +1084,17 @@ body {
     font-size: 14px;
     margin-bottom: 8px;
     box-shadow: 0px 7px 30px 0px #003cff0d;
+    font-family: "Geologica", sans-serif;
 }
 
 .archive-text {
     color: var(--sec-text-color) !important;
+    font-family: "Montserrat", sans-serif !important;
+}
+
+.archive-link {
+    text-decoration: none;
+    color: inherit;
 }
 
 .calendar-card {
@@ -1094,6 +1120,7 @@ body {
     font-size: 16px;
     min-width: 120px;
     text-align: center;
+    font-family: "Geologica", sans-serif;
 }
 
 .nav-arrow {
@@ -1211,6 +1238,7 @@ body {
     margin: 0 0 4px 0;
     font-size: 16px;
     color: #333;
+    font-family: "Geologica", sans-serif;
 }
 
 .event-card .event-time {
@@ -1309,6 +1337,7 @@ body {
     font-weight: 700;
     color: var(--pr-text-color);
     line-height: 1.2;
+    font-family: "Geologica", sans-serif;
 }
 
 .post-date {
@@ -1550,6 +1579,7 @@ body {
     font-weight: 700;
     color: var(--pr-text-color);
     padding: 20px;
+    font-family: "Geologica", sans-serif;
 }
 
 .icon-btn-edit {
@@ -1613,6 +1643,7 @@ body {
     font-weight: 700;
     color: var(--pr-text-color);
     margin-bottom: 2px;
+    font-family: "Geologica", sans-serif;
 }
 
 .msg-preview {
@@ -1668,6 +1699,7 @@ body {
     margin: 0;
     font-size: 18px;
     color: var(--pr-text-color);
+    font-family: "Geologica", sans-serif;
 }
 
 .close-modal-btn {
@@ -1696,6 +1728,7 @@ body {
     outline: none;
     margin-bottom: 24px;
     box-sizing: border-box;
+    font-family: "Montserrat", sans-serif;
 }
 
 .modal-input:focus {
@@ -1716,6 +1749,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     font-size: 14px;
+    font-family: "Geologica", sans-serif;
 }
 
 .btn-secondary {
@@ -1770,12 +1804,14 @@ body {
     font-weight: 800;
     margin-bottom: 15px;
     margin-top: 0;
+    font-family: "Geologica", sans-serif;
 }
 
 .footer-desc {
     font-size: 14px;
     line-height: 1.5;
     margin-bottom: 30px;
+    font-family: "Montserrat", sans-serif;
 }
 
 .footer-heading {
@@ -1784,6 +1820,7 @@ body {
     font-weight: 700;
     margin-bottom: 15px;
     margin-top: 0;
+    font-family: "Geologica", sans-serif;
 }
 
 .profile-heading {
@@ -1804,6 +1841,7 @@ body {
     text-decoration: none;
     color: var(--sec-text-color);
     transition: color 0.2s;
+    font-family: "Montserrat", sans-serif;
 }
 
 .footer-links a:hover {
@@ -1825,12 +1863,15 @@ body {
 .contact-label {
     font-weight: 700;
     color: var(--pr-text-color);
+    font-family: "Geologica", sans-serif;
 }
 
 .contact-item a {
     text-decoration: none;
     color: var(--sec-text-color);
+    font-family: "Montserrat", sans-serif;
 }
+
 
 /* Admin panel */
 .admin-panel {
@@ -1902,11 +1943,11 @@ body {
     border: 1px solid #e6f0ff;
 }
 
-.admin-panel #aiRequestsList > div,
-.admin-panel #adminRequestsList > div,
-.admin-panel #verificationApprovedList > div,
-.admin-panel #userReportsList > div,
-.admin-panel #lectureReportsList > div {
+.admin-panel #aiRequestsList>div,
+.admin-panel #adminRequestsList>div,
+.admin-panel #verificationApprovedList>div,
+.admin-panel #userReportsList>div,
+.admin-panel #lectureReportsList>div {
     background: #ffffff;
     border-radius: 14px;
     padding: 12px;

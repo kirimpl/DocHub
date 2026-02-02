@@ -15,64 +15,81 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-   const renderHeader = (user) => {
-    const nameEl = document.getElementById('profileName');
-    const sexAgeEl = document.getElementById('profileSexAge');
-    const usernameEl = document.getElementById('profileUsername');
-    const verifiedBadge = document.getElementById('verifiedBadge');
+    const renderHeader = (user) => {
+        const nameEl = document.getElementById('profileName');
+        const sexAgeEl = document.getElementById('profileSexAge');
+        const usernameEl = document.getElementById('profileUsername');
+        const verifiedBadge = document.getElementById('verifiedBadge');
 
-    const name = user.name || 'Гость';
-    const username = user.username || 'doctor';
-    const sexLabel = user.sex === 'woman' ? 'Женщина' : 'Мужчина';
+        const name = user.name || 'Гость';
+        const username = user.username || 'doctor';
+        const sexLabel = user.sex === 'woman' ? 'Женщина' : 'Мужчина';
 
-    let ageLabel = '???';
-    if (user.birth_date) {
-        const birth = new Date(user.birth_date);
-        if (!Number.isNaN(birth.getTime())) {
-            const today = new Date();
-            let age = today.getFullYear() - birth.getFullYear();
-            const m = today.getMonth() - birth.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-            ageLabel = age;
+        let ageLabel = '???';
+        if (user.birth_date) {
+            const birth = new Date(user.birth_date);
+            if (!Number.isNaN(birth.getTime())) {
+                const today = new Date();
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                ageLabel = age;
+            }
         }
-    }
 
-    nameEl.textContent = name;
-    usernameEl.textContent = `@${username}`;
-    sexAgeEl.textContent = `${sexLabel}, ${ageLabel} лет`;
+        if (nameEl) nameEl.textContent = name;
+        if (usernameEl) usernameEl.textContent = `@${username}`;
+        if (sexAgeEl) sexAgeEl.textContent = `${sexLabel}, ${ageLabel} лет`;
 
-    /* === ВЕРИФИКАЦИЯ === */
-    if (verifiedBadge) {
-        verifiedBadge.style.display =
-            user.verification_status === 'approved'
-                ? 'inline-flex'
-                : 'none';
-    }
+        if (verifiedBadge) {
+            verifiedBadge.style.display = user.is_verified ? 'inline-flex' : 'none';
+        }
 
-    if (avatarImg && user.avatar) {
-        avatarImg.src = `${user.avatar}?t=${Date.now()}`;
-    }
+        if (avatarImg && user.avatar) {
+            avatarImg.src = `${user.avatar}?t=${Date.now()}`;
+        }
 
-    if (coverDiv && user.cover_image) {
-        coverDiv.style.backgroundImage =
-            `url('${user.cover_image}?t=${Date.now()}')`;
-    }
-};
+        if (coverDiv && user.cover_image) {
+            coverDiv.style.backgroundImage = `url('${user.cover_image}?t=${Date.now()}')`;
+        }
+    };
 
     const renderInfo = (user) => {
         if (!infoGrid) return;
 
         infoGrid.innerHTML = `
-            <div class="detail-item"><span>Город</span><b>${user.city || '—'}</b></div>
-            <div class="detail-item"><span>Место работы</span><b>${user.work_place || '—'}</b></div>
-            <div class="detail-item"><span>Стаж</span><b>${user.work_experience || 0} лет</b></div>
-            <div class="detail-item"><span>Образование</span><b>${user.education || '—'}</b></div>
+            <div class="detail-item">
+                <span>Город</span>
+                <b>${user.city || '—'}</b>
+            </div>
+
+            <div class="detail-item">
+                <span>Место работы</span>
+                <b>${user.work_place || '—'}</b>
+            </div>
+
+            <div class="detail-item">
+                <span>Стаж</span>
+                <b>${user.work_experience || 0} лет</b>
+            </div>
+
+            <div class="detail-item">
+                <span>Образование</span>
+                <b>${user.education || '—'}</b>
+            </div>
 
             <div class="section-title contacts-title">Контакты</div>
             <div class="underline-link"></div>
 
-            <div class="detail-item"><span>Почта</span><b>${user.email || '—'}</b></div>
-            <div class="detail-item"><span>Телефон</span><b>${user.phone_number || '—'}</b></div>
+            <div class="detail-item">
+                <span>Почта</span>
+                <b>${user.email || '—'}</b>
+            </div>
+
+            <div class="detail-item">
+                <span>Телефон</span>
+                <b>${user.phone_number || '—'}</b>
+            </div>
         `;
     };
 
@@ -80,8 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!postsList) return;
 
         if (!posts.length) {
-            postsList.innerHTML =
-                '<p style="text-align:center;padding:20px">Постов пока нет</p>';
+            postsList.innerHTML = '<p style="text-align:center;padding:20px">Постов пока нет</p>';
             return;
         }
 

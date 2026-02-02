@@ -27,8 +27,10 @@
                         <span>Терапия</span>
                     </div>
                     <div class="lecture-item archive-item">
-                        <div class="archive-box">+ 24 000</div>
-                        <span class="archive-text">Архив лекций</span>
+                        <a href="lecture-archives" class="archive-link">
+                            <div class="archive-box">+ 24 000</div>
+                            <span class="archive-text">Архив лекций</span>
+                        </a>
                     </div>
                 </div>
                 <div class="lecture-actions">
@@ -68,8 +70,7 @@
                     </div>
 
                     <div style="position: relative;">
-                        <input type="file" id="hiddenFileInput" style="display: none;"
-                            onchange="handleFileSelect(this)">
+                        <input type="file" id="hiddenFileInput" style="display: none;" onchange="handleFileSelect(this)">
                         <button class="cp-icon-btn clip-btn" onclick="document.getElementById('hiddenFileInput').click()">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -96,16 +97,17 @@
             <div id="feed-container" class="feed"></div>
 
             <div class="feed-filters">
-                <button class="filter-tab active" data-filter="organization">От организации</button>
-
+                <button class="filter-tab active" data-filter="all">Все посты</button>
                 <div class="filter-divider"></div>
-
+                <button class="filter-tab" data-filter="mine">От себя</button>
+                <div class="filter-divider"></div>
                 <button class="filter-tab" data-filter="department">От отделения</button>
-
                 <div class="filter-divider"></div>
-
-                <button class="filter-tab" data-filter="colleagues">От коллег</button>
+                <button class="filter-tab" data-filter="organization">От организации</button>
+                <div class="filter-divider"></div>
+                <button class="filter-tab" data-filter="global">Глобальные</button>
             </div>
+
 
             <div id="newsFeed"></div>
 
@@ -238,7 +240,8 @@
             </div>
             <div class="modal-body">
                 <p class="modal-date-label">Тема собрания</p>
-                <input type="text" id="meetingTitle" class="modal-input" placeholder="Например: Обсуждение отделения">
+                <input type="text" id="meetingTitle" class="modal-input"
+                    placeholder="Например: Обсуждение отделения">
 
                 <p class="modal-date-label">Описание</p>
                 <textarea id="meetingDescription" class="modal-input modal-textarea" rows="3" placeholder="Краткое описание"></textarea>
