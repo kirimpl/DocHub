@@ -526,6 +526,7 @@ class AuthController extends Controller
             $message = Message::create([
                 'sender_id' => $sender->id,
                 'recipient_id' => $recipient->id,
+                'message_type' => 'direct',
                 'body' => $data['body'] ?? '',
                 'shared_user_id' => $targetUser->id,
             ]);

@@ -15,6 +15,7 @@ class Message extends Model
         'sender_id',
         'recipient_id',
         'support_ticket_id',
+        'message_type',
         'body',
         'audio_url',
         'image_url',
