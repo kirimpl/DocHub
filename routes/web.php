@@ -29,3 +29,18 @@ Route::get('/support', function () {
 Route::get('/lecture/{id}', function ($id) {
     return view('lecture', ['lectureId' => $id]);
 });
+Route::get('/lecture-archives', function () {
+    return view('lecture-archives');
+});
+Route::get('/notes', function () {
+    return view('notes');
+});
+Route::get('/meetings', function () {
+    return view('meetings');
+});
+Route::get('/search', function () {
+    return view('search');
+});
+Route::get('/colleagues', function () {
+    return view('colleagues');
+});

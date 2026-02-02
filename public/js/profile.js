@@ -1,687 +1,218 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    const API_URL = "http://127.0.0.1:8000/api";
-    const REVERB_HOST = "localhost";
-    const REVERB_PORT = 8080;
-    const REVERB_APP_KEY = "my_app_key";
+document.addEventListener('DOMContentLoaded', () => {
+    const infoGrid = document.getElementById('userDataGrid');
+    const postsList = document.getElementById('postsList');
+    const avatarImg = document.getElementById('profileAvatar');
+    const avatarInput = document.getElementById('avatarInput');
+    const coverDiv = document.getElementById('profileCover');
+    const coverInput = document.getElementById('coverInput');
 
-    const token = localStorage.getItem("auth_token");
+    const getAuthToken = () => localStorage.getItem('auth_token');
 
-    if (!token) {
-        window.location.href = "/";
-        return;
-    }
+    const formatTime = (value) => {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
 
-    // --- API Methods ---
-    const postsApi = {
-        async uploadMedia(file) {
+    const renderHeader = (user) => {
+        const nameEl = document.getElementById('profileName');
+        const sexAgeEl = document.getElementById('profileSexAge');
+        const usernameEl = document.getElementById('profileUsername');
+
+        const name = user.name || 'Гость';
+        const username = user.username || 'doctor';
+        const sexLabel = user.sex === 'woman' ? 'Женщина' : 'Мужчина';
+        let ageLabel = '???';
+        if (user.birth_date) {
+            const birth = new Date(user.birth_date);
+            if (!Number.isNaN(birth.getTime())) {
+                const today = new Date();
+                let age = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age -= 1;
+                ageLabel = String(age);
+            }
+        }
+
+        if (nameEl) nameEl.textContent = name;
+        if (usernameEl) usernameEl.textContent = `@${username}`;
+        if (sexAgeEl) sexAgeEl.textContent = `${sexLabel}, ${ageLabel} лет`;
+        if (avatarImg && user.avatar) avatarImg.src = user.avatar + '?t=' + Date.now();
+        if (coverDiv && user.cover_image) coverDiv.style.backgroundImage = `url('${user.cover_image}?t=${Date.now()}')`;
+    };
+
+    const renderInfo = (user) => {
+        if (!infoGrid) return;
+        infoGrid.innerHTML = `
+    <div class="detail-item">
+        <svg width="22" height="21" viewBox="0 0 22 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <mask id="mask0_city" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="22" height="21">
+                <path d="M1 20H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 12H4C3.44772 12 3 12.4477 3 13V19C3 19.5523 3.44772 20 4 20H6C6.55228 20 7 19.5523 7 19V13C7 12.4477 6.55228 12 6 12Z" fill="white" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M5 16H5.5" stroke="black" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"/>
+                <path d="M18 1H8C7.44772 1 7 1.44772 7 2V19C7 19.5523 7.44772 20 8 20H18C18.5523 20 19 19.5523 19 19V2C19 1.44772 18.5523 1 18 1Z" fill="white" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M10 4H12V6H10V4ZM14 4H16V6H14V4ZM10 7.5H12V9.5H10V7.5ZM14 7.5H16V9.5H14V7.5ZM14 11H16V13H14V11ZM14 14.5H16V16.5H14V14.5Z" fill="black"/>
+            </mask>
+            <g mask="url(#mask0_city)">
+                <path d="M-1 -1H23V23H-1V-1Z" fill="#0056A6"/>
+            </g>
+        </svg>
+        <span>Город</span>
+        <b>${user.city || '—'}</b>
+    </div>
+
+    <div class="detail-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M11 3C10.2044 3 9.44129 3.31607 8.87868 3.87868C8.31607 4.44129 8 5.20435 8 6V7H5C4.20435 7 3.44129 7.31607 2.87868 7.87868C2.31607 8.44129 2 9.20435 2 10V18C2 18.7956 2.31607 19.5587 2.87868 20.1213C3.44129 20.6839 4.20435 21 5 21H19C19.7956 21 20.5587 20.6839 21.1213 20.1213C21.6839 19.5587 22 18.7956 22 18V10C22 9.20435 21.6839 8.44129 21.1213 7.87868C20.5587 7.31607 19.7956 7 19 7H16V6C16 5.20435 15.6839 4.44129 15.1213 3.87868C14.5587 3.31607 13.7956 3 13 3H11ZM14 7H10V6C10 5.73478 10.1054 5.48043 10.2929 5.29289C10.4804 5.10536 10.7348 5 11 5H13C13.2652 5 13.5196 5.10536 13.7071 5.29289C13.8946 5.48043 14 5.73478 14 6V7Z" fill="#0056A6"/>
+        </svg>
+        <span>Место работы</span>
+        <b>${user.work_place || '—'}</b>
+    </div>
+
+    <div class="detail-item">
+        <!-- Иконка Стаж -->
+        <svg width="16" height="21" viewBox="0 0 16 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0H0V2L5.81 6.36C4.04674 6.94143 2.58648 8.19918 1.75016 9.8568C0.913849 11.5144 0.769916 13.4363 1.35 15.2C1.63699 16.0737 2.09342 16.8822 2.69318 17.5794C3.29294 18.2765 4.02426 18.8486 4.84531 19.2628C5.66635 19.677 6.56101 19.9253 7.47811 19.9935C8.39521 20.0616 9.31674 19.9483 10.19 19.66C11.5905 19.1997 12.8099 18.309 13.6744 17.1149C14.5388 15.9207 15.0043 14.4842 15.0043 13.01C15.0043 11.5358 14.5388 10.0993 13.6744 8.90514C12.8099 7.71103 11.5905 6.82032 10.19 6.36L16 2V0ZM10.94 17.5L8 15.78L5.06 17.5L5.84 14.17L3.25 11.93L6.66 11.64L8 8.5L9.34 11.64L12.75 11.93L10.16 14.17L10.94 17.5Z" fill="#0056A6"/>
+        </svg>
+        <span>Стаж</span>
+        <b>${user.work_experience || 0} лет</b>
+    </div>
+
+    <div class="detail-item">
+        <!-- Иконка Образование -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.835 8.50001L12 0.807007L0.165039 8.50001L12 16.192L20 10.992V16H22V9.69301L23.835 8.50001Z" fill="#0056A6"/>
+            <path d="M5 17.5V13.835L12 18.385L19 13.835V17.5C19 18.97 17.986 20.115 16.747 20.838C15.483 21.576 13.802 22 12 22C10.198 22 8.518 21.576 7.253 20.838C6.014 20.115 5 18.97 5 17.5Z" fill="#0056A6"/>
+        </svg>
+        <span>Образование</span>
+        <b>${user.education || '—'}</b>
+    </div>
+
+    <div class="section-title contacts-title">Контакты</div>
+    <div class="underline-link"></div>
+
+    <div class="detail-item">
+    <svg width="24" height="24" viewBox="0 0 24 24">
+        <path fill="currentColor"
+            d="M4 20C3.45 20 2.97933 19.8043 2.588 19.413C2.19667 19.0217 2.00067 18.5507 2 18V6C2 5.45 2.196 4.97933 2.588 4.588C2.98 4.19667 3.45067 4.00067 4 4H20C20.55 4 21.021 4.196 21.413 4.588C21.805 4.98 22.0007 5.45067 22 6V18C22 18.55 21.8043 19.021 21.413 19.413C21.0217 19.805 20.5507 20.0007 20 20H4ZM12 13L20 8V6L12 11L4 6V8L12 13Z"/>
+    </svg>
+    <span>Почта</span>
+    <b>${user.email || '—'}</b>
+</div>
+
+<div class="detail-item">
+    <svg width="24" height="24" viewBox="0 0 24 24">
+        <path fill="currentColor"
+            d="M9.00411 3.41598C8.43211 2.60598 7.64011 2.24098 6.80011 2.24998C6.00311 2.25798 5.22711 2.59898 4.57911 3.05298C3.91817 3.5183 3.35459 4.10837 2.92011 4.78998C2.51011 5.43898 2.21411 6.20598 2.25411 6.95498C2.44711 10.558 4.47411 14.408 7.32111 17.257C10.1661 20.103 13.9651 22.081 17.8011 21.703C18.5531 21.629 19.2641 21.246 19.8451 20.758C20.446 20.249 20.937 19.6229 21.2881 18.918C21.6281 18.226 21.8311 17.428 21.7191 16.651C21.6031 15.841 21.1501 15.117 20.3171 14.637C19.3011 14.017 18.0521 13.399 16.5621 13.202C16.0111 13.278 15.4991 13.538 15.0561 14.004C14.7151 14.364 14.2131 14.476 13.5071 14.272C12.7891 14.064 11.9811 13.548 11.2791 12.85C10.5771 12.154 10.0461 11.34 9.81911 10.605C9.59511 9.87698 9.69411 9.34198 10.0441 8.97298C10.5171 8.47498 10.7691 7.92098 10.8221 7.33498C10.8741 6.76498 10.7321 6.22898 10.5291 5.76098C10.2251 5.06198 9.70911 4.36698 9.30511 3.82498L9.00411 3.41598Z"/>
+    </svg>
+    <span>Телефон</span>
+    <b>${user.phone_number || '—'}</b>
+</div>
+
+`;
+
+    };
+
+    const renderPosts = (user, posts) => {
+        if (!postsList) return;
+        if (!posts || posts.length === 0) {
+            postsList.innerHTML = '<p style="text-align: center; color: var(--text-title); padding: 20px;">Постов пока нет</p>';
+            return;
+        }
+        const initials = (user.name || 'Доктор').slice(0, 2).toUpperCase();
+        postsList.innerHTML = posts.map(post => {
+            const time = formatTime(post.created_at);
+            return `
+                <div class="post-card-style">
+                    <div></div>
+                    <div style="padding: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <div style="background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">${initials}</div>
+                            <strong class="author">${user.name || 'Доктор'}${time ? ` • ${time}` : ''}</strong>
+                        </div>
+                        <p>${post.content || ''}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const fetchCurrentUser = async () => {
+        const token = getAuthToken();
+        if (!token) return {};
+        const res = await fetch('/api/me', {
+            headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return res.ok ? res.json() : {};
+    };
+
+    const fetchMyPosts = async () => {
+        const token = getAuthToken();
+        if (!token) return [];
+        const res = await fetch('/api/my-posts', {
+            headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return res.ok ? res.json() : [];
+    };
+
+    (async () => {
+        const user = await fetchCurrentUser();
+        renderHeader(user);
+        renderInfo(user);
+        const posts = await fetchMyPosts();
+        renderPosts(user, posts);
+    })();
+
+    if (avatarImg && avatarInput) {
+        avatarImg.addEventListener('click', () => avatarInput.click());
+        avatarInput.addEventListener('change', async () => {
+            const file = avatarInput.files[0];
+            if (!file) return;
+            const token = getAuthToken();
+            if (!token) return alert('Нет авторизации');
+
             const formData = new FormData();
-            formData.append("file", file);
-            const res = await fetch(`${API_URL}/media`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/json"
-                },
-                body: formData,
-            });
-            if (!res.ok) throw new Error("Ошибка загрузки файла");
-            return await res.json();
-        },
+            formData.append('avatar', file);
 
-        async createPost(data) {
-            const res = await fetch(`${API_URL}/posts`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                    Accept: "application/json"
-                },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error("Ошибка создания поста");
-            return await res.json();
-        },
-
-        async getPosts() {
-            const res = await fetch(`${API_URL}/posts`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error("Ошибка получения постов");
-            return await res.json();
-        },
-
-        async deletePost(id) {
-            const res = await fetch(`${API_URL}/posts/${id}`, {
-                method: "DELETE",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error("Ошибка удаления поста");
-            return true;
-        },
-
-        async likePost(id) {
-            return await fetch(`${API_URL}/posts/${id}/like`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-        },
-
-        async unlikePost(id) {
-            return await fetch(`${API_URL}/posts/${id}/unlike`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-        },
-
-        // Новый метод для "Поделиться"
-        async sharePost(id, targetId) {
-            const res = await fetch(`${API_URL}/posts/${id}/share`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                    Accept: "application/json"
-                },
-                body: JSON.stringify({
-                    target_type: 'user', // Пока жестко user, можно доработать
-                    target_id: targetId,
-                    body: 'Shared post'
-                })
-            });
-            if (!res.ok) throw new Error("Ошибка шаринга");
-            return await res.json();
-        },
-
-        async getComments(postId) {
-            const res = await fetch(`${API_URL}/posts/${postId}/comments`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            return await res.json();
-        },
-
-        async addComment(postId, content) {
-            return await fetch(`${API_URL}/posts/${postId}/comments`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ content }),
-            });
-        },
-    };
-
-    // --- State & Handlers ---
-    let currentScope = "org";
-    let selectedFile = null;
-
-    window.setPostType = (element, type) => {
-        document.querySelectorAll(".cp-tab").forEach((el) => el.classList.remove("active"));
-        element.classList.add("active");
-        currentScope = type;
-    };
-
-    window.handleFileSelect = (input) => {
-        if (input.files && input.files[0]) {
-            selectedFile = input.files[0];
-            const indicator = document.getElementById("file-indicator");
-            if (indicator) indicator.style.display = "block";
-            alert(`Файл "${selectedFile.name}" прикреплен!`);
-        }
-    };
-
-    window.handlePublish = async () => {
-        const textInput = document.getElementById("postText");
-        const content = textInput.value;
-
-        if (!content && !selectedFile) {
-            alert("Введите текст или прикрепите фото");
-            return;
-        }
-
-        const btn = document.querySelector('.cp-send-btn') || document.querySelector('button[onclick="handlePublish()"]');
-        if (btn) btn.disabled = true;
-
-        try {
-            let imageUrl = null;
-
-            if (selectedFile) {
-                const uploadRes = await postsApi.uploadMedia(selectedFile);
-                imageUrl = uploadRes.url || uploadRes.data?.url;
-            }
-
-            let isGlobal = false;
-            let departmentTags = [];
-
-            if (currentScope === "org") {
-                isGlobal = true;
-                departmentTags = ["Хирургия", "Терапия"];
-            } else if (currentScope === "dept") {
-                isGlobal = false;
-                departmentTags = ["Хирургия"];
-            } else {
-                departmentTags = ["Общее"];
-            }
-
-            const postData = {
-                content: content,
-                image: imageUrl,
-                is_global: isGlobal,
-                is_public: true,
-                department_tags: departmentTags,
-            };
-
-            await postsApi.createPost(postData);
-
-            textInput.value = "";
-            selectedFile = null;
-            const hiddenInput = document.getElementById("hiddenFileInput");
-            if (hiddenInput) hiddenInput.value = "";
-            const indicator = document.getElementById("file-indicator");
-            if (indicator) indicator.style.display = "none";
-
-            alert("Пост опубликован!");
-
-            const allTab = document.querySelector('.filter-tab[data-filter="all"]');
-            if (allTab) allTab.click();
-            else loadFeed("all");
-
-        } catch (error) {
-            console.error("Ошибка при публикации:", error);
-            alert("Не удалось опубликовать пост");
-        } finally {
-            if (btn) btn.disabled = false;
-        }
-    };
-
-    // --- Feed Logic ---
-    const feedContainer = document.getElementById("newsFeed");
-    const template = document.getElementById("postTemplate");
-    const filterTabs = document.querySelectorAll(".filter-tab");
-
-    async function loadFeed(filter = "all") {
-        if (!feedContainer || !template) return;
-
-        try {
-            const response = await postsApi.getPosts();
-            const posts = Array.isArray(response) ? response : response.data || [];
-            renderFeed(posts, filter);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    function renderFeed(posts, filter) {
-        feedContainer.innerHTML = "";
-
-        if (posts.length === 0) {
-            feedContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">Новостей пока нет</p>';
-            return;
-        }
-
-        posts.forEach((post) => {
-            if (filter === "organization" && !post.is_global) return;
-            if (filter === "department" && post.is_global) return;
-
-            const clone = template.content.cloneNode(true);
-
-            // Автор
-            const authorId = post.user_id || post.author_id || (post.author ? post.author.id : null);
-            const authorName = post.author ? (post.author.name || "ID " + authorId) : "Неизвестный";
-            clone.querySelector(".post-author").textContent = authorName;
-
-            // Дата и текст
-            const dateObj = new Date(post.created_at);
-            clone.querySelector(".post-date").textContent = dateObj.toLocaleString("ru-RU");
-            clone.querySelector(".post-text").textContent = post.content;
-
-            // ==========================================================
-            // ЛОГИКА МЕНЮ "РЕДАКТИРОВАНИЕ/УДАЛЕНИЕ" (Ваш SVG для настроек)
-            // ==========================================================
-            if (currentUserId && authorId == currentUserId) {
-                const header = clone.querySelector(".post-header");
-                if (header) {
-                    // Контейнер для меню
-                    const menuContainer = document.createElement("div");
-                    menuContainer.className = "post-options-container";
-
-                    // Кнопка "Редактировать/Опции"
-                    const editBtn = document.createElement("button");
-                    editBtn.className = "btn-options";
-                    editBtn.title = "Управление постом";
-
-                    // ВСТАВЬТЕ ВАШ SVG ДЛЯ РЕДАКТИРОВАНИЯ/МЕНЮ НИЖЕ ВНУТРИ innerHTML
-                    editBtn.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="1"></circle>
-                            <circle cx="19" cy="12" r="1"></circle>
-                            <circle cx="5" cy="12" r="1"></circle>
-                        </svg>
-                    `;
-
-                    // Выпадающий список
-                    const dropdown = document.createElement("div");
-                    dropdown.className = "options-dropdown";
-
-                    // Пункт 1: Редактировать (заглушка)
-                    const editItem = document.createElement("button");
-                    editItem.className = "dropdown-item";
-                    editItem.innerHTML = "✏️ Редактировать";
-                    editItem.onclick = (e) => {
-                        e.stopPropagation();
-                        alert("Функция редактирования в разработке");
-                    };
-
-                    const deleteItem = document.createElement("button");
-                    deleteItem.className = "dropdown-item delete";
-                    deleteItem.innerHTML = "🗑️ Удалить";
-                    deleteItem.onclick = async (e) => {
-                        e.stopPropagation();
-                        if (confirm("Вы действительно хотите удалить этот пост?")) {
-                            try {
-                                await postsApi.deletePost(post.id);
-                                loadFeed(filter);
-                            } catch (err) {
-                                alert("Ошибка удаления");
-                            }
-                        }
-                    };
-
-                    dropdown.appendChild(editItem);
-                    dropdown.appendChild(deleteItem);
-                    menuContainer.appendChild(editBtn);
-                    menuContainer.appendChild(dropdown);
-                    header.appendChild(menuContainer);
-
-                    editBtn.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        document.querySelectorAll('.options-dropdown').forEach(d => {
-                            if (d !== dropdown) d.classList.remove('active');
-                        });
-                        dropdown.classList.toggle("active");
-                    });
-                }
-            }
-
-            const gallery = clone.querySelector(".post-gallery");
-            if (post.image) {
-                const imgDiv = document.createElement("div");
-                imgDiv.classList.add("gallery-item");
-                imgDiv.style.backgroundImage = `url('${post.image}')`;
-                gallery.appendChild(imgDiv);
-            } else {
-                gallery.style.display = "none";
-            }
-
-            const likeBtn = clone.querySelector(".like-btn");
-            const likeCounter = clone.querySelector(".likes-count");
-            let likesCount = post.likes_count || 0;
-            let isLiked = post.is_liked || false;
-
-            likeCounter.textContent = likesCount;
-            if (isLiked) likeBtn.classList.add("active");
-
-            likeBtn.addEventListener("click", async () => {
-                try {
-                    if (isLiked) {
-                        await postsApi.unlikePost(post.id);
-                        likesCount--;
-                        likeBtn.classList.remove("active");
-                    } else {
-                        await postsApi.likePost(post.id);
-                        likesCount++;
-                        likeBtn.classList.add("active");
-                    }
-                    isLiked = !isLiked;
-                    likeCounter.textContent = likesCount;
-                } catch (e) { console.error(e); }
+            const res = await fetch('/api/profile/avatar', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+                body: formData
             });
 
-            const commentCounter = clone.querySelector(".comments-count");
-            const comments = post.comments || [];
-            commentCounter.textContent = comments.length;
-
-            const actionsBlock = clone.querySelector(".post-footer .actions") || clone.querySelector(".post-footer");
-            if (actionsBlock) {
-                const shareBtn = document.createElement("button");
-                shareBtn.className = "btn-share";
-
-                shareBtn.innerHTML = `
-                    <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M15 20C14.1667 20 13.4583 19.7083 12.875 19.125C12.2917 18.5417 12 17.8333 12 17C12 16.9 12.025 16.6667 12.075 16.3L5.05 12.2C4.78333 12.45 4.475 12.646 4.125 12.788C3.775 12.93 3.4 13.0007 3 13C2.16667 13 1.45833 12.7083 0.875 12.125C0.291667 11.5417 0 10.8333 0 10C0 9.16667 0.291667 8.45833 0.875 7.875C1.45833 7.29167 2.16667 7 3 7C3.4 7 3.775 7.071 4.125 7.213C4.475 7.355 4.78333 7.55067 5.05 7.8L12.075 3.7C12.0417 3.58333 12.021 3.471 12.013 3.363C12.005 3.255 12.0007 3.134 12 3C12 2.16667 12.2917 1.45833 12.875 0.875C13.4583 0.291667 14.1667 0 15 0C15.8333 0 16.5417 0.291667 17.125 0.875C17.7083 1.45833 18 2.16667 18 3C18 3.83333 17.7083 4.54167 17.125 5.125C16.5417 5.70833 15.8333 6 15 6C14.6 6 14.225 5.929 13.875 5.787C13.525 5.645 13.2167 5.44933 12.95 5.2L5.925 9.3C5.95833 9.41667 5.97933 9.52933 5.988 9.638C5.99667 9.74667 6.00067 9.86733 6 10C5.99933 10.1327 5.99533 10.2537 5.988 10.363C5.98067 10.4723 5.95967 10.5847 5.925 10.7L12.95 14.8C13.2167 14.55 13.525 14.3543 13.875 14.213C14.225 14.0717 14.6 14.0007 15 14C15.8333 14 16.5417 14.2917 17.125 14.875C17.7083 15.4583 18 16.1667 18 17C18 17.8333 17.7083 18.5417 17.125 19.125C16.5417 19.7083 15.8333 20 15 20Z" fill="#0056A6"/>
-</svg>
-
-                    Поделиться
-                `;
-
-                shareBtn.onclick = async () => {
-                    const targetId = prompt("Введите ID пользователя, которому отправить пост:", "");
-                    if (targetId) {
-                        try {
-                            await postsApi.sharePost(post.id, targetId);
-                            alert("Пост отправлен!");
-                        } catch (e) {
-                            alert("Ошибка отправки");
-                        }
-                    }
-                };
-
-                actionsBlock.appendChild(shareBtn);
-            }
-
-            feedContainer.appendChild(clone);
-        });
-
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.options-dropdown').forEach(d => d.classList.remove('active'));
+            if (!res.ok) return alert('Ошибка загрузки аватарки');
+            const data = await res.json();
+            avatarImg.src = data.avatar + '?t=' + Date.now();
         });
     }
 
-    if (filterTabs.length > 0) {
-        filterTabs.forEach((tab) => {
-            tab.addEventListener("click", () => {
-                filterTabs.forEach((t) => t.classList.remove("active"));
-                tab.classList.add("active");
-                loadFeed(tab.dataset.filter);
+    if (coverDiv && coverInput) {
+        coverDiv.addEventListener('click', () => coverInput.click());
+        coverInput.addEventListener('change', async () => {
+            const file = coverInput.files[0];
+            if (!file) return;
+            const token = getAuthToken();
+            if (!token) return alert('Нет авторизации');
+
+            const formData = new FormData();
+            formData.append('cover', file);
+
+            const res = await fetch('/api/profile/cover', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+                body: formData
             });
+
+            if (!res.ok) return alert('Ошибка загрузки обложки');
+            const data = await res.json();
+            coverDiv.style.backgroundImage = `url('${data.cover_image}?t=${Date.now()}')`;
         });
-    }
-
-    const notifBtn = document.getElementById("h_btn1");
-    const notifPopup = document.getElementById("notifPopup");
-    const notifList = document.getElementById("notifList");
-    const settingsBtn = document.getElementById("h_btn2");
-    const settingsPopup = document.getElementById("settingsPopup");
-    const logoutBtn = document.querySelector(".text-danger");
-
-    let currentNotifications = [];
-    let currentUserId = null;
-    let badge = notifBtn.querySelector("#notifBadge");
-
-    if (!badge) {
-        badge = document.createElement("span");
-        badge.id = "notifBadge";
-        badge.style.cssText = "position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: red; border-radius: 50%; display: none; border: 2px solid #fff;";
-        notifBtn.appendChild(badge);
-    }
-
-    async function initUser() {
-        try {
-            const res = await fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` } });
-            if (res.ok) {
-                const data = await res.json();
-                const userData = data.data || data;
-                currentUserId = userData.id;
-
-                const nameEl = document.getElementById("profile-name");
-                const avatarEl = document.getElementById("profile-avatar");
-                if (nameEl) nameEl.textContent = userData.name;
-                if (avatarEl && userData.avatar) avatarEl.src = userData.avatar;
-
-                initRealtime();
-                loadNotifications();
-                loadFeed();
-            }
-        } catch (e) { console.error(e); }
-    }
-
-    function initRealtime() {
-        if (!window.Echo) return;
-        window.Echo = new Echo({
-            broadcaster: "reverb",
-            key: REVERB_APP_KEY,
-            wsHost: REVERB_HOST,
-            wsPort: REVERB_PORT,
-            wssPort: REVERB_PORT,
-            forceTLS: false,
-            enabledTransports: ["ws", "wss"],
-            authEndpoint: `${API_URL.replace("/api", "")}/broadcasting/auth`,
-            auth: {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
-                },
-            },
-        });
-        window.Echo.private(`App.Models.User.${currentUserId}`).notification(() => loadNotifications());
-    }
-
-    async function loadNotifications() {
-        try {
-            const response = await fetch(`${API_URL}/notifications`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (response.ok) {
-                const data = await response.json();
-                currentNotifications = Array.isArray(data) ? data : data.data || [];
-                renderNotifications(currentNotifications);
-            }
-        } catch (error) { console.error(error); }
-    }
-
-    function renderNotifications(data) {
-        if (!notifList) return;
-        notifList.innerHTML = "";
-        if (data.length === 0) {
-            notifList.innerHTML = `<div style="padding:15px; text-align:center; color:#999; font-size:13px;">Нет новых уведомлений</div>`;
-            badge.style.display = "none";
-            return;
-        }
-        const hasUnread = data.some((n) => !n.read_at);
-        badge.style.display = hasUnread ? "block" : "none";
-        data.forEach((n) => {
-            const item = document.createElement("div");
-            item.className = "notify-item";
-            if (!n.read_at) {
-                item.style.backgroundColor = "#f0f8ff";
-                item.style.cursor = "pointer";
-            }
-            const payload = n.data || n;
-            const text = payload.message || payload.body || "Новое уведомление";
-            item.innerHTML = `<div class="notify-content" style="padding: 10px; font-size: 13px;">${text}</div>`;
-            item.addEventListener("click", () => {
-                if (!n.read_at) markAsRead(n.id, item);
-            });
-            notifList.appendChild(item);
-        });
-    }
-
-    async function markAsRead(id, element) {
-        element.style.backgroundColor = "transparent";
-        element.style.cursor = "default";
-        try {
-            await fetch(`${API_URL}/notifications/${id}/read`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            loadNotifications();
-        } catch (error) { console.error(error); }
-    }
-
-    if (logoutBtn) logoutBtn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        try {
-            await fetch(`${API_URL}/security/logout-all`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-            });
-        } finally {
-            localStorage.removeItem("auth_token");
-            localStorage.removeItem("user_info");
-            window.location.href = "/";
-        }
-    });
-
-    if (notifBtn) notifBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (settingsPopup) settingsPopup.classList.remove("active");
-        notifPopup.classList.toggle("active");
-    });
-
-    if (settingsBtn) settingsBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (notifPopup) notifPopup.classList.remove("active");
-        settingsPopup.classList.toggle("active");
-    });
-
-    document.addEventListener("click", (e) => {
-        if (notifPopup && notifPopup.classList.contains("active") && !notifPopup.contains(e.target) && e.target !== notifBtn) {
-            notifPopup.classList.remove("active");
-        }
-        if (settingsPopup && settingsPopup.classList.contains("active") && !settingsPopup.contains(e.target) && e.target !== settingsBtn) {
-            settingsPopup.classList.remove("active");
-        }
-    });
-
-    const daysContainer = document.getElementById("daysGrid");
-    const monthYearLabel = document.getElementById("monthYearLabel");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const addModal = document.getElementById("eventModal");
-    const eventInput = document.getElementById("eventInput");
-    const saveBtn = document.getElementById("saveEventBtn");
-    const cancelAddBtn = document.getElementById("cancelBtn");
-    const closeAddBtn = document.getElementById("closeAddBtn");
-    const viewModal = document.getElementById("viewEventModal");
-    const eventsListWrapper = document.getElementById("eventsListWrapper");
-    const closeViewBtn = document.getElementById("closeViewBtn");
-    const closeViewXBtn = document.getElementById("closeViewXBtn");
-    const addMoreBtn = document.getElementById("addMoreBtn");
-
-    let currentDate = new Date();
-    let activeMonth = currentDate.getMonth();
-    let activeYear = currentDate.getFullYear();
-    let eventsMap = {};
-    let selectedDateStr = null;
-
-    async function loadEventsFromBackend() {
-        try {
-            const response = await fetch(`${API_URL}/events`, { headers: { Authorization: `Bearer ${token}` } });
-            if (response.ok) {
-                const serverData = await response.json();
-                eventsMap = {};
-                serverData.forEach((event) => {
-                    let rawDate = event.starts_at || event.created_at;
-                    if (rawDate) {
-                        const dateKey = rawDate.substring(0, 10);
-                        if (!eventsMap[dateKey]) eventsMap[dateKey] = [];
-                        eventsMap[dateKey].push(event);
-                    }
-                });
-                renderCalendar(activeYear, activeMonth);
-            }
-        } catch (error) { console.error(error); }
-    }
-
-    function renderCalendar(year, month) {
-        if (!daysContainer) return;
-        daysContainer.innerHTML = "";
-        const monthName = new Date(year, month).toLocaleString("ru-RU", { month: "long" });
-        if (monthYearLabel) monthYearLabel.textContent = `${monthName} ${year}`;
-        let firstDay = new Date(year, month, 1).getDay();
-        let adjustDay = firstDay === 0 ? 6 : firstDay - 1;
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const daysInPrevMonth = new Date(year, month, 0).getDate();
-
-        for (let i = 0; i < adjustDay; i++) {
-            const span = document.createElement("span");
-            span.textContent = daysInPrevMonth - adjustDay + i + 1;
-            span.classList.add("prev-month");
-            daysContainer.appendChild(span);
-        }
-        const today = new Date();
-        for (let i = 1; i <= daysInMonth; i++) {
-            const span = document.createElement("span");
-            span.textContent = i;
-            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
-            if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) span.classList.add("today");
-            if (eventsMap[dateStr] && eventsMap[dateStr].length > 0) span.classList.add("has-event");
-            span.addEventListener("click", () => {
-                selectedDateStr = dateStr;
-                if (eventsMap[dateStr] && eventsMap[dateStr].length > 0) openViewModal(dateStr, eventsMap[dateStr]);
-                else openAddModal(dateStr);
-            });
-            daysContainer.appendChild(span);
-        }
-    }
-
-    function openAddModal(dateStr) {
-        if (!addModal) return;
-        const titleEl = document.getElementById("modalDateTitle");
-        if (titleEl) titleEl.textContent = `Добавить на ${dateStr}`;
-        eventInput.value = "";
-        addModal.classList.add("active");
-    }
-    function closeAddModal() { if (addModal) addModal.classList.remove("active"); }
-
-    function openViewModal(dateStr, list) {
-        if (!viewModal) return;
-        const titleEl = document.getElementById("viewDateTitle");
-        if (titleEl) titleEl.textContent = `События: ${dateStr}`;
-        eventsListWrapper.innerHTML = "";
-        list.forEach((ev) => {
-            const card = document.createElement("div");
-            Object.assign(card.style, { background: "#f8f9fa", borderLeft: "4px solid #0056A6", padding: "10px", marginBottom: "10px", borderRadius: "4px" });
-            let timeStr = ev.starts_at && ev.starts_at.length > 15 ? ev.starts_at.substring(11, 16) : "--:--";
-            card.innerHTML = `<div style="font-size:12px; color:#0056A6; font-weight:bold;">${timeStr}</div><h4 style="margin:0 0 5px; color:#333;">${ev.title || "Без названия"}</h4><p style="margin:0; font-size:13px; color:#666;">${ev.description || ""}</p>`;
-            eventsListWrapper.appendChild(card);
-        });
-        viewModal.classList.add("active");
-    }
-    function closeViewModal() { if (viewModal) viewModal.classList.remove("active"); }
-
-    async function saveEvent() {
-        const title = eventInput.value.trim();
-        if (selectedDateStr && title !== "") {
-            saveBtn.textContent = "Сохранение...";
-            saveBtn.disabled = true;
-            try {
-                const payload = { title: title, starts_at: selectedDateStr + " 11:00:00", ends_at: selectedDateStr + " 12:00:00", description: "Создано вручную", is_global: false };
-                const response = await fetch(`${API_URL}/events`, {
-                    method: "POST",
-                    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
-                if (response.ok) { closeAddModal(); await loadEventsFromBackend(); }
-                else { alert("Ошибка сохранения"); }
-            } catch (error) { console.error(error); alert("Ошибка соединения"); }
-            finally { saveBtn.textContent = "Сохранить"; saveBtn.disabled = false; }
-        }
-    }
-
-    if (saveBtn) saveBtn.addEventListener("click", saveEvent);
-    if (cancelAddBtn) cancelAddBtn.addEventListener("click", closeAddModal);
-    if (closeAddBtn) closeAddBtn.addEventListener("click", closeAddModal);
-    if (addModal) addModal.addEventListener("click", (e) => { if (e.target === addModal) closeAddModal(); });
-    if (viewModal) {
-        if (closeViewBtn) closeViewBtn.addEventListener("click", closeViewModal);
-        if (closeViewXBtn) closeViewXBtn.addEventListener("click", closeViewModal);
-        if (addMoreBtn) addMoreBtn.addEventListener("click", () => { closeViewModal(); openAddModal(selectedDateStr); });
-        viewModal.addEventListener("click", (e) => { if (e.target === viewModal) closeViewModal(); });
-    }
-    if (prevBtn) prevBtn.addEventListener("click", () => {
-        activeMonth--;
-        if (activeMonth < 0) { activeMonth = 11; activeYear--; }
-        renderCalendar(activeYear, activeMonth);
-    });
-    if (nextBtn) nextBtn.addEventListener("click", () => {
-        activeMonth++;
-        if (activeMonth > 11) { activeMonth = 0; activeYear++; }
-        renderCalendar(activeYear, activeMonth);
-    });
-
-    const toggleBtn = document.querySelector(".btn-more");
-    const card = document.querySelector(".lectures-card");
-    if (toggleBtn && card) {
-        toggleBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            card.classList.toggle("collapsed");
-        });
-    }
-
-    initUser();
-    if (daysContainer) {
-        renderCalendar(activeYear, activeMonth);
-        loadEventsFromBackend();
     }
 });

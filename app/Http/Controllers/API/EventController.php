@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChatGroup;
 use App\Models\Event;
 use App\Models\EventInvitation;
+use App\Models\Lecture;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -119,6 +122,84 @@ class EventController extends Controller
         return response()->json($events);
     }
 
+    public function meetings(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([]);
+        }
+
+        $now = now();
+
+        $events = Event::query()
+            ->with('creator:id,name,avatar')
+            ->where('type', 'meeting')
+            ->when(!$user->isGlobalAdmin(), function ($query) use ($user) {
+                if (!$user->work_place) {
+                    $query->whereRaw('1=0');
+                    return;
+                }
+                $query->where('organization_name', $user->work_place);
+            })
+            ->where(function ($query) use ($now) {
+                $query->where('status', 'live')
+                    ->orWhere(function ($sub) use ($now) {
+                        $sub->whereNotNull('starts_at')
+                            ->where('starts_at', '>=', $now)
+                            ->whereIn('status', ['scheduled', 'live']);
+                    })
+                    ->orWhere(function ($sub) use ($now) {
+                        $sub->whereNotNull('starts_at')
+                            ->where('starts_at', '<=', $now)
+                            ->where(function ($end) use ($now) {
+                                $end->whereNull('ends_at')
+                                    ->orWhere('ends_at', '>=', $now);
+                            });
+                    });
+            })
+            ->orderByRaw('CASE WHEN starts_at IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('starts_at')
+            ->get();
+
+        $workPlacesByCity = config('directories.work_places_by_city', []);
+        $events->transform(function ($event) use ($workPlacesByCity) {
+            $city = null;
+            if ($event->organization_name && $workPlacesByCity) {
+                foreach ($workPlacesByCity as $cityName => $places) {
+                    if (in_array($event->organization_name, $places, true)) {
+                        $city = $cityName;
+                        break;
+                    }
+                }
+            }
+            if (!$city && $event->creator && $event->creator->city) {
+                $city = $event->creator->city;
+            }
+            $event->city = $city;
+            return $event;
+        });
+
+        return response()->json($events);
+    }
+
+    public function room(Request $request, $id)
+    {
+        $user = $request->user();
+        $event = Event::with('creator')->findOrFail($id);
+
+        if (!$user->isGlobalAdmin()) {
+            if (!$event->organization_name || $event->organization_name !== $user->work_place) {
+                return response()->json(['message' => 'Access denied.'], 403);
+            }
+        }
+
+        $lecture = $this->ensureLectureForEvent($event);
+
+        return response()->json([
+            'lecture_id' => $lecture->id,
+        ]);
+    }
+
     public function join(Request $request, $id)
     {
         $user = $request->user();
@@ -210,5 +291,53 @@ class EventController extends Controller
             ->get();
 
         return response()->json($invites);
+    }
+
+    private function ensureLectureForEvent(Event $event): Lecture
+    {
+        $lecture = Lecture::where('event_id', $event->id)->first();
+        if ($lecture) {
+            return $lecture;
+        }
+
+        $lecture = Lecture::create([
+            'title' => $event->title,
+            'description' => $event->description,
+            'starts_at' => $event->starts_at,
+            'ends_at' => $event->ends_at,
+            'is_online' => true,
+            'status' => $event->status ?? 'scheduled',
+            'creator_id' => $event->creator_id,
+            'event_id' => $event->id,
+        ]);
+
+        $lecture->participants()->syncWithoutDetaching([
+            $event->creator_id => ['role' => 'admin'],
+        ]);
+
+        if ($lecture->is_online && $lecture->status !== 'archived') {
+            $group = $lecture->chatGroup()->create([
+                'name' => $lecture->title,
+                'owner_id' => $event->creator_id,
+                'type' => 'lecture',
+                'is_system' => true,
+            ]);
+
+            $group->members()->syncWithoutDetaching([
+                $event->creator_id => ['role' => 'admin'],
+            ]);
+
+            $globalAdmins = User::where('global_role', 'admin')->pluck('id')->all();
+            if ($globalAdmins) {
+                $payload = [];
+                foreach ($globalAdmins as $adminId) {
+                    $payload[$adminId] = ['role' => 'admin'];
+                }
+                $group->members()->syncWithoutDetaching($payload);
+                $lecture->participants()->syncWithoutDetaching($payload);
+            }
+        }
+
+        return $lecture;
     }
 }

@@ -127,6 +127,50 @@
     margin-right: auto;
 }
 
+.lecture-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 30, 55, 0.45);
+    display: grid;
+    place-items: center;
+    z-index: 50;
+}
+
+.lecture-modal[hidden] {
+    display: none !important;
+}
+
+.lecture-modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    width: 360px;
+    box-shadow: 0 18px 40px rgba(19, 70, 130, 0.2);
+    text-align: center;
+}
+
+.lecture-modal-card h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: #0f2f52;
+}
+
+.lecture-modal-card p {
+    margin: 0 0 14px;
+    color: #3a5f86;
+    font-size: 14px;
+}
+
+.lecture-modal-card button {
+    border: none;
+    background: var(--lecture-accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
 .lecture-stage {
     display: grid;
     grid-template-columns: 580px 580px;

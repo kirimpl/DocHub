@@ -168,7 +168,7 @@ class FriendController extends Controller
         $user = $request->user();
         $sentRequests = FriendRequest::where('requester_id', $user->id)
             ->where('status', 'pending')
-            ->with('recipient:id,name,email,avatar,is_online')
+            ->with('recipient:id,name,last_name,email,avatar,is_online,city,work_place,organization_name,speciality,position')
             ->get()
             ->map(function ($fr) {
                 return [

@@ -19,6 +19,7 @@ use App\Http\Controllers\API\BlockController;
 use App\Http\Controllers\API\OrganizationController;
 use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\LectureController;
+use App\Http\Controllers\API\LectureRecordingController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\VoiceRoomController;
 use App\Http\Controllers\API\VerificationController;
@@ -26,6 +27,8 @@ use App\Http\Controllers\API\AiController;
 use App\Http\Controllers\API\DirectoryController;
 use App\Http\Controllers\API\ProfileController;
 use App\Http\Controllers\API\ReportController;
+use App\Http\Controllers\API\NoteController;
+use App\Http\Controllers\API\AdminAiController;
 
 // public endpoints
 Route::get('ping', function () {
@@ -103,6 +106,8 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('ai/key-points', [AiController::class, 'keyPoints']);
     Route::post('ai/lecture/outline', [AiController::class, 'lectureOutline']);
     Route::post('ai/lecture/questions', [AiController::class, 'quizQuestions']);
+    Route::get('admin/ai-requests', [AdminAiController::class, 'index']);
+    Route::post('admin/ai-requests', [AdminAiController::class, 'store']);
     // feed
     Route::get('feed', [FeedController::class, 'index']);
     Route::get('feed/global', [FeedController::class, 'global']);
@@ -191,6 +196,7 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
 
     // lectures
     Route::get('lectures', [LectureController::class, 'index']);
+    Route::get('lectures/archives', [LectureController::class, 'archives']);
     Route::post('lectures', [LectureController::class, 'store']);
     Route::get('lectures/{id}', [LectureController::class, 'show'])->whereNumber('id');
     Route::patch('lectures/{id}', [LectureController::class, 'update'])->whereNumber('id');
@@ -206,6 +212,9 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('lectures/{id}/kick', [LectureController::class, 'kick'])->whereNumber('id');
     Route::post('lectures/{id}/ban', [LectureController::class, 'ban'])->whereNumber('id');
     Route::post('lectures/{id}/signal', [LectureController::class, 'signal'])->whereNumber('id');
+    Route::get('lectures/{id}/recordings', [LectureRecordingController::class, 'index'])->whereNumber('id');
+    Route::post('lectures/{id}/recordings', [LectureRecordingController::class, 'store'])->whereNumber('id');
+    Route::get('lectures/{id}/recordings/{recordingId}/download', [LectureRecordingController::class, 'download'])->whereNumber('id')->whereNumber('recordingId');
 
     // reports
     Route::post('reports/lectures', [ReportController::class, 'reportLecture']);
@@ -219,12 +228,14 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
 
     // events
     Route::get('events', [EventController::class, 'index']);
+    Route::get('events/meetings', [EventController::class, 'meetings']);
     Route::get('events/calendar', [EventController::class, 'calendar']);
     Route::get('events/invites', [EventController::class, 'myInvites']);
     Route::post('events', [EventController::class, 'store']);
     Route::get('events/{id}', [EventController::class, 'show'])->whereNumber('id');
     Route::patch('events/{id}', [EventController::class, 'update'])->whereNumber('id');
     Route::delete('events/{id}', [EventController::class, 'destroy'])->whereNumber('id');
+    Route::get('events/{id}/room', [EventController::class, 'room'])->whereNumber('id');
     Route::post('events/{id}/join', [EventController::class, 'join'])->whereNumber('id');
     Route::post('events/{id}/leave', [EventController::class, 'leave'])->whereNumber('id');
     Route::post('events/{id}/invite', [EventController::class, 'invite'])->whereNumber('id');
@@ -243,10 +254,18 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('voice-rooms/{id}/invite', [VoiceRoomController::class, 'invite'])->whereNumber('id');
     Route::post('voice-rooms/{id}/invites/{inviteId}/accept', [VoiceRoomController::class, 'acceptInvite'])->whereNumber('id')->whereNumber('inviteId');
     Route::post('voice-rooms/{id}/invites/{inviteId}/decline', [VoiceRoomController::class, 'declineInvite'])->whereNumber('id')->whereNumber('inviteId');
-    //avatar
-    
 
-    Route::post('profile/cover', [ProfileController::class, 'updateCover'])->middleware('auth:sanctum');
-    Route::middleware('auth:sanctum')->post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+    // notes
+    Route::get('notes', [NoteController::class, 'index']);
+    Route::post('notes', [NoteController::class, 'store']);
+    Route::patch('notes/{id}', [NoteController::class, 'update'])->whereNumber('id');
+    Route::delete('notes/{id}', [NoteController::class, 'destroy'])->whereNumber('id');
+    //avatar
+
+
+  Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+    Route::post('/profile/cover', [ProfileController::class, 'updateCover']);
+    Route::get('/profile', [ProfileController::class, 'profile']);
 });
-    
+});

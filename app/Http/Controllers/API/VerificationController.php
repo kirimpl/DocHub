@@ -59,6 +59,7 @@ class VerificationController extends Controller
                         ->where('recipient_id', $user->id);
                 });
             })
+            ->where('message_type', 'support')
             ->when($ticket, function ($query) use ($ticket) {
                 $query->where('support_ticket_id', $ticket->id);
             })
@@ -143,6 +144,7 @@ class VerificationController extends Controller
             'sender_id' => $user->id,
             'recipient_id' => $support->id,
             'support_ticket_id' => $ticket->id,
+            'message_type' => 'support',
             'body' => $data['body'],
         ]);
 
@@ -223,6 +225,7 @@ class VerificationController extends Controller
                         ->where('recipient_id', $user->id);
                 });
             })
+            ->where('message_type', 'support')
             ->where('support_ticket_id', $ticket->id)
             ->orderBy('created_at')
             ->get(['id', 'sender_id', 'recipient_id', 'body', 'created_at']);
@@ -276,6 +279,7 @@ class VerificationController extends Controller
             'sender_id' => $support->id,
             'recipient_id' => $user->id,
             'support_ticket_id' => $ticket->id,
+            'message_type' => 'support',
             'body' => $data['body'],
         ]);
 

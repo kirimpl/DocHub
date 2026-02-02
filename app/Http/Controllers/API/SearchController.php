@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Post;
 use App\Models\UserBlock;
+use App\Models\Lecture;
 
 class SearchController extends Controller
 {
@@ -28,7 +29,7 @@ class SearchController extends Controller
     {
         $q = $request->query('q');
         if (!$q) {
-            return response()->json(['users' => [], 'posts' => []]);
+            return response()->json(['users' => [], 'posts' => [], 'lectures' => []]);
         }
 
         $viewer = $request->user();
@@ -52,6 +53,16 @@ class SearchController extends Controller
         $posts = $postsQuery->limit(20)->get();
         $posts = $posts->filter(fn ($post) => $this->canSeePost($viewer, $post))->values();
 
-        return response()->json(['users' => $users, 'posts' => $posts]);
+        $lectures = Lecture::query()
+            ->with('creator:id,name,avatar')
+            ->where(function ($query) use ($q) {
+                $query->where('title', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        return response()->json(['users' => $users, 'posts' => $posts, 'lectures' => $lectures]);
     }
 }

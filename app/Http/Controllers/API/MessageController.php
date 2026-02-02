@@ -34,7 +34,11 @@ class MessageController extends Controller
     public function inbox(Request $request)
     {
         $user = $request->user();
-        $messages = Message::where('recipient_id', $user->id)->with('sender')->latest()->get();
+        $messages = Message::where('recipient_id', $user->id)
+            ->where('message_type', 'direct')
+            ->with('sender')
+            ->latest()
+            ->get();
         return response()->json($messages);
     }
 
@@ -81,6 +85,7 @@ class MessageController extends Controller
         $message = Message::create([
             'sender_id' => $sender->id,
             'recipient_id' => $data['recipient_id'],
+            'message_type' => 'direct',
             'body' => $data['body'] ?? '',
             'audio_url' => $data['audio_url'] ?? null,
             'image_url' => $data['image_url'] ?? null,
@@ -127,7 +132,8 @@ class MessageController extends Controller
             $q->where('sender_id', $me->id)->where('recipient_id', $other->id);
         })->orWhere(function ($q) use ($me, $other) {
             $q->where('sender_id', $other->id)->where('recipient_id', $me->id);
-        })->where(function ($q) use ($me) {
+        })->where('message_type', 'direct')
+        ->where(function ($q) use ($me) {
             $q->whereNull('deleted_by')->orWhere('deleted_by', '!=', $me->id);
         })->with(['sender', 'replyTo.sender', 'reactions.user'])
           ->orderBy('created_at', 'desc')
@@ -139,6 +145,7 @@ class MessageController extends Controller
         // Mark messages as read for the current user
         Message::where('recipient_id', $me->id)
             ->where('sender_id', $other->id)
+            ->where('message_type', 'direct')
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
@@ -160,7 +167,8 @@ class MessageController extends Controller
             $q->where('sender_id', $me->id)->where('recipient_id', $other->id);
         })->orWhere(function ($q) use ($me, $other) {
             $q->where('sender_id', $other->id)->where('recipient_id', $me->id);
-        })->where('is_pinned', true)
+        })->where('message_type', 'direct')
+            ->where('is_pinned', true)
             ->where(function ($q) use ($me) {
                 $q->whereNull('deleted_by')->orWhere('deleted_by', '!=', $me->id);
             })
@@ -194,6 +202,7 @@ class MessageController extends Controller
         Message::create([
             'sender_id' => $me->id,
             'recipient_id' => $otherId,
+            'message_type' => 'direct',
             'body' => '[[system]]' . $me->name . ' pinned a message: ' . $label . '[[/system]]',
         ]);
 
@@ -229,6 +238,7 @@ class MessageController extends Controller
 
         while ((time() - $started) < $timeout) {
             $messages = Message::where('recipient_id', $user->id)
+                ->where('message_type', 'direct')
                 ->where('id', '>', $sinceId)
                 ->select(['id', 'sender_id', 'recipient_id', 'body', 'created_at'])
                 ->orderBy('id', 'asc')
@@ -258,7 +268,7 @@ class MessageController extends Controller
                 $q->where('sender_id', $me->id)->where('recipient_id', $other->id);
             })->orWhere(function ($q) use ($me, $other) {
                 $q->where('sender_id', $other->id)->where('recipient_id', $me->id);
-            })->delete();
+            })->where('message_type', 'direct')->delete();
             return response()->json(['message' => 'Conversation deleted for all.']);
         } elseif ($request->isMethod('patch')) {
             // Delete for me
@@ -266,7 +276,8 @@ class MessageController extends Controller
                 $q->where('sender_id', $me->id)->where('recipient_id', $other->id);
             })->orWhere(function ($q) use ($me, $other) {
                 $q->where('sender_id', $other->id)->where('recipient_id', $me->id);
-            })->update(['deleted_by' => $me->id]);
+            })->where('message_type', 'direct')
+              ->update(['deleted_by' => $me->id]);
             return response()->json(['message' => 'Conversation deleted for you.']);
         }
 

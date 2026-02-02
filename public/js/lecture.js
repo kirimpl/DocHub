@@ -16,7 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
         chatGroupId: null,
         chatMessages: [],
         chatMessageIds: new Set(),
+        recording: {
+            recorder: null,
+            chunks: [],
+            startedAt: null,
+            uploading: false,
+        },
+        audioMix: null,
         viewMode: 'grid',
+        startModalDismissed: false,
     };
     const audioAnalysers = new Map();
     const keyFor = (id) => String(id);
@@ -67,6 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('lectureChatInput');
     const chatSend = document.getElementById('lectureChatSend');
     const chatInputWrapper = document.querySelector('.lecture-chat-input');
+    const startModal = document.getElementById('lectureStartModal');
+    const startCountdown = document.getElementById('lectureStartCountdown');
+    const startDismiss = document.getElementById('lectureStartDismiss');
 
     const backBtn = document.getElementById('lectureBackBtn');
     const shareBtn = document.getElementById('lectureShareBtn');
@@ -98,6 +109,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const minutes = String(Math.floor(total / 60)).padStart(2, '0');
         const seconds = String(total % 60).padStart(2, '0');
         return `${minutes}:${seconds}`;
+    };
+
+    const updateStartModal = () => {
+        if (!startModal) return;
+        const startsAt = state.lecture?.starts_at;
+        if (!startsAt) {
+            startModal.hidden = true;
+            return;
+        }
+        const diff = Math.floor((new Date(startsAt).getTime() - Date.now()) / 1000);
+        if (diff > 0 && !state.startModalDismissed) {
+            startModal.hidden = false;
+            if (startCountdown) {
+                startCountdown.textContent = formatTime(diff);
+            }
+        } else {
+            startModal.hidden = true;
+        }
     };
 
     const getFullName = (user) => {
@@ -369,6 +398,140 @@ document.addEventListener('DOMContentLoaded', () => {
         return parsed;
     };
 
+    const ensureAudioMix = () => {
+        if (state.audioMix) return state.audioMix;
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const destination = context.createMediaStreamDestination();
+        state.audioMix = { context, destination, sources: new Map() };
+        return state.audioMix;
+    };
+
+    const addStreamToMix = (userId, stream) => {
+        if (!stream) return;
+        const tracks = stream.getAudioTracks();
+        if (!tracks || tracks.length === 0) return;
+        const mix = ensureAudioMix();
+        const key = String(userId);
+        if (mix.sources.has(key)) return;
+        try {
+            const source = mix.context.createMediaStreamSource(stream);
+            source.connect(mix.destination);
+            mix.sources.set(key, source);
+        } catch (e) {
+            // ignore
+        }
+    };
+
+    const removeStreamFromMix = (userId) => {
+        const mix = state.audioMix;
+        if (!mix) return;
+        const key = String(userId);
+        const source = mix.sources.get(key);
+        if (source && source.disconnect) {
+            source.disconnect();
+        }
+        mix.sources.delete(key);
+    };
+
+    const getRecordingStream = () => {
+        const mix = ensureAudioMix();
+        if (state.localStream) {
+            addStreamToMix(state.me?.id || 'local', state.localStream);
+        }
+        const audioTracks = mix.destination.stream.getAudioTracks();
+        let videoTrack = state.localStream?.getVideoTracks()?.[0] || null;
+        if (!videoTrack) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1280;
+            canvas.height = 720;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '24px sans-serif';
+                ctx.fillText('Lecture recording', 40, 60);
+            }
+            const stream = canvas.captureStream(5);
+            videoTrack = stream.getVideoTracks()[0] || null;
+        }
+        const stream = new MediaStream();
+        if (videoTrack) stream.addTrack(videoTrack);
+        audioTracks.forEach((track) => stream.addTrack(track));
+        return stream;
+    };
+
+    const uploadRecording = async (blob, meta) => {
+        if (!blob || state.recording.uploading) return;
+        if (!state.lecture?.id) return;
+        state.recording.uploading = true;
+        try {
+            const form = new FormData();
+            form.append('recording', blob, `lecture-${state.lecture.id}.webm`);
+            if (meta?.duration_seconds !== undefined) {
+                form.append('duration_seconds', String(meta.duration_seconds));
+            }
+            if (meta?.started_at) form.append('started_at', meta.started_at);
+            if (meta?.ended_at) form.append('ended_at', meta.ended_at);
+
+            await fetch(`${API_URL}/lectures/${state.lecture.id}/recordings`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: form,
+            });
+        } finally {
+            state.recording.uploading = false;
+        }
+    };
+
+    const stopRecording = async (shouldUpload = true) => {
+        const rec = state.recording.recorder;
+        if (!rec || rec.state === 'inactive') return;
+        rec.stop();
+        if (!shouldUpload) return;
+    };
+
+    const startRecordingIfCreator = () => {
+        if (state.recording.recorder) return;
+        if (!state.me || !state.lecture) return;
+        if (Number(state.me.id) !== Number(state.lecture.creator_id)) return;
+        const stream = getRecordingStream();
+        if (!stream) return;
+        const options = {};
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+            options.mimeType = 'video/webm;codecs=vp8,opus';
+        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+            options.mimeType = 'video/webm';
+        }
+        const recorder = new MediaRecorder(stream, options);
+        state.recording.recorder = recorder;
+        state.recording.chunks = [];
+        state.recording.startedAt = Date.now();
+        recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                state.recording.chunks.push(event.data);
+            }
+        };
+        recorder.onstop = async () => {
+            const chunks = state.recording.chunks;
+            state.recording.chunks = [];
+            const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+            const durationSeconds = Math.round((Date.now() - (state.recording.startedAt || Date.now())) / 1000);
+            const startedAt = new Date(state.recording.startedAt || Date.now()).toISOString();
+            const endedAt = new Date().toISOString();
+            state.recording.recorder = null;
+            state.recording.startedAt = null;
+            if (blob.size > 0) {
+                await uploadRecording(blob, {
+                    duration_seconds: durationSeconds,
+                    started_at: startedAt,
+                    ended_at: endedAt,
+                });
+            }
+        };
+        recorder.start(2000);
+    };
+
     const handleSignal = async (data) => {
         if (!data) return;
         const { from_user_id, to_user_id, payload } = data;
@@ -575,6 +738,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const attachRemoteStream = (userId, stream) => {
         const peer = state.peers.get(userId);
         if (peer) peer.stream = stream;
+        if (state.me?.id === state.lecture?.creator_id) {
+            addStreamToMix(userId, stream);
+        }
         const creatorId = state.lecture?.creator_id;
         if (creatorId && Number(userId) === Number(creatorId) && Number(state.me?.id) !== Number(creatorId)) {
             if (mainVideo && mainVideo.srcObject !== stream) {
@@ -609,6 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
             peer.pc.close();
         }
         state.peers.delete(userId);
+        removeStreamFromMix(userId);
         const video = gridEl.querySelector(`[data-user-id="${userId}"] video`);
         if (video) {
             video.srcObject = null;
@@ -645,9 +812,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const micOff = !(state.localStream.getAudioTracks()?.[0]?.enabled ?? false);
         setStateFor(state.me?.id, { videoOff: !hasVideo, micOff });
         await attachLocalTracksToPeers();
+        if (state.me?.id === state.lecture?.creator_id) {
+            addStreamToMix(state.me?.id, state.localStream);
+            startRecordingIfCreator();
+        }
     };
 
     const updateTimer = () => {
+        updateStartModal();
         if (!state.lecture?.ends_at) return;
         const now = new Date();
         const ends = new Date(state.lecture.ends_at);
@@ -996,9 +1168,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         endBtn?.addEventListener('click', async () => {
             if (!confirm('Завершить трансляцию?')) return;
+            await stopRecording(true);
             await fetch(`${API_URL}/lectures/${lectureId}/end`, {
                 method: 'POST',
                 headers: authHeaders(),
+            });
+            await fetch(`${API_URL}/lectures/${lectureId}`, {
+                method: 'PATCH',
+                headers: {
+                    ...authHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: 'archived' }),
             });
         });
 
@@ -1015,6 +1196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ok = confirm('Вы создатель лекции. При выходе лекция завершится через 5 минут. Продолжить?');
                 if (!ok) return;
             }
+            await stopRecording(true);
             await fetch(`${API_URL}/lectures/${lectureId}/leave`, {
                 method: 'POST',
                 headers: authHeaders(),
@@ -1032,6 +1214,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         emojiBtn?.addEventListener('click', () => {
             alert('Эмодзи будут добавлены позже.');
+        });
+
+        startDismiss?.addEventListener('click', async () => {
+            await fetch(`${API_URL}/lectures/${lectureId}/leave`, {
+                method: 'POST',
+                headers: authHeaders(),
+            });
+            window.location.href = '/meetings';
         });
     };
 

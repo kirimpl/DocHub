@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const lectureCreateEnds = document.getElementById('lectureCreateEnds');
     const lectureCreateBtn = document.getElementById('lectureCreateBtn');
     const lectureCreateNote = document.getElementById('lectureCreateNote');
+    const aiRequestType = document.getElementById('aiRequestType');
+    const aiRequestLecture = document.getElementById('aiRequestLecture');
+    const aiLectureWrap = document.getElementById('aiLectureWrap');
+    const aiRequestText = document.getElementById('aiRequestText');
+    const aiRequestCount = document.getElementById('aiRequestCount');
+    const aiRequestSend = document.getElementById('aiRequestSend');
+    const aiRequestResult = document.getElementById('aiRequestResult');
+    const aiRequestsList = document.getElementById('aiRequestsList');
 
     if (!adminList && !threadsList) {
         return;
@@ -27,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let echoReady = false;
     let pusherClient = null;
     const messageCache = new Map();
+    const lectureArchiveCache = new Map();
+    let lectureArchivesLoaded = false;
+    const lectureArchiveTypes = new Set(['lecture_summary', 'key_points', 'lecture_questions']);
 
     const getAuthToken = () => localStorage.getItem('auth_token');
 
@@ -148,6 +159,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (!res.ok) return null;
         return res.json();
+    };
+
+    const fetchAiRequests = async () => {
+        if (!aiRequestsList) return null;
+        const res = await fetch(`${API_URL}/admin/ai-requests`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const fetchLectureArchives = async () => {
+        if (!aiRequestLecture) return null;
+        const res = await fetch(`${API_URL}/lectures/archives`, {
+            headers: authHeaders(),
+        });
+        if (!res.ok) return null;
+        return res.json();
+    };
+
+    const renderLectureArchives = (items) => {
+        if (!aiRequestLecture) return;
+        lectureArchiveCache.clear();
+        aiRequestLecture.innerHTML = '<option value="">Выберите лекцию</option>';
+        if (!items || !items.length) return;
+        items.forEach((lecture) => {
+            lectureArchiveCache.set(String(lecture.id), lecture);
+            const starts = lecture.starts_at ? new Date(lecture.starts_at).toLocaleString() : '';
+            const label = starts ? `${lecture.title} · ${starts}` : lecture.title;
+            const option = document.createElement('option');
+            option.value = String(lecture.id);
+            option.textContent = label;
+            aiRequestLecture.appendChild(option);
+        });
+    };
+
+    const renderAiRequests = (items) => {
+        if (!aiRequestsList) return;
+        if (!items || !items.length) {
+            aiRequestsList.innerHTML = '<div>Нет запросов.</div>';
+            return;
+        }
+        const typeLabels = {
+            improve: 'Улучшение текста',
+            lecture_summary: 'Краткое содержание лекции',
+            key_points: 'Ключевые пункты',
+            lecture_outline: 'План лекции',
+            lecture_questions: 'Вопросы по лекции',
+        };
+        aiRequestsList.innerHTML = items.map((item) => {
+            const name = item.user ? [item.user.name, item.user.last_name].filter(Boolean).join(' ') : 'Админ';
+            const created = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+            const status = item.status || 'success';
+            const statusColor = status === 'failed' ? '#ef4444' : '#10b981';
+            const output = item.output ? String(item.output).slice(0, 300) : '';
+            return `
+                <div style="padding: 10px 0; border-bottom: 1px solid #eef2f7;">
+                    <div style="font-weight:600;">${typeLabels[item.type] || item.type}</div>
+                    <div style="font-size:12px; color:#6b7280;">${name} · ${created}</div>
+                    <div style="font-size:12px; color:${statusColor};">Статус: ${status}</div>
+                    ${item.error ? `<div style="font-size:12px; color:#ef4444;">${item.error}</div>` : ''}
+                    ${output ? `<div style="font-size:12px; color:#6b7280; margin-top:6px;">${output}</div>` : ''}
+                </div>
+            `;
+        }).join('');
     };
 
     const approveUserReport = async (id) => {
@@ -605,6 +681,11 @@ document.addEventListener('DOMContentLoaded', () => {
             renderLectureReports(lectureReports);
         }
 
+        const aiRequests = await fetchAiRequests();
+        if (aiRequests !== null) {
+            renderAiRequests(aiRequests);
+        }
+
         initEcho();
     };
 
@@ -649,6 +730,90 @@ document.addEventListener('DOMContentLoaded', () => {
             lectureCreateBtn.disabled = false;
             lectureCreateBtn.textContent = 'Создать';
         });
+    }
+
+    if (aiRequestSend && aiRequestText && aiRequestType) {
+        aiRequestSend.addEventListener('click', async () => {
+            const type = aiRequestType.value;
+            const text = aiRequestText.value.trim();
+            const count = aiRequestCount?.value ? Number(aiRequestCount.value) : null;
+            const useArchive = lectureArchiveTypes.has(type);
+            let selectedLectureId = null;
+            if (useArchive) {
+                selectedLectureId = aiRequestLecture?.value ? String(aiRequestLecture.value) : null;
+                if (!selectedLectureId) {
+                    if (aiRequestResult) aiRequestResult.textContent = 'Выберите лекцию из архива.';
+                    return;
+                }
+            }
+            if (!text && !useArchive) {
+                if (aiRequestResult) aiRequestResult.textContent = 'Введите текст.';
+                return;
+            }
+            aiRequestSend.disabled = true;
+            aiRequestSend.textContent = 'Отправка...';
+            if (aiRequestResult) aiRequestResult.textContent = '';
+            const payload = {
+                type,
+                text,
+                transcript: text,
+                count: Number.isFinite(count) ? count : null,
+            };
+            if (useArchive && selectedLectureId) {
+                payload.lecture_id = Number(selectedLectureId);
+                payload.text = '';
+                payload.transcript = '';
+            }
+            const res = await fetch(`${API_URL}/admin/ai-requests`, {
+                method: 'POST',
+                headers: {
+                    ...authHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                if (aiRequestResult) aiRequestResult.textContent = err.message || 'Ошибка запроса.';
+            } else {
+                const data = await res.json();
+                if (aiRequestResult) {
+                    const result = data.result ? String(data.result) : '';
+                    aiRequestResult.textContent = result || 'Готово.';
+                }
+                const aiRequests = await fetchAiRequests();
+                if (aiRequests !== null) {
+                    renderAiRequests(aiRequests);
+                }
+            }
+            aiRequestSend.disabled = false;
+            aiRequestSend.textContent = 'Отправить';
+        });
+    }
+
+    if (aiRequestType && aiLectureWrap && aiRequestLecture && aiRequestText) {
+        const updateAiArchiveUi = async () => {
+            const type = aiRequestType.value;
+            const useArchive = lectureArchiveTypes.has(type);
+            aiLectureWrap.style.display = useArchive ? 'grid' : 'none';
+            aiRequestText.readOnly = useArchive;
+            if (useArchive) {
+                aiRequestText.value = '';
+                aiRequestText.placeholder = 'Текст будет взят из выбранной лекции.';
+                if (!lectureArchivesLoaded) {
+                    const items = await fetchLectureArchives();
+                    if (items !== null) {
+                        renderLectureArchives(items);
+                        lectureArchivesLoaded = true;
+                    }
+                }
+            } else {
+                aiRequestText.placeholder = 'Текст или расшифровка лекции';
+            }
+        };
+
+        aiRequestType.addEventListener('change', updateAiArchiveUi);
+        updateAiArchiveUi();
     }
 
     if (chatSend && chatInput) {

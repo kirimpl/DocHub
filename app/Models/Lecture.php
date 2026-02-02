@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\LectureInvitation;
 use App\Models\LectureBan;
+use App\Models\LectureRecording;
 
 class Lecture extends Model
 {
@@ -58,6 +60,11 @@ class Lecture extends Model
     public function bans()
     {
         return $this->hasMany(LectureBan::class, 'lecture_id');
+    }
+
+    public function recordings(): HasMany
+    {
+        return $this->hasMany(LectureRecording::class, 'lecture_id');
     }
 
     public function isEnded(): bool
