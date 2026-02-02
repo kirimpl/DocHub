@@ -28,7 +28,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'sex'=> 'woman',
-            'username'=>fake()->name(), 
+            'username'=>fake()->name(),
             'phone_number' => '+7' . fake()->unique()->numerify('7#########'),
             'birth_date' => fake()->date('Y-m-d'),
             'education'=>'Macan',
@@ -48,9 +48,6 @@ class UserFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [

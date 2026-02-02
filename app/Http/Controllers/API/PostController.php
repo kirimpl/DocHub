@@ -112,35 +112,38 @@ class PostController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'content' => 'nullable|string',
-            'image' => 'nullable|string',
-            'is_public' => 'boolean',
-            'is_global' => 'boolean',
-            'department_tags' => 'required|array|min:1',
-            'department_tags.*' => 'string|max:100',
-        ]);
+{
+    $data = $request->validate([
+        'content' => 'nullable|string',
+        'image' => 'nullable|string',
+        'is_public' => 'boolean',
+        'is_global' => 'boolean',
+        'department_tags' => 'required|array|min:1',
+        'department_tags.*' => 'string|max:100',
+    ]);
 
-        $user = $request->user();
-        $isGlobal = (bool) ($data['is_global'] ?? false);
-        if (!$isGlobal && !$user->work_place) {
-            return response()->json(['message' => 'User organization is required for local posts.'], 422);
-        }
-
-        $post = Post::create(array_merge($data, [
-            'user_id' => $user->id,
-            'is_global' => $isGlobal,
-            'organization_name' => $isGlobal ? null : $user->work_place,
-        ]));
-        $this->clearPostCaches($request->user()->id);
-
-        $tags = $data['department_tags'] ?? [];
-        $scope = $isGlobal ? 'global' : 'local';
-        $this->notifyTaggedUsers($user, $post, $tags, $scope, $isGlobal);
-
-        return response()->json($post, 201);
+    $user = $request->user();
+    $isGlobal = (bool) ($data['is_global'] ?? false);
+    if (!$isGlobal && !$user->work_place) {
+        return response()->json(['message' => 'User organization is required for local posts.'], 422);
     }
+
+
+    $post = Post::create([
+        'user_id' => $user->id,
+        'content' => $data['content'] ?? '',
+        'image' => $data['image'] ?? null,
+        'is_public' => $data['is_public'] ?? false,
+        'is_global' => $isGlobal,
+        'organization_name' => $isGlobal ? null : $user->work_place,
+        'department_tags' => $data['department_tags'] ?? [],
+    ]);
+
+    $this->clearPostCaches($user->id);
+
+    return response()->json($post, 201);
+}
+
 
     public function share(Request $request, $id)
     {
