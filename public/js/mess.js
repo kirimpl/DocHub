@@ -1,787 +1,752 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_URL = '/api';
-
-    const messagesContainer = document.querySelector('.chat-messages');
-    const chatsListContainer = document.getElementById('chatsListContainer');
-    const groupsListContainer = document.getElementById('groupsListContainer');
-    const emptyState = document.getElementById('emptyState');
-    const chatView = document.getElementById('chatView');
-    const contactsListEl = document.getElementById('contactsList');
-
-    const headerName = document.getElementById('chatHeaderName');
-    const headerAvatar = document.getElementById('chatHeaderAvatar');
-
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const attachBtn = document.getElementById('attachBtn');
-    const hiddenFileInput = document.getElementById('hiddenFileInput');
-    const micBtn = document.getElementById('micBtn');
-
-    const modalChat = document.getElementById('createChatModal');
-    const modalGroup = document.getElementById('createGroupModal');
-    const btnCreateGroup = document.getElementById('btnCreateGroup');
-    const groupNameInput = document.getElementById('groupNameInput');
-    const submitCreateGroup = document.getElementById('submitCreateGroup');
-
-    const emojiBtn = document.getElementById('emojiBtn');
-    const emojiWrapper = document.getElementById('emojiWrapper');
-    const ctxMenu = document.getElementById('msgContextMenu');
-    const ctxReply = document.getElementById('ctxReply');
-    const ctxDelete = document.getElementById('ctxDelete');
-    const ctxPin = document.getElementById('ctxPin');
-
-    const pinnedMessageBar = document.getElementById('pinnedMessageBar');
-    const pinnedText = document.getElementById('pinnedText');
-    const unpinBtn = document.getElementById('unpinBtn');
-    const pinnedContentClick = document.getElementById('pinnedContentClick');
-
-    const replyPanel = document.getElementById('replyPanel');
-    const replyTextPreview = document.getElementById('replyTextPreview');
-    const closeReplyBtn = document.getElementById('closeReplyBtn');
-
-    const chatMenuBtn = document.getElementById('chatMenuBtn');
-    const chatDropdown = document.getElementById('chatDropdown');
-    const menuSearchBtn = document.getElementById('menuSearchBtn');
-    const menuClearBtn = document.getElementById('menuClearBtn');
-    const menuDeleteBtn = document.getElementById('menuDeleteBtn');
-
-    const searchBar = document.getElementById('searchBar');
-    const searchInput = document.getElementById('searchInput');
-    const closeSearchBtn = document.getElementById('closeSearchBtn');
-
-    let currentUser = null;
-    let currentActiveChatId = null;
-    let activeChatType = null; 
-    let targetMessageElement = null;
-    let currentPinnedElement = null;
-    let isReplying = false;
-    let replyContent = null;
-    
-    let isRecording = false;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    
-    let echoReady = false;
-    let pusherClient = null;
-
-    const getAuthToken = () => localStorage.getItem('auth_token');
-
-    const authHeaders = (isMultipart = false) => {
-        const headers = {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${getAuthToken()}`
-        };
-        if (!isMultipart) headers['Content-Type'] = 'application/json';
-        return headers;
+    // 1. КОНФИГУРАЦИЯ
+    const CONFIG = {
+        API_URL: '/api',
+        PUSHER_KEY: 'h81dgta6jqvb3e3mkasl',
+        WS_HOST: window.location.hostname,
+        WS_PORT: 8080,
     };
 
-    const formatTime = (value) => {
-        if (!value) return '';
-        return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const State = {
+        user: null,
+        chat: { id: null, type: null },
+        recorder: { instance: null, chunks: [], active: false },
+        pusher: null,
+        echoReady: false,
+        isReplying: false,
+        replyContent: null,
+        messageToForward: null,
+        targetElement: null,
+        pinnedElement: null,
+        cache: { users: [], groups: [] }
     };
 
-    const getDisplayUser = (user) => {
-        if (!user) return { name: 'Неизвестный', initials: '??', desc: '', id: 0 };
-        const firstName = user.name || '';
-        const lastName = user.last_name || '';
-        const fullName = `${firstName} ${lastName}`.trim() || user.email || 'Без имени';
-
-        let i1 = firstName.charAt(0).toUpperCase();
-        let i2 = lastName.charAt(0).toUpperCase();
-        if (!i1 && !i2) i1 = '?';
-
-        const desc = user.speciality || user.position || 'Пользователь';
-        return { id: user.id, name: fullName, initials: (i1 + i2), desc: desc, avatar: user.avatar };
-    };
-
-    const fetchMe = async () => {
-        try {
-            const res = await fetch(`${API_URL}/me`, { headers: authHeaders() });
-            if (res.ok) return await res.json();
-        } catch (e) { console.error(e); }
-        return null;
-    };
-
-    const fetchUsers = async () => {
-        let url = `${API_URL}/users`;
-        try {
-            let res = await fetch(url, { headers: authHeaders() });
-            if (!res.ok) {
-                url = `${API_URL}/search`;
-                res = await fetch(url, { headers: authHeaders() });
-            }
-            if (res.ok) return await res.json();
-        } catch (e) { }
-        return [];
-    };
-
-    const fetchInbox = async () => {
-        try {
-            const res = await fetch(`${API_URL}/messages/inbox`, { headers: authHeaders() });
-            if (res.ok) {
-                const json = await res.json();
-                let items = [];
-                if (Array.isArray(json)) items = json;
-                else if (json.data && Array.isArray(json.data)) items = json.data;
-                else if (json.conversations && Array.isArray(json.conversations)) items = json.conversations;
-                else if (typeof json === 'object' && json !== null) items = Object.values(json);
-                return items;
-            }
-        } catch (e) { console.error(e); }
-        return [];
-    };
-
-    const fetchGroups = async () => {
-        try {
-            const res = await fetch(`${API_URL}/group-chats`, { headers: authHeaders() });
-            if (res.ok) {
-                const json = await res.json();
-                if (Array.isArray(json)) return json;
-                if (json.data && Array.isArray(json.data)) return json.data;
-                return [];
-            }
-        } catch (e) { }
-        return [];
-    };
-
-    const fetchMessages = async (id, type) => {
-        const url = type === 'private'
-            ? `${API_URL}/messages/conversation/${id}`
-            : `${API_URL}/group-chats/${id}/messages`;
-
-        try {
-            const res = await fetch(url, { headers: authHeaders() });
-            if (res.ok) return await res.json();
-        } catch (e) { }
-        return [];
-    };
-
-    const uploadMedia = async (file) => {
-        if (file.size > 10 * 1024 * 1024) {
-            alert('Файл слишком большой. Максимум 10МБ.');
-            return null;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const res = await fetch(`${API_URL}/media`, { 
-                method: 'POST', 
-                headers: authHeaders(true), 
-                body: formData 
-            });
-            
-            if (!res.ok) return null;
-            const json = await res.json();
-            return json.data ? json.data : json;
-        } catch (e) { 
-            return null; 
-        }
-    };
-
-    const apiSendMessage = async (data, targetId, type) => {
-        let safeBody = data.body;
-        if (!safeBody || safeBody.trim() === '') {
-            if (data.type === 'image') safeBody = ' Фото';
-            else if (data.type === 'audio') safeBody = ' Голосовое сообщение';
-            else if (data.type === 'file') safeBody = ' Файл';
-            else safeBody = '.';
-        }
-
-        const payload = {
-            body: safeBody,
-            type: data.type || 'text',
-            attachment_id: data.attachment_id || null 
-        };
-
-        let url;
-        if (type === 'private') {
-            url = `${API_URL}/messages/send`;
-            payload.recipient_id = targetId;
-        } else {
-            url = `${API_URL}/group-chats/${targetId}/messages`;
-        }
-
-        try {
-            const res = await fetch(url, { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload) });
-            if (res.ok) return await res.json();
-        } catch (e) { }
-        return null;
-    };
-
-    const apiAction = async (msgId, action) => {
-        let url = activeChatType === 'private'
-            ? `${API_URL}/messages/${msgId}`
-            : `${API_URL}/group-chats/${currentActiveChatId}/messages/${msgId}`;
-
-        let method = 'POST';
-        if (action === 'delete') method = 'DELETE';
-        else if (action === 'pin' || action === 'unpin') {
-            url += '/pin';
-            method = (action === 'pin') ? 'POST' : 'DELETE';
-        }
-        await fetch(url, { method, headers: authHeaders() });
-    };
-
-    function createSidebarItem(item, type, container) {
-        const emptyMsg = container.querySelector('.empty-list-msg');
-        if (emptyMsg) emptyMsg.remove();
-
-        let targetUser = null;
-        let targetId = null;
-
-        if (type === 'private') {
-            if (item.sender_id || item.recipient_id) {
-                const myId = String(currentUser.id);
-                const senderId = String(item.sender_id);
-
-                if (senderId === myId) {
-                    targetUser = item.recipient || { id: item.recipient_id, name: `ID: ${item.recipient_id}`, speciality: '' };
-                    targetId = item.recipient_id;
-                } else {
-                    targetUser = item.sender || { id: item.sender_id, name: `ID: ${item.sender_id}`, speciality: '' };
-                    targetId = item.sender_id;
-                }
-            }
-            else if (item.id) {
-                targetUser = item;
-                targetId = item.id;
-            }
-        } else {
-            targetUser = { name: item.name, speciality: 'Группа', id: item.id };
-            targetId = item.id;
-        }
-
-        if (!targetId) return;
-        if (container.querySelector(`[data-chat-id="${targetId}"]`)) return;
-
-        const display = getDisplayUser(targetUser);
-        const bg = (type === 'group') ? '#6EA8DB' : '#004080';
-
-        const el = document.createElement('div');
-        el.className = 'list-item';
-        el.dataset.chatId = targetId;
-
-        el.innerHTML = `
-            <div class="avatar-sq" style="background-color: ${bg}">${display.initials}</div>
-            <div class="item-info">
-                <span class="name">${display.name}</span>
-                <span class="desc">${display.desc}</span>
+    // 2. ИНЪЕКЦИЯ HTML (МОДАЛКА)
+    if (!document.getElementById('forwardModal')) {
+        const fwModal = document.createElement('div');
+        fwModal.id = 'forwardModal';
+        fwModal.className = 'modal-overlay';
+        fwModal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Переслать</h3>
+                    <button class="close-modal" id="closeForwardBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="forwardList" class="contacts-list" style="max-height: 300px; overflow-y: auto;"></div>
+                </div>
             </div>
         `;
-
-        el.addEventListener('click', () => {
-            document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
-            el.classList.add('active');
-            openChat(targetId, type, display);
-        });
-
-        if (type === 'private' && !item.sender_id && !item.recipient_id) {
-            container.appendChild(el);
-        } else {
-            container.prepend(el);
-        }
+        document.body.appendChild(fwModal);
     }
 
-    function renderMessage(data) {
-        const msgDiv = document.createElement('div');
-        msgDiv.dataset.id = data.id;
-        const isMine = (String(data.sender_id) === String(currentUser?.id));
+    const ctxMenu = document.getElementById('msgContextMenu');
+    if (ctxMenu && !document.getElementById('ctxForward')) {
+        const btn = document.createElement('div');
+        btn.id = 'ctxForward';
+        btn.className = 'context-item';
+        btn.innerHTML = '<i class="fa-solid fa-share"></i> Переслать';
+        const delBtn = document.getElementById('ctxDelete');
+        if (delBtn) ctxMenu.insertBefore(btn, delBtn);
+        else ctxMenu.appendChild(btn);
+    }
 
-        msgDiv.className = `message-bubble ${isMine ? 'sent' : 'received'}`;
+    // 3. UI
+    const UI = {
+        containers: {
+            messages: document.querySelector('.chat-messages'),
+            chats: document.getElementById('chatsListContainer'),
+            groups: document.getElementById('groupsListContainer'),
+            empty: document.getElementById('emptyState'),
+            view: document.getElementById('chatView'),
+            contacts: document.getElementById('contactsList'),
+            forwardList: document.getElementById('forwardList')
+        },
+        header: {
+            name: document.getElementById('chatHeaderName'),
+            avatar: document.getElementById('chatHeaderAvatar'),
+        },
+        input: {
+            message: document.getElementById('messageInput'),
+            file: document.getElementById('hiddenFileInput'),
+            search: document.getElementById('searchInput'),
+            groupName: document.getElementById('groupNameInput'),
+        },
+        buttons: {
+            send: document.getElementById('sendBtn'),
+            attach: document.getElementById('attachBtn'),
+            mic: document.getElementById('micBtn'),
+            emoji: document.getElementById('emojiBtn'),
+            createGroup: document.getElementById('btnCreateGroup'),
+            submitGroup: document.getElementById('submitCreateGroup'),
+            closeReply: document.getElementById('closeReplyBtn'),
+            menu: document.getElementById('chatMenuBtn'),
+            menuSearch: document.getElementById('menuSearchBtn'),
 
-        const time = formatTime(data.created_at || new Date());
-        let content = data.body || '';
-        let contentType = data.content_type || 'text';
+            menuClear: document.getElementById('menuClearBtn'),
+            menuDelete: document.getElementById('menuDeleteBtn'),
 
-        let attachment = data.attachment || null;
+            closeSearch: document.getElementById('closeSearchBtn'),
+            unpin: document.getElementById('unpinBtn'),
+            closeForward: document.getElementById('closeForwardBtn')
+        },
+        panels: {
+            pinned: document.getElementById('pinnedMessageBar'),
+            pinnedText: document.getElementById('pinnedText'),
+            reply: document.getElementById('replyPanel'),
+            replyText: document.getElementById('replyTextPreview'),
+            search: document.getElementById('searchBar'),
+            emoji: document.getElementById('emojiWrapper'),
+            context: document.getElementById('msgContextMenu'),
+            dropdown: document.getElementById('chatDropdown'),
+        },
+        modals: {
+            chat: document.getElementById('createChatModal'),
+            group: document.getElementById('createGroupModal'),
+            forward: document.getElementById('forwardModal'),
+        },
+        ctx: {
+            reply: document.getElementById('ctxReply'),
+            forward: document.getElementById('ctxForward'),
+            delete: document.getElementById('ctxDelete'),
+            pin: document.getElementById('ctxPin'),
+        }
+    };
+
+    // 4. УТИЛИТЫ
+    const Utils = {
+        getToken: () => localStorage.getItem('auth_token'),
         
-        if (data.localBlobUrl) {
-            attachment = { url: data.localBlobUrl, original_name: 'Загрузка...', mime_type: data.content_type };
-            contentType = data.content_type;
-        } 
-        else if (attachment) {
-            const mime = attachment.mime_type || attachment.type || '';
-            if (mime.includes('image')) contentType = 'image';
-            else if (mime.includes('audio')) contentType = 'audio';
-            else contentType = 'file';
+        getHeaders: (isMultipart = false) => {
+            const headers = {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${Utils.getToken()}`
+            };
+            if (!isMultipart) headers['Content-Type'] = 'application/json';
+            return headers;
+        },
+
+        formatTime: (val) => val ? new Date(val).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
+
+        getDisplayUser: (user) => {
+            if (!user) return { name: '?', initials: '?', desc: '', id: 0 };
+            const name = user.name || user.email || 'Без имени';
+            const i1 = (user.name || '').charAt(0).toUpperCase();
+            const i2 = (user.last_name || '').charAt(0).toUpperCase();
+            return {
+                id: user.id,
+                name: name,
+                initials: (i1 + i2),
+                desc: user.speciality || 'Пользователь',
+                avatar: user.avatar
+            };
+        },
+
+        rememberChat: (userId) => {
+            if (!State.user || !userId) return;
+            const key = `chats_${State.user.id}`;
+            let chats = JSON.parse(localStorage.getItem(key) || '[]');
+            const sid = String(userId);
+            if (!chats.includes(sid)) {
+                chats.push(sid);
+                localStorage.setItem(key, JSON.stringify(chats));
+            }
+        },
+
+        setClearTime: (chatId) => {
+            if(!State.user || !chatId) return;
+            const key = `cleared_${State.user.id}_${chatId}`;
+            localStorage.setItem(key, new Date().toISOString());
+        },
+
+        getClearTime: (chatId) => {
+            if(!State.user || !chatId) return null;
+            return localStorage.getItem(`cleared_${State.user.id}_${chatId}`);
+        },
+
+        resolveUrl: (path) => {
+            if (!path) return null;
+            if (path.startsWith('blob:') || path.startsWith('http')) return path;
+            let clean = path.replace(/^public\//, '').replace(/^\/+/, '').replace(/^storage\//, '');
+            return `/storage/${clean}`;
+        },
+
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ (ВЫРЕЗАЕТ ТЕГ НАЧИСТО) ===
+        parseMessageContent: (msg) => {
+            let text = msg.body || '';
+            let type = 'text';
+            let url = null;
+
+            // 1. Сначала берем URL из базы данных (если есть)
+            if (msg.audio_url) { type = 'audio'; url = msg.audio_url; }
+            else if (msg.image_url) { type = 'image'; url = msg.image_url; }
+            else if (msg.localBlobUrl) { type = msg.content_type; url = msg.localBlobUrl; }
+
+            // 2. Регулярное выражение для поиска тегов [IMAGE|...]
+            const tagRegex = /\[(IMAGE|FILE|AUDIO)\|(.*?)\]/gi;
+
+            // Если URL еще нет (например, пришло по сокету текстом), пытаемся достать из тега
+            if (!url) {
+                const match = tagRegex.exec(text);
+                if (match) {
+                    type = match[1].toLowerCase();
+                    url = match[2];
+                }
+            }
+
+            // 3. ГЛАВНОЕ ИСПРАВЛЕНИЕ:
+            // Жестко удаляем ВСЕ технические теги из текста, чтобы они не отображались под фото
+            text = text.replace(tagRegex, '').trim();
+
+            if (text === '.') text = '';
+
+            if (type !== 'text' && url) url = Utils.resolveUrl(url);
+            return { type, url, text };
         }
+    };
+    // 5. API
+    const Api = {
+        async req(endpoint, method = 'GET', body = null, isFile = false) {
+            try {
+                const opts = { method, headers: Utils.getHeaders(isFile) };
+                if (body) opts.body = isFile ? body : JSON.stringify(body);
 
-        let innerHTML = '';
-        if (data.is_forwarded) innerHTML += `<div class="forwarded-tag"><i class="fa-solid fa-share"></i> Пересланное</div>`;
+                const res = await fetch(`${CONFIG.API_URL}${endpoint}`, opts);
 
-        if (activeChatType === 'group' && !isMine && data.sender) {
-            const senderInfo = getDisplayUser(data.sender);
-            innerHTML += `<div style="font-size:10px; color:#555; margin-bottom:2px;">${senderInfo.name}</div>`;
+                if (res.status === 204) return true;
+
+                if (res.ok) {
+                    const text = await res.text();
+                    try { return text ? JSON.parse(text) : true; } catch (e) { return true; }
+                }
+            } catch (e) { console.error(e); }
+            return null;
+        },
+        async upload(file) {
+            if (file.size > 10 * 1024 * 1024) { alert('Файл > 10МБ'); return null; }
+            const fd = new FormData(); fd.append('file', file);
+            const res = await Api.req('/media', 'POST', fd, true);
+            return res ? (res.data || res) : null;
         }
+    };
 
-        if (data.reply_to) {
-            innerHTML += `<div class="msg-quote"><span class="quote-name">Цитата</span><span class="quote-text">${data.reply_to.body || 'Вложение'}</span></div>`;
+    // 6. ЛОГИКА
+    const Logic = {
+        async send(text, attachmentType = null, attachmentUrl = null, targetChatOverride = null) {
+            const targetChat = targetChatOverride || State.chat;
+            if (!targetChat.id) return;
+
+            let finalBody = text || '';
+            const payload = {};
+
+            if (attachmentUrl) {
+                finalBody += ` [${attachmentType.toUpperCase()}|${attachmentUrl}]`;
+                if (attachmentType === 'audio') payload.audio_url = attachmentUrl;
+                if (attachmentType === 'image') payload.image_url = attachmentUrl;
+            }
+
+            if (!finalBody.trim()) finalBody = '.';
+
+            payload.body = finalBody;
+            if (targetChat.type === 'private') payload.recipient_id = targetChat.id;
+
+            const url = targetChat.type === 'private'
+                ? '/messages/send'
+                : `/group-chats/${targetChat.id}/messages`;
+
+            await Api.req(url, 'POST', payload);
+        },
+
+        async action(id, type) {
+            const base = State.chat.type === 'private' ? `/messages/${id}` : `/group-chats/${State.chat.id}/messages/${id}`;
+            if (type === 'delete') {
+                await Api.req(base, 'DELETE');
+                return true;
+            }
+            else await Api.req(`${base}/${type}`, 'POST');
+        },
+
+        // 1. ОЧИСТИТЬ (Остается в списке, но пустой)
+        async clearCurrentChat() {
+            UI.panels.dropdown.classList.add('hidden');
+            if (!confirm('Очистить историю?')) return;
+
+            // Запоминаем время очистки (чтобы скрыть старые сообщения, даже если они придут с сервера)
+            Utils.setClearTime(State.chat.id);
+
+            const bubbles = document.querySelectorAll('.message-bubble');
+            const ids = Array.from(bubbles).map(el => el.dataset.id).filter(id => id && !id.startsWith('loc'));
+
+            UI.containers.messages.innerHTML = '<div style="text-align:center;padding:20px;color:#888">Очистка...</div>';
+
+            // Удаляем с сервера
+            if (ids.length > 0) {
+                ids.forEach(id => Logic.action(id, 'delete'));
+            }
+
+            UI.containers.messages.innerHTML = '<div style="text-align:center;color:#888;margin-top:20px">История очищена</div>';
+        },
+
+        // 2. УДАЛИТЬ (Уходит из списка)
+        async deleteCurrentChat() {
+            UI.panels.dropdown.classList.add('hidden');
+
+            if (State.chat.type === 'group') {
+                if (!confirm('Удалить группу навсегда?')) return;
+                const success = await Api.req(`/group-chats/${State.chat.id}`, 'DELETE');
+                if (success) {
+                    const item = document.querySelector(`.list-item[data-chat-id="${State.chat.id}"]`);
+                    if (item) item.remove();
+                    UI.containers.view.classList.add('hidden');
+                    UI.containers.empty.classList.remove('hidden');
+                } else {
+                    alert('Ошибка удаления группы');
+                }
+            } else {
+                if (!confirm('Удалить чат?')) return;
+
+                Utils.setClearTime(State.chat.id); // Тоже ставим фильтр на всякий случай
+
+                const bubbles = document.querySelectorAll('.message-bubble');
+                const ids = Array.from(bubbles).map(el => el.dataset.id).filter(id => id && !id.startsWith('loc'));
+                if (ids.length > 0) {
+                    ids.forEach(id => Api.req(`/messages/${id}`, 'DELETE'));
+                }
+
+                const item = document.querySelector(`.list-item[data-chat-id="${State.chat.id}"]`);
+                if (item) item.remove();
+
+                UI.containers.view.classList.add('hidden');
+                UI.containers.empty.classList.remove('hidden');
+
+                const key = `chats_${State.user.id}`;
+                let chats = JSON.parse(localStorage.getItem(key) || '[]');
+                chats = chats.filter(id => String(id) !== String(State.chat.id));
+                localStorage.setItem(key, JSON.stringify(chats));
+            }
         }
+    };
 
-        if (contentType === 'image' && attachment) {
-            innerHTML += `<img src="${attachment.url}" class="msg-image" onclick="window.open('${attachment.url}', '_blank')">`;
-        } else if (contentType === 'file' && attachment) {
-            innerHTML += `
-            <a href="${attachment.url}" target="_blank" style="text-decoration:none; color:inherit;">
-                <div class="msg-file">
-                    <div class="msg-file-icon"><i class="fa-solid fa-arrow-down"></i></div>
-                    <div class="msg-file-details">
-                        <div class="msg-file-name">${attachment.original_name || attachment.name || 'Файл'}</div>
-                    </div>
-                </div>
-            </a>`;
-        } else if (contentType === 'audio' && attachment) {
-            innerHTML += `<audio controls src="${attachment.url}" class="msg-audio" style="max-width: 240px;"></audio>`;
-        } else {
-            innerHTML += `<div class="msg-text">${content}</div>`;
+    const Render = {
+        chatItem(item, type, container, isForwardMode = false) {
+            let uid = null, uObj = null;
+            if (type === 'private') {
+                if (item.id && !item.sender_id && !item.recipient_id) { uid = item.id; uObj = item; }
+                else {
+                    const myId = String(State.user.id);
+                    uid = String(item.sender_id) === myId ? item.recipient_id : item.sender_id;
+                    uObj = String(item.sender_id) === myId ? item.recipient : item.sender;
+                }
+            } else { uid = item.id; uObj = { name: item.name, speciality: 'Группа', id: item.id }; }
+            if (!uid || (!isForwardMode && container.querySelector(`[data-chat-id="${uid}"]`))) return;
+            const d = Utils.getDisplayUser(uObj);
+            const el = document.createElement('div');
+            el.className = isForwardMode ? 'contact-item' : 'list-item';
+            el.dataset.chatId = uid;
+            el.innerHTML = `<div class="avatar-sq" style="background:${type === 'group' ? '#0056A6' : '#004080'}">${d.initials}</div><div class="${isForwardMode ? 'contact-info' : 'item-info'}"><span class="name">${d.name}</span><span class="desc">${d.desc}</span></div>`;
+            el.onclick = () => {
+                if (isForwardMode) { Actions.executeForward({ id: uid, type: type }); }
+                else {
+                    document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
+                    el.classList.add('active');
+                    Actions.open(uid, type, d);
+                    if (type === 'private') Utils.rememberChat(uid);
+                }
+            };
+            container.prepend(el);
+        },
+
+        message(msg) {
+            // === ФИЛЬТР: Убираем системные уведомления о закрепе из ленты ===
+            if (msg.support_ticket_id || msg.type === 'system' || msg.action === 'pin' || (msg.body && msg.body.toLowerCase().includes('закрепил'))) return;
+
+            // === ФИЛЬТР: Проверка на очистку чата ===
+            let chatIdCheck = State.chat.id;
+            if (!chatIdCheck && msg.sender_id) chatIdCheck = String(msg.sender_id) === String(State.user.id) ? msg.recipient_id : msg.sender_id;
+            if (chatIdCheck) {
+                const clearTimeStr = Utils.getClearTime(chatIdCheck);
+                if (clearTimeStr) {
+                    if (new Date(msg.created_at).getTime() <= new Date(clearTimeStr).getTime()) return;
+                }
+            }
+
+            const isMine = String(msg.sender_id) === String(State.user.id);
+            const content = Utils.parseMessageContent(msg);
+            const div = document.createElement('div');
+            div.className = `message-bubble ${isMine ? 'sent' : 'received'}`;
+            div.dataset.id = msg.id;
+            let html = '';
+            if (State.chat.type === 'group' && !isMine && msg.sender) html += `<div style="font-size:10px;color:#555;margin-bottom:2px">${Utils.getDisplayUser(msg.sender).name}</div>`;
+            if (msg.reply_to) {
+                const rC = Utils.parseMessageContent(msg.reply_to);
+                let rT = rC.text || 'Вложение';
+                if (rC.type === 'audio') rT = '🎤 Голосовое'; if (rC.type === 'image') rT = '📷 Фото';
+                html += `<div class="msg-quote"><span class="quote-name">Цитата</span><span class="quote-text">${rT}</span></div>`;
+            }
+
+            if (content.type === 'image') {
+                html += `<img src="${content.url}" class="msg-image" onclick="window.open('${content.url}','_blank')">`;
+                if (content.text) html += `<div class="msg-text">${content.text}</div>`;
+            } else if (content.type === 'audio') {
+                html += `<audio controls preload="metadata" src="${content.url}" class="msg-audio"></audio>`;
+            } else if (content.type === 'file') {
+                html += `<a href="${content.url}" target="_blank" style="text-decoration:none;color:inherit"><div class="msg-file"><div class="msg-file-icon"><i class="fa-solid fa-file-lines"></i></div><div class="msg-file-details"><div class="msg-file-name">Файл</div><div class="msg-file-size">Скачать</div></div></div></a>`;
+                if (content.text) html += `<div class="msg-text">${content.text}</div>`;
+            } else {
+                html += `<div class="msg-text">${content.text}</div>`;
+            }
+
+            html += `<div class="msg-meta">${Utils.formatTime(msg.created_at)} ${isMine ? '<i class="fa-solid fa-check-double" style="margin-left:5px"></i>' : ''}</div>`;
+            div.innerHTML = html;
+            UI.containers.messages.appendChild(div);
+
+            // Если при загрузке истории есть флаг is_pinned - обновляем шапку
+            if (msg.is_pinned) Actions.togglePin(true, content.text, div);
+
+            UI.containers.messages.scrollTop = UI.containers.messages.scrollHeight;
         }
+    };
 
-        const checkIcon = isMine ? '<i class="fa-solid fa-check-double" style="margin-left:5px;"></i>' : '';
-        innerHTML += `<div class="msg-meta">${time} ${checkIcon}</div>`;
+    const Actions = {
+        async init() {
+            const token = Utils.getToken();
+            if (!token) return;
 
-        msgDiv.innerHTML = innerHTML;
-        messagesContainer.appendChild(msgDiv);
+            State.user = await Api.req('/me');
+            if (!State.user) return;
 
-        if (data.is_pinned) showPinnedBar(content, msgDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+            const [inbox, users, groups] = await Promise.all([
+                Api.req('/messages/inbox'),
+                Api.req('/users'),
+                Api.req('/group-chats')
+            ]);
 
-    async function openChat(id, type, userDisplayData) {
-        emptyState.classList.add('hidden');
-        chatView.classList.remove('hidden');
+            State.cache = { users: users || [], groups: groups || [] };
 
-        currentActiveChatId = id;
-        activeChatType = type;
+            const savedIds = JSON.parse(localStorage.getItem(`chats_${State.user.id}`) || '[]');
+            const rendered = new Set();
+            UI.containers.chats.innerHTML = '';
 
-        headerName.textContent = userDisplayData.name;
-        headerAvatar.textContent = userDisplayData.initials;
+            (Array.isArray(inbox) ? inbox : (inbox?.data || [])).forEach(c => {
+                const uid = String(c.sender_id) === String(State.user.id) ? c.recipient_id : c.sender_id;
+                if (uid) { rendered.add(String(uid)); Render.chatItem(c, 'private', UI.containers.chats); }
+            });
 
-        hidePinnedBar();
-        cancelReply();
-
-        if (searchBar) {
-            searchBar.classList.add('hidden');
-            if (searchInput) searchInput.value = '';
-        }
-
-        messagesContainer.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка...</div>';
-
-        const messages = await fetchMessages(id, type);
-        messagesContainer.innerHTML = '';
-
-        if (messages && messages.length > 0) {
-            messages.forEach(msg => renderMessage(msg));
-        } else {
-            messagesContainer.innerHTML = '<div style="text-align:center; color:#888; margin-top:20px;">Напишите первое сообщение</div>';
-        }
-    }
-
-    const initData = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-
-        currentUser = await fetchMe();
-        if (!currentUser) return;
-
-        const inbox = await fetchInbox();
-        chatsListContainer.innerHTML = '';
-
-        if (inbox.length > 0) {
-            inbox.forEach(chat => createSidebarItem(chat, 'private', chatsListContainer));
-        } else {
-            const allUsers = await fetchUsers();
-            if (allUsers.length > 0) {
-                const hint = document.createElement('div');
-                hint.innerHTML = '<div style="padding:10px; font-size:11px; color:#888; text-align:center;">Ваши контакты</div>';
-                chatsListContainer.appendChild(hint);
-
-                allUsers.forEach(user => {
-                    if (String(user.id) !== String(currentUser.id)) {
-                        createSidebarItem(user, 'private', chatsListContainer);
+            if (users) {
+                savedIds.forEach(id => {
+                    if (!rendered.has(String(id))) {
+                        const u = users.find(x => String(x.id) === String(id));
+                        if (u) { Render.chatItem(u, 'private', UI.containers.chats); rendered.add(String(id)); }
                     }
                 });
-            } else {
-                chatsListContainer.innerHTML = '<div class="empty-list-msg" style="padding:15px; text-align:center; font-size:12px; color:#888;">Нет контактов</div>';
+                if (rendered.size === 0) {
+                    UI.containers.chats.innerHTML += '<div style="padding:10px;font-size:11px;color:#888;text-align:center">Контакты</div>';
+                    users.forEach(u => {
+                        if (u.id !== State.user.id) Render.chatItem(u, 'private', UI.containers.chats);
+                    });
+                }
             }
-        }
 
-        const groups = await fetchGroups();
-        groupsListContainer.innerHTML = '';
-
-        if (groups.length === 0) {
-            groupsListContainer.innerHTML = '<div class="empty-list-msg" style="padding:15px; text-align:center; font-size:12px; color:#888;">Нет групп</div>';
-        } else {
-            groups.forEach(group => {
-                if (group.type === 'lecture' || group.is_lecture) return;
-                createSidebarItem(group, 'group', groupsListContainer);
+            UI.containers.groups.innerHTML = '';
+            (Array.isArray(groups) ? groups : (groups?.data || [])).forEach(g => {
+                if (g.type !== 'lecture') Render.chatItem(g, 'group', UI.containers.groups);
             });
-        }
 
-        initEcho();
-    };
+            Socket.init();
+        },
 
-    const handleIncomingMessage = (e) => {
-        const msg = e.message || e;
-        if (activeChatType === 'private' && String(msg.sender_id) === String(currentActiveChatId)) {
-            renderMessage(msg);
-        }
-    };
+        async open(id, type, disp) {
+            UI.containers.empty.classList.add('hidden');
+            UI.containers.view.classList.remove('hidden');
+            State.chat = { id, type };
+            UI.header.name.textContent = disp.name;
+            UI.header.avatar.textContent = disp.initials;
+            Actions.togglePin(false);
+            Actions.cancelReply();
 
-    const initEcho = () => {
-        if (echoReady || !currentUser) return;
-        if (!window.Pusher || !window.REVERB_CONFIG) return;
+            UI.containers.messages.innerHTML = '<div style="text-align:center;padding:20px">Загрузка...</div>';
+            const res = await Api.req(type === 'private' ? `/messages/conversation/${id}` : `/group-chats/${id}/messages`);
+            UI.containers.messages.innerHTML = '';
 
-        const token = getAuthToken();
-        const config = window.REVERB_CONFIG;
+            if (res && Array.isArray(res) && res.length) res.forEach(Render.message);
+            else UI.containers.messages.innerHTML = '<div style="text-align:center;color:#888;margin-top:20px">Напишите первое сообщение</div>';
+        },
 
-        const pusherConfig = {
-            wsHost: config.host,
-            wsPort: config.port,
-            wssPort: 443,
-            forceTLS: config.scheme === 'https',
-            disableStats: true,
-            cluster: 'mt1',
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '/api/broadcasting/auth',
-            auth: { headers: { Authorization: `Bearer ${token}` } }
-        };
+        openForwardModal() {
+            UI.panels.context.classList.add('hidden');
+            UI.modals.forward.classList.add('active');
+            UI.containers.forwardList.innerHTML = '';
 
-        if (window.Echo) {
-            const EchoCtor = window.Echo.default || window.Echo;
-            window.Echo = new EchoCtor({
-                broadcaster: 'pusher',
-                key: config.key,
-                ...pusherConfig
-            });
-            window.Echo.private(`messages.${currentUser.id}`).listen('.MessageSent', handleIncomingMessage);
-            echoReady = true;
-        } else {
-            pusherClient = new window.Pusher(config.key, pusherConfig);
-            const channel = pusherClient.subscribe(`private-messages.${currentUser.id}`);
-            channel.bind('MessageSent', handleIncomingMessage);
-            channel.bind('.MessageSent', handleIncomingMessage);
-            echoReady = true;
-        }
-    };
+            if (State.cache.users) {
+                State.cache.users.forEach(u => {
+                    if (u.id !== State.user.id) Render.chatItem(u, 'private', UI.containers.forwardList, true);
+                });
+            }
+            if (State.cache.groups) {
+                (Array.isArray(State.cache.groups) ? State.cache.groups : State.cache.groups.data).forEach(g => {
+                    if (g.type !== 'lecture') Render.chatItem(g, 'group', UI.containers.forwardList, true);
+                });
+            }
+        },
 
-    function toggleSendBtn() {
-        if (messageInput.value.trim().length > 0) {
-            sendBtn.classList.remove('hidden');
-            sendBtn.classList.add('visible');
-        } else {
-            sendBtn.classList.remove('visible');
-            sendBtn.classList.add('hidden');
-        }
-    }
+        async executeForward(targetChat) {
+            if (!State.messageToForward) return;
+            const msg = State.messageToForward;
+            const content = Utils.parseMessageContent(msg);
 
-    async function sendMessage() {
-        const text = messageInput.value.trim();
-        if (text === '' || !currentActiveChatId) return;
+            await Logic.send(content.text, content.type, content.url, targetChat);
 
-        const tempMsg = {
-            body: text,
-            created_at: new Date().toISOString(),
-            sender_id: currentUser.id,
-            content_type: 'text',
-            id: 'temp-' + Date.now()
-        };
-        if (isReplying && replyContent) tempMsg.reply_to = { body: replyContent };
+            UI.modals.forward.classList.remove('active');
+            alert('Сообщение переслано!');
+        },
 
-        renderMessage(tempMsg);
-        messageInput.value = '';
-        cancelReply();
-        toggleSendBtn();
+        async sendMsg() {
+            const txt = UI.input.message.value.trim();
+            if (!txt && !State.recorder.active) return;
 
-        await apiSendMessage({ body: text, type: 'text' }, currentActiveChatId, activeChatType);
+            const tmp = {
+                id: 'tmp-' + Date.now(), body: txt, created_at: new Date(),
+                sender_id: State.user.id, localBlobUrl: null
+            };
+            if (State.isReplying) tmp.reply_to = { body: State.replyContent };
 
-        if (activeChatType === 'private') {
-            await initData();
-        }
-    }
+            Render.message(tmp);
+            UI.input.message.value = '';
+            Actions.cancelReply();
+            Actions.toggleBtn();
+            if (State.chat.type === 'private') Utils.rememberChat(State.chat.id);
 
-    sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-    messageInput.addEventListener('input', toggleSendBtn);
+            await Logic.send(txt);
+        },
 
-    if (attachBtn) attachBtn.addEventListener('click', () => hiddenFileInput.click());
-
-    if (hiddenFileInput) hiddenFileInput.addEventListener('change', async function () {
-        if (this.files && this.files.length > 0) {
-            const file = this.files[0];
-            if (!currentActiveChatId) return;
-
-            const localUrl = URL.createObjectURL(file);
+        async sendFile(file) {
+            if (!file || !State.chat.id) return;
             const type = file.type.startsWith('image/') ? 'image' : 'file';
+            const url = URL.createObjectURL(file);
 
-            renderMessage({
-                id: 'local-' + Date.now(),
-                sender_id: currentUser.id,
-                created_at: new Date().toISOString(),
-                body: '',
-                content_type: type,
-                attachment: { url: localUrl, original_name: file.name, mime_type: file.type }
+            Render.message({
+                id: 'loc-' + Date.now(), sender_id: State.user.id, created_at: new Date(),
+                body: '', localBlobUrl: url, content_type: type
+            });
+            if (State.chat.type === 'private') Utils.rememberChat(State.chat.id);
+
+            const up = await Api.upload(file);
+            if (up) await Logic.send('', type, up.path || up.url);
+        },
+
+        toggleBtn() {
+            const show = UI.input.message.value.trim().length > 0;
+            UI.buttons.send.classList.toggle('hidden', !show);
+            UI.buttons.send.classList.toggle('visible', show);
+        },
+
+        cancelReply() {
+            State.isReplying = false; UI.panels.reply.classList.add('hidden');
+        },
+
+        togglePin(show, txt = '', el = null) {
+            if (show) {
+                UI.panels.pinned.classList.remove('hidden');
+                UI.panels.pinnedText.textContent = txt;
+                State.pinnedElement = el;
+            } else {
+                UI.panels.pinned.classList.add('hidden');
+                State.pinnedElement = null;
+            }
+        }
+    };
+
+    const Socket = {
+        init() {
+            if (State.echoReady || !window.Pusher || !State.user) return;
+            State.pusher = new window.Pusher(CONFIG.PUSHER_KEY, {
+                wsHost: CONFIG.WS_HOST, wsPort: CONFIG.WS_PORT, forceTLS: false, encrypted: false,
+                enabledTransports: ['ws', 'wss'], authEndpoint: '/broadcasting/auth',
+                auth: { headers: { Authorization: `Bearer ${Utils.getToken()}` } }
             });
 
-            const uploadRes = await uploadMedia(file);
+            // КАНАЛ СООБЩЕНИЙ
+            const channel = State.pusher.subscribe(`private-messages.${State.user.id}`);
 
-            if (uploadRes && uploadRes.id) {
-                await apiSendMessage({ 
-                    body: '', 
-                    type: type, 
-                    attachment_id: uploadRes.id 
-                }, currentActiveChatId, activeChatType);
-            }
+            // 1. Пришло новое сообщение
+            channel.bind('MessageSent', (e) => {
+                const msg = e.message || e;
+                if (!msg || msg.support_ticket_id) return;
+                if (e.sender) msg.sender = e.sender;
+                if (State.chat.type === 'private' && String(msg.sender_id) === String(State.chat.id)) {
+                    Render.message(msg);
+                }
+            });
 
-            this.value = '';
+            // 2. Сообщение ЗАКРЕПИЛИ
+            channel.bind('MessagePinned', (e) => {
+                const msg = e.message || e;
+                if (State.chat.id) {
+                    // Проверяем, относится ли закреп к текущему чату
+                    const belongs = (State.chat.type === 'private' && (String(msg.sender_id) === String(State.chat.id) || String(msg.recipient_id) === String(State.chat.id))) ||
+                        (State.chat.type === 'group' && String(msg.chat_group_id) === String(State.chat.id));
+
+                    if (belongs) {
+                        const content = Utils.parseMessageContent(msg);
+                        Actions.togglePin(true, content.text);
+                    }
+                }
+            });
+
+            // 3. Сообщение ОТКРЕПИЛИ
+            channel.bind('MessageUnpinned', () => {
+                Actions.togglePin(false);
+            });
+
+            State.echoReady = true;
         }
+    };
+
+    // 8. LISTENERS
+    UI.buttons.send.onclick = Actions.sendMsg;
+    UI.input.message.onkeypress = e => { if (e.key === 'Enter') Actions.sendMsg(); };
+    UI.input.message.oninput = Actions.toggleBtn;
+
+    UI.buttons.attach.onclick = () => UI.input.file.click();
+    UI.input.file.onchange = function () { if (this.files[0]) Actions.sendFile(this.files[0]); this.value = ''; };
+
+    UI.buttons.emoji.onclick = (e) => { e.stopPropagation(); UI.panels.emoji.classList.toggle('hidden'); };
+    document.querySelector('emoji-picker')?.addEventListener('emoji-click', e => {
+        UI.input.message.value += e.detail.unicode;
+        Actions.toggleBtn(); UI.input.message.focus();
     });
 
-    if (micBtn) micBtn.addEventListener('click', async () => {
-        if (!currentActiveChatId) return;
-
-        if (isRecording) {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            return;
-        }
-
-        if (!navigator.mediaDevices) {
-            alert('Ваш браузер не поддерживает запись звука.');
-            return;
-        }
-
+    UI.buttons.mic.onclick = async () => {
+        if (!State.chat.id) return;
+        if (State.recorder.active) { State.recorder.instance.stop(); return; }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+            const mr = new MediaRecorder(stream);
+            State.recorder = { instance: mr, chunks: [], active: true };
+            mr.start();
+            UI.buttons.mic.innerHTML = '<i class="fa-solid fa-stop" style="color:red"></i>';
+            UI.input.message.disabled = true; UI.input.message.placeholder = 'Запись...';
 
-            mediaRecorder.start();
-            isRecording = true;
-
-            micBtn.innerHTML = '<i class="fa-solid fa-stop" style="color:red"></i>';
-            messageInput.placeholder = 'Запись голосового...';
-            messageInput.disabled = true;
-
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                const file = new File([blob], "voice.webm", { type: "audio/webm" });
-                
-                const localUrl = URL.createObjectURL(blob);
-                renderMessage({
-                    id: 'local-' + Date.now(),
-                    sender_id: currentUser.id,
-                    created_at: new Date().toISOString(),
-                    body: '',
-                    content_type: 'audio',
-                    attachment: { url: localUrl, mime_type: 'audio/webm' }
+            mr.ondataavailable = e => State.recorder.chunks.push(e.data);
+            mr.onstop = async () => {
+                const file = new File([new Blob(State.recorder.chunks, { type: 'audio/webm' })], "v.webm", { type: "audio/webm" });
+                Render.message({
+                    id: 'loc-' + Date.now(), sender_id: State.user.id, created_at: new Date(),
+                    body: '', localBlobUrl: URL.createObjectURL(file), content_type: 'audio'
                 });
+                UI.buttons.mic.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                if (State.chat.type === 'private') Utils.rememberChat(State.chat.id);
 
-                micBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                const up = await Api.upload(file);
+                if (up) await Logic.send('', 'audio', up.path || up.url);
 
-                const uploadRes = await uploadMedia(file);
-                
-                if (uploadRes && uploadRes.id) {
-                    await apiSendMessage({ 
-                        body: '', 
-                        type: 'audio', 
-                        attachment_id: uploadRes.id 
-                    }, currentActiveChatId, activeChatType);
-                }
-
-                isRecording = false;
-                micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
-                micBtn.style.color = '';
-                messageInput.placeholder = 'Напишите сообщение...';
-                messageInput.disabled = false;
-
+                State.recorder.active = false;
+                UI.buttons.mic.innerHTML = '<i class="fa-solid fa-microphone"></i>'; UI.buttons.mic.style.color = '';
+                UI.input.message.disabled = false; UI.input.message.placeholder = 'Сообщение...';
                 stream.getTracks().forEach(t => t.stop());
             };
-        } catch (e) {
-            alert('Ошибка доступа к микрофону.');
-        }
-    });
+        } catch (e) { alert('Микрофон недоступен'); }
+    };
 
-    document.querySelectorAll('.trigger-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!btn.textContent.includes('группу')) {
-                modalChat.classList.add('active');
-                renderContacts();
-            }
-        });
-    });
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', function () { this.closest('.modal-overlay').classList.remove('active'); });
-    });
+    UI.buttons.menu.onclick = (e) => { e.stopPropagation(); UI.panels.dropdown.classList.toggle('hidden'); };
+    UI.buttons.menuSearch.onclick = () => { UI.panels.dropdown.classList.add('hidden'); UI.panels.search.classList.remove('hidden'); UI.input.search.focus(); };
+    UI.buttons.closeSearch.onclick = () => { UI.panels.search.classList.add('hidden'); UI.input.search.value = ''; document.querySelectorAll('.message-bubble').forEach(m => m.classList.remove('hidden')); };
+    UI.input.search.oninput = (e) => {
+        const v = e.target.value.toLowerCase();
+        document.querySelectorAll('.message-bubble').forEach(m => m.classList.toggle('hidden', !m.querySelector('.msg-text')?.textContent.toLowerCase().includes(v)));
+    };
 
-    async function renderContacts() {
-        contactsListEl.innerHTML = '<div style="padding:20px; text-align:center;">Загрузка...</div>';
-        const users = await fetchUsers();
-        contactsListEl.innerHTML = '';
-        users.forEach(user => {
-            if (user.id === currentUser.id) return;
-            const item = document.createElement('div');
-            item.className = 'contact-item';
-            const d = getDisplayUser(user);
-            item.innerHTML = `<div class="avatar-sq">${d.initials}</div><div class="contact-info"><h4>${d.name}</h4><p>${d.desc}</p></div>`;
-            item.addEventListener('click', () => {
-                createSidebarItem(user, 'private', chatsListContainer);
-                modalChat.classList.remove('active');
-                openChat(user.id, 'private', d);
+    if (UI.buttons.menuClear) UI.buttons.menuClear.onclick = Logic.clearCurrentChat;
+    if (UI.buttons.menuDelete) UI.buttons.menuDelete.onclick = Logic.deleteCurrentChat;
+
+    UI.containers.messages.oncontextmenu = (e) => {
+        const b = e.target.closest('.message-bubble');
+        if (b) {
+            e.preventDefault(); State.targetElement = b;
+
+            const content = Utils.parseMessageContent({
+                body: b.querySelector('.msg-text')?.textContent || '',
+                audio_url: b.querySelector('audio')?.src,
+                image_url: b.querySelector('.msg-image')?.src
             });
-            contactsListEl.appendChild(item);
-        });
-    }
+            State.messageToForward = { body: content.text, audio_url: content.type === 'audio' ? content.url : null, image_url: content.type === 'image' ? content.url : null };
 
-    if (btnCreateGroup) btnCreateGroup.addEventListener('click', (e) => { e.stopPropagation(); modalGroup.classList.add('active'); });
-    if (submitCreateGroup) submitCreateGroup.addEventListener('click', async () => {
-        const name = groupNameInput.value.trim();
-        if (!name) { alert('Название?'); return; }
-        try {
-            const res = await fetch(`${API_URL}/group-chats`, {
-                method: 'POST',
-                headers: authHeaders(),
-                body: JSON.stringify({ name: name, member_ids: [] })
-            });
-            if (res.ok) {
-                modalGroup.classList.remove('active');
-                groupNameInput.value = '';
-                initData();
-            } else { alert('Ошибка создания'); }
-        } catch (e) { alert('Ошибка сети'); }
-    });
-
-    if (chatMenuBtn) {
-        chatMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            chatDropdown.classList.toggle('hidden');
-        });
-    }
-
-    if (menuSearchBtn) {
-        menuSearchBtn.addEventListener('click', () => {
-            chatDropdown.classList.add('hidden');
-            if (searchBar) {
-                searchBar.classList.remove('hidden');
-                if (searchInput) searchInput.focus();
-            }
-        });
-    }
-
-    if (closeSearchBtn) {
-        closeSearchBtn.addEventListener('click', () => {
-            searchBar.classList.add('hidden');
-            if (searchInput) searchInput.value = '';
-            document.querySelectorAll('.message-bubble').forEach(msg => msg.classList.remove('hidden'));
-        });
-    }
-
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.message-bubble').forEach(msg => {
-                const textEl = msg.querySelector('.msg-text');
-                if (textEl) {
-                    if (textEl.textContent.toLowerCase().includes(term)) msg.classList.remove('hidden');
-                    else msg.classList.add('hidden');
-                }
-            });
-        });
-    }
-
-    if (menuClearBtn) {
-        menuClearBtn.addEventListener('click', async () => {
-            if (!confirm('Вы уверены? Это удалит все сообщения в этом чате.')) return;
-            chatDropdown.classList.add('hidden');
-
-            let url;
-            if (activeChatType === 'private') {
-                url = `${API_URL}/messages/conversation/${currentActiveChatId}`;
-            } else {
-                url = `${API_URL}/group-chats/${currentActiveChatId}/messages`; 
-            }
-
-            try {
-                const res = await fetch(url, { method: 'DELETE', headers: authHeaders() });
-                
-                if (res.ok) {
-                    messagesContainer.innerHTML = '<div style="text-align:center; color:#888; margin-top:20px;">История очищена</div>';
-                } else {
-                    if(activeChatType === 'group') {
-                        alert('Очистка группового чата недоступна или вы не администратор.');
-                    } else {
-                        alert('Не удалось очистить чат');
-                    }
-                }
-            } catch (e) { alert('Ошибка сети'); }
-        });
-    }
-
-    if (menuDeleteBtn) {
-        menuDeleteBtn.addEventListener('click', async () => {
-            if (confirm('Удалить чат?')) {
-                const url = activeChatType === 'private' ? `${API_URL}/messages/conversation/${currentActiveChatId}` : `${API_URL}/group-chats/${currentActiveChatId}`;
-                await fetch(url, { method: 'DELETE', headers: authHeaders() });
-                location.reload();
-            }
-        });
-    }
-
-    messagesContainer.addEventListener('contextmenu', (e) => {
-        const bubble = e.target.closest('.message-bubble');
-        if (bubble) {
-            e.preventDefault();
-            targetMessageElement = bubble;
             let x = e.clientX, y = e.clientY;
             if (x + 220 > window.innerWidth) x = window.innerWidth - 220;
             if (y + 200 > window.innerHeight) y = window.innerHeight - 200;
-            ctxMenu.style.left = `${x}px`; ctxMenu.style.top = `${y}px`; ctxMenu.classList.remove('hidden');
+
+            UI.panels.context.style.left = x + 'px';
+            UI.panels.context.style.top = y + 'px';
+            UI.panels.context.classList.remove('hidden');
         }
-    });
+    };
 
-    window.addEventListener('click', (e) => {
-        if (ctxMenu) ctxMenu.classList.add('hidden');
-        if (emojiWrapper && !emojiWrapper.contains(e.target) && e.target !== emojiBtn) emojiWrapper.classList.add('hidden');
-        if (chatDropdown && !chatMenuBtn.contains(e.target)) chatDropdown.classList.add('hidden');
-        if (e.target === modalChat) modalChat.classList.remove('active');
-        if (e.target === modalGroup) modalGroup.classList.remove('active');
-    });
-
-    if (ctxPin) ctxPin.addEventListener('click', async () => {
-        if (targetMessageElement) {
-            showPinnedBar(targetMessageElement.querySelector('.msg-text')?.innerText || 'Вложение', targetMessageElement);
-            if (targetMessageElement.dataset.id) await apiAction(targetMessageElement.dataset.id, 'pin');
+    UI.ctx.reply.onclick = () => {
+        State.isReplying = true; State.replyContent = State.targetElement.querySelector('.msg-text')?.innerText || 'Вложение';
+        UI.panels.reply.classList.remove('hidden'); UI.panels.replyText.textContent = State.replyContent; UI.input.message.focus();
+    };
+    UI.ctx.delete.onclick = async () => {
+        if (confirm('Удалить?')) {
+            const id = State.targetElement.dataset.id; State.targetElement.remove();
+            if (id) await Logic.action(id, 'delete');
         }
-    });
-    function showPinnedBar(txt, el) { pinnedMessageBar.classList.remove('hidden'); pinnedText.textContent = txt; currentPinnedElement = el; }
-    function hidePinnedBar() { pinnedMessageBar.classList.add('hidden'); currentPinnedElement = null; }
-    if (unpinBtn) unpinBtn.addEventListener('click', async (e) => { e.stopPropagation(); if (currentPinnedElement?.dataset.id) await apiAction(currentPinnedElement.dataset.id, 'unpin'); hidePinnedBar(); });
-    if (pinnedContentClick) pinnedContentClick.addEventListener('click', () => { if (currentPinnedElement) currentPinnedElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    };
+    UI.ctx.pin.onclick = async () => {
+        const txt = State.targetElement.querySelector('.msg-text')?.innerText || 'Вложение';
+        Actions.togglePin(true, txt, State.targetElement);
+        if (State.targetElement.dataset.id) await Logic.action(State.targetElement.dataset.id, 'pin');
+    };
+    UI.ctx.forward.onclick = () => {
+        Actions.openForwardModal();
+    };
 
-    if (ctxReply) ctxReply.addEventListener('click', () => {
-        if (targetMessageElement) {
-            isReplying = true; replyContent = targetMessageElement.querySelector('.msg-text')?.innerText || 'Вложение';
-            replyPanel.classList.remove('hidden'); replyTextPreview.textContent = replyContent; messageInput.focus();
+    UI.buttons.unpin.onclick = async (e) => {
+        e.stopPropagation();
+        if (State.pinnedElement?.dataset.id) await Logic.action(State.pinnedElement.dataset.id, 'unpin');
+        Actions.togglePin(false);
+    };
+    UI.buttons.closeReply.onclick = Actions.cancelReply;
+    if (UI.buttons.closeForward) UI.buttons.closeForward.onclick = () => UI.modals.forward.classList.remove('active');
+
+    window.onclick = (e) => {
+        if (!UI.panels.context.contains(e.target)) UI.panels.context.classList.add('hidden');
+        if (!UI.panels.emoji.contains(e.target) && e.target !== UI.buttons.emoji) UI.panels.emoji.classList.add('hidden');
+        if (!UI.buttons.menu.contains(e.target)) UI.panels.dropdown.classList.add('hidden');
+        if (e.target === UI.modals.chat) UI.modals.chat.classList.remove('active');
+        if (e.target === UI.modals.group) UI.modals.group.classList.remove('active');
+        if (e.target === UI.modals.forward) UI.modals.forward.classList.remove('active');
+    };
+
+    document.querySelectorAll('.trigger-modal').forEach(b => b.onclick = () => { if (!b.textContent.includes('группу')) { UI.modals.chat.classList.add('active'); renderContacts(); } });
+    document.querySelectorAll('.close-modal').forEach(b => b.onclick = function () { this.closest('.modal-overlay').classList.remove('active'); });
+    UI.buttons.createGroup.onclick = (e) => { e.stopPropagation(); UI.modals.group.classList.add('active'); };
+    UI.buttons.submitGroup.onclick = async () => {
+        const n = UI.input.groupName.value.trim();
+        if (!n) return alert('Название?');
+        if (await Api.req('/group-chats', 'POST', { name: n, member_ids: [] })) {
+            UI.modals.group.classList.remove('active'); UI.input.groupName.value = ''; Actions.init();
         }
-    });
-    if (closeReplyBtn) closeReplyBtn.addEventListener('click', cancelReply);
-    function cancelReply() { isReplying = false; replyContent = null; replyPanel.classList.add('hidden'); }
+    };
 
-    if (ctxDelete) ctxDelete.addEventListener('click', async () => {
-        if (confirm('Удалить сообщение?')) {
-            const id = targetMessageElement.dataset.id;
-            targetMessageElement.remove();
-            if (id) await apiAction(id, 'delete');
-        }
-    });
+    async function renderContacts() {
+        UI.containers.contacts.innerHTML = 'Загрузка...';
+        const u = await Api.req('/users');
+        UI.containers.contacts.innerHTML = '';
+        if (u) u.forEach(user => {
+            if (user.id === State.user.id) return;
+            const d = Utils.getDisplayUser(user);
+            const el = document.createElement('div');
+            el.className = 'contact-item';
+            el.innerHTML = `<div class="avatar-sq">${d.initials}</div><div class="contact-info"><h4>${d.name}</h4><p>${d.desc}</p></div>`;
+            el.onclick = () => {
+                Render.chatItem(user, 'private', UI.containers.chats);
+                UI.modals.chat.classList.remove('active');
+                Actions.open(user.id, 'private', d);
+                Utils.rememberChat(user.id);
+            };
+            UI.containers.contacts.appendChild(el);
+        });
+    }
 
-    if (emojiBtn) emojiBtn.addEventListener('click', (e) => { e.stopPropagation(); emojiWrapper.classList.toggle('hidden'); });
-    const picker = document.querySelector('emoji-picker');
-    if (picker) picker.addEventListener('emoji-click', event => { messageInput.value += event.detail.unicode; });
-
-    initData();
+    Actions.init();
 });

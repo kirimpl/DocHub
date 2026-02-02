@@ -1029,38 +1029,35 @@ emoji-picker {
     font-weight: 600;
 }
 
-/* 2. Внутри самого сообщения  */
 .msg-quote {
-    background: rgba(0, 0, 0, 0.05);
-    border-left: 3px solid #fff; 
-    padding: 5px 10px;
+    border-left: 3px solid #3b82f6;
+    background-color: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
-    margin-bottom: 5px;
-    font-size: 12px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
     display: flex;
     flex-direction: column;
+    font-size: 0.85rem;
     cursor: pointer;
-}
-
-/* Если сообщение мое (синее), цитата выглядит иначе */
-.message-bubble.sent .msg-quote {
-    background: rgba(255, 255, 255, 0.2);
-    border-left-color: rgba(255, 255, 255, 0.8);
-    color: white;
+    max-width: 100%;
 }
 
 .quote-name {
-    font-weight: bold;
-    font-size: 11px;
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 0.75rem;
     margin-bottom: 2px;
-    opacity: 0.9;
 }
 
 .quote-text {
+    color: #e5e7eb;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    opacity: 0.8;
+}
+
+.msg-quote img {
+    display: none;
 }
 
 /*  СТИЛИ ПЕРЕСЛАННОГО СООБЩЕНИЯ  */
