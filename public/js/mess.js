@@ -1,70 +1,69 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === КОНФИГУРАЦИЯ ===
     const API_URL = '/api';
 
-    // === DOM ЭЛЕМЕНТЫ ===
     const messagesContainer = document.querySelector('.chat-messages');
     const chatsListContainer = document.getElementById('chatsListContainer');
     const groupsListContainer = document.getElementById('groupsListContainer');
     const emptyState = document.getElementById('emptyState');
     const chatView = document.getElementById('chatView');
     const contactsListEl = document.getElementById('contactsList');
+
     const headerName = document.getElementById('chatHeaderName');
     const headerAvatar = document.getElementById('chatHeaderAvatar');
+
     const messageInput = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendBtn');
     const attachBtn = document.getElementById('attachBtn');
     const hiddenFileInput = document.getElementById('hiddenFileInput');
     const micBtn = document.getElementById('micBtn');
 
-    // Модальные окна
     const modalChat = document.getElementById('createChatModal');
     const modalGroup = document.getElementById('createGroupModal');
     const btnCreateGroup = document.getElementById('btnCreateGroup');
     const groupNameInput = document.getElementById('groupNameInput');
-    const groupDescInput = document.getElementById('groupDescInput');
     const submitCreateGroup = document.getElementById('submitCreateGroup');
 
-    // Элементы меню и сообщений
     const emojiBtn = document.getElementById('emojiBtn');
     const emojiWrapper = document.getElementById('emojiWrapper');
     const ctxMenu = document.getElementById('msgContextMenu');
     const ctxReply = document.getElementById('ctxReply');
     const ctxDelete = document.getElementById('ctxDelete');
     const ctxPin = document.getElementById('ctxPin');
+
     const pinnedMessageBar = document.getElementById('pinnedMessageBar');
     const pinnedText = document.getElementById('pinnedText');
     const unpinBtn = document.getElementById('unpinBtn');
     const pinnedContentClick = document.getElementById('pinnedContentClick');
+
     const replyPanel = document.getElementById('replyPanel');
     const replyTextPreview = document.getElementById('replyTextPreview');
     const closeReplyBtn = document.getElementById('closeReplyBtn');
 
-    // --- НОВЫЕ ЭЛЕМЕНТЫ МЕНЮ ЧАТА ---
     const chatMenuBtn = document.getElementById('chatMenuBtn');
     const chatDropdown = document.getElementById('chatDropdown');
-    const menuSearchBtn = document.getElementById('menuSearchBtn'); // <-- Поиск
-    const menuClearBtn = document.getElementById('menuClearBtn');   // <-- Очистка
+    const menuSearchBtn = document.getElementById('menuSearchBtn');
+    const menuClearBtn = document.getElementById('menuClearBtn');
     const menuDeleteBtn = document.getElementById('menuDeleteBtn');
-    const searchBar = document.getElementById('searchBar');         // <-- Панель поиска
+
+    const searchBar = document.getElementById('searchBar');
     const searchInput = document.getElementById('searchInput');
     const closeSearchBtn = document.getElementById('closeSearchBtn');
 
-    // === СОСТОЯНИЕ ===
     let currentUser = null;
     let currentActiveChatId = null;
-    let activeChatType = null;
+    let activeChatType = null; 
     let targetMessageElement = null;
     let currentPinnedElement = null;
     let isReplying = false;
     let replyContent = null;
+    
     let isRecording = false;
     let mediaRecorder = null;
     let audioChunks = [];
+    
     let echoReady = false;
     let pusherClient = null;
 
-    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
     const getAuthToken = () => localStorage.getItem('auth_token');
 
     const authHeaders = (isMultipart = false) => {
@@ -86,14 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const firstName = user.name || '';
         const lastName = user.last_name || '';
         const fullName = `${firstName} ${lastName}`.trim() || user.email || 'Без имени';
+
         let i1 = firstName.charAt(0).toUpperCase();
         let i2 = lastName.charAt(0).toUpperCase();
         if (!i1 && !i2) i1 = '?';
+
         const desc = user.speciality || user.position || 'Пользователь';
         return { id: user.id, name: fullName, initials: (i1 + i2), desc: desc, avatar: user.avatar };
     };
-
-    // === 1. API ЗАПРОСЫ ===
 
     const fetchMe = async () => {
         try {
@@ -104,7 +103,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchUsers = async () => {
-        try { const res = await fetch(`${API_URL}/users`, { headers: authHeaders() }); if (res.ok) return await res.json(); } catch (e) { } return [];
+        let url = `${API_URL}/users`;
+        try {
+            let res = await fetch(url, { headers: authHeaders() });
+            if (!res.ok) {
+                url = `${API_URL}/search`;
+                res = await fetch(url, { headers: authHeaders() });
+            }
+            if (res.ok) return await res.json();
+        } catch (e) { }
+        return [];
     };
 
     const fetchInbox = async () => {
@@ -112,14 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_URL}/messages/inbox`, { headers: authHeaders() });
             if (res.ok) {
                 const json = await res.json();
-                console.log('Inbox JSON:', json);
                 let items = [];
                 if (Array.isArray(json)) items = json;
                 else if (json.data && Array.isArray(json.data)) items = json.data;
                 else if (json.conversations && Array.isArray(json.conversations)) items = json.conversations;
+                else if (typeof json === 'object' && json !== null) items = Object.values(json);
                 return items;
             }
-        } catch (e) { console.error('Ошибка Inbox:', e); }
+        } catch (e) { console.error(e); }
         return [];
     };
 
@@ -130,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const json = await res.json();
                 if (Array.isArray(json)) return json;
                 if (json.data && Array.isArray(json.data)) return json.data;
+                return [];
             }
         } catch (e) { }
         return [];
@@ -139,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = type === 'private'
             ? `${API_URL}/messages/conversation/${id}`
             : `${API_URL}/group-chats/${id}/messages`;
+
         try {
             const res = await fetch(url, { headers: authHeaders() });
             if (res.ok) return await res.json();
@@ -147,29 +157,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const uploadMedia = async (file) => {
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Файл слишком большой. Максимум 10МБ.');
+            return null;
+        }
+
         const formData = new FormData();
         formData.append('file', file);
+
         try {
-            const res = await fetch(`${API_URL}/media`, { method: 'POST', headers: authHeaders(true), body: formData });
+            const res = await fetch(`${API_URL}/media`, { 
+                method: 'POST', 
+                headers: authHeaders(true), 
+                body: formData 
+            });
+            
             if (!res.ok) return null;
-            return await res.json();
-        } catch (e) { return null; }
+            const json = await res.json();
+            return json.data ? json.data : json;
+        } catch (e) { 
+            return null; 
+        }
     };
 
-    // === 2. ОТПРАВКА ===
     const apiSendMessage = async (data, targetId, type) => {
         let safeBody = data.body;
         if (!safeBody || safeBody.trim() === '') {
-            if (data.type === 'image') safeBody = '📷 Фото';
-            else if (data.type === 'audio') safeBody = '🎤 Голосовое сообщение';
-            else if (data.type === 'file') safeBody = '📎 Файл';
+            if (data.type === 'image') safeBody = ' Фото';
+            else if (data.type === 'audio') safeBody = ' Голосовое сообщение';
+            else if (data.type === 'file') safeBody = ' Файл';
             else safeBody = '.';
         }
 
         const payload = {
             body: safeBody,
             type: data.type || 'text',
-            attachment_id: data.attachment_id || null
+            attachment_id: data.attachment_id || null 
         };
 
         let url;
@@ -201,28 +224,28 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetch(url, { method, headers: authHeaders() });
     };
 
-    // === 3. ОТРИСОВКА ===
-
     function createSidebarItem(item, type, container) {
         const emptyMsg = container.querySelector('.empty-list-msg');
         if (emptyMsg) emptyMsg.remove();
 
-        const el = document.createElement('div');
-        el.className = 'list-item';
-
-        let targetUser = item;
-        let targetId = item.id;
+        let targetUser = null;
+        let targetId = null;
 
         if (type === 'private') {
             if (item.sender_id || item.recipient_id) {
-                const amISender = (String(item.sender_id) === String(currentUser.id));
-                if (amISender) {
-                    targetUser = item.recipient || { id: item.recipient_id, name: `User ${item.recipient_id}`, speciality: '' };
+                const myId = String(currentUser.id);
+                const senderId = String(item.sender_id);
+
+                if (senderId === myId) {
+                    targetUser = item.recipient || { id: item.recipient_id, name: `ID: ${item.recipient_id}`, speciality: '' };
+                    targetId = item.recipient_id;
                 } else {
-                    targetUser = item.sender || { id: item.sender_id, name: `User ${item.sender_id}`, speciality: '' };
+                    targetUser = item.sender || { id: item.sender_id, name: `ID: ${item.sender_id}`, speciality: '' };
+                    targetId = item.sender_id;
                 }
-                targetId = targetUser.id;
-            } else {
+            }
+            else if (item.id) {
+                targetUser = item;
                 targetId = item.id;
             }
         } else {
@@ -230,9 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
             targetId = item.id;
         }
 
+        if (!targetId) return;
+        if (container.querySelector(`[data-chat-id="${targetId}"]`)) return;
+
         const display = getDisplayUser(targetUser);
-        if (type === 'group') display.desc = item.description || 'Групповой чат';
         const bg = (type === 'group') ? '#6EA8DB' : '#004080';
+
+        const el = document.createElement('div');
+        el.className = 'list-item';
+        el.dataset.chatId = targetId;
 
         el.innerHTML = `
             <div class="avatar-sq" style="background-color: ${bg}">${display.initials}</div>
@@ -242,17 +271,17 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        const existing = container.querySelector(`[data-chat-id="${targetId}"]`);
-        if (existing) return;
-        el.dataset.chatId = targetId;
-
         el.addEventListener('click', () => {
             document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
             el.classList.add('active');
             openChat(targetId, type, display);
         });
 
-        container.prepend(el);
+        if (type === 'private' && !item.sender_id && !item.recipient_id) {
+            container.appendChild(el);
+        } else {
+            container.prepend(el);
+        }
     }
 
     function renderMessage(data) {
@@ -267,7 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let contentType = data.content_type || 'text';
 
         let attachment = data.attachment || null;
-        if (attachment) {
+        
+        if (data.localBlobUrl) {
+            attachment = { url: data.localBlobUrl, original_name: 'Загрузка...', mime_type: data.content_type };
+            contentType = data.content_type;
+        } 
+        else if (attachment) {
             const mime = attachment.mime_type || attachment.type || '';
             if (mime.includes('image')) contentType = 'image';
             else if (mime.includes('audio')) contentType = 'audio';
@@ -287,11 +321,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (contentType === 'image' && attachment) {
-            innerHTML += `<img src="${attachment.url}" class="msg-image">`;
+            innerHTML += `<img src="${attachment.url}" class="msg-image" onclick="window.open('${attachment.url}', '_blank')">`;
         } else if (contentType === 'file' && attachment) {
-            innerHTML += `<div class="msg-file"><div class="msg-file-icon"><i class="fa-solid fa-arrow-down"></i></div><div class="msg-file-details"><div class="msg-file-name">${attachment.original_name || attachment.name || 'Файл'}</div></div></div>`;
+            innerHTML += `
+            <a href="${attachment.url}" target="_blank" style="text-decoration:none; color:inherit;">
+                <div class="msg-file">
+                    <div class="msg-file-icon"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div class="msg-file-details">
+                        <div class="msg-file-name">${attachment.original_name || attachment.name || 'Файл'}</div>
+                    </div>
+                </div>
+            </a>`;
         } else if (contentType === 'audio' && attachment) {
-            innerHTML += `<audio controls src="${attachment.url}" class="msg-audio"></audio>`;
+            innerHTML += `<audio controls src="${attachment.url}" class="msg-audio" style="max-width: 240px;"></audio>`;
         } else {
             innerHTML += `<div class="msg-text">${content}</div>`;
         }
@@ -319,7 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
         hidePinnedBar();
         cancelReply();
 
-        // Скрываем поиск если он был открыт
         if (searchBar) {
             searchBar.classList.add('hidden');
             if (searchInput) searchInput.value = '';
@@ -337,8 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // === 4. ИНИЦИАЛИЗАЦИЯ ===
-
     const initData = async () => {
         const token = getAuthToken();
         if (!token) return;
@@ -348,24 +387,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const inbox = await fetchInbox();
         chatsListContainer.innerHTML = '';
-        if (inbox.length === 0) {
-            chatsListContainer.innerHTML = '<div class="empty-list-msg" style="padding:15px; text-align:center; font-size:12px; color:#888;">Чатов пока нет</div>';
-        } else {
+
+        if (inbox.length > 0) {
             inbox.forEach(chat => createSidebarItem(chat, 'private', chatsListContainer));
+        } else {
+            const allUsers = await fetchUsers();
+            if (allUsers.length > 0) {
+                const hint = document.createElement('div');
+                hint.innerHTML = '<div style="padding:10px; font-size:11px; color:#888; text-align:center;">Ваши контакты</div>';
+                chatsListContainer.appendChild(hint);
+
+                allUsers.forEach(user => {
+                    if (String(user.id) !== String(currentUser.id)) {
+                        createSidebarItem(user, 'private', chatsListContainer);
+                    }
+                });
+            } else {
+                chatsListContainer.innerHTML = '<div class="empty-list-msg" style="padding:15px; text-align:center; font-size:12px; color:#888;">Нет контактов</div>';
+            }
         }
 
         const groups = await fetchGroups();
         groupsListContainer.innerHTML = '';
+
         if (groups.length === 0) {
             groupsListContainer.innerHTML = '<div class="empty-list-msg" style="padding:15px; text-align:center; font-size:12px; color:#888;">Нет групп</div>';
         } else {
-            groups.forEach(group => createSidebarItem(group, 'group', groupsListContainer));
+            groups.forEach(group => {
+                if (group.type === 'lecture' || group.is_lecture) return;
+                createSidebarItem(group, 'group', groupsListContainer);
+            });
         }
 
         initEcho();
     };
 
-    // === 5. REALTIME ===
     const handleIncomingMessage = (e) => {
         const msg = e.message || e;
         if (activeChatType === 'private' && String(msg.sender_id) === String(currentActiveChatId)) {
@@ -410,7 +466,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // === 6. EVENT LISTENERS ===
+    function toggleSendBtn() {
+        if (messageInput.value.trim().length > 0) {
+            sendBtn.classList.remove('hidden');
+            sendBtn.classList.add('visible');
+        } else {
+            sendBtn.classList.remove('visible');
+            sendBtn.classList.add('hidden');
+        }
+    }
 
     async function sendMessage() {
         const text = messageInput.value.trim();
@@ -430,66 +494,118 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelReply();
         toggleSendBtn();
 
-        const res = await apiSendMessage({ body: text, type: 'text' }, currentActiveChatId, activeChatType);
+        await apiSendMessage({ body: text, type: 'text' }, currentActiveChatId, activeChatType);
+
+        if (activeChatType === 'private') {
+            await initData();
+        }
     }
 
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-    messageInput.addEventListener('input', () => {
-        if (messageInput.value.trim().length > 0) {
-            sendBtn.classList.remove('hidden'); sendBtn.classList.add('visible');
-        } else {
-            sendBtn.classList.remove('visible'); sendBtn.classList.add('hidden');
-        }
-    });
+    messageInput.addEventListener('input', toggleSendBtn);
 
     if (attachBtn) attachBtn.addEventListener('click', () => hiddenFileInput.click());
+
     if (hiddenFileInput) hiddenFileInput.addEventListener('change', async function () {
         if (this.files && this.files.length > 0) {
             const file = this.files[0];
             if (!currentActiveChatId) return;
+
+            const localUrl = URL.createObjectURL(file);
+            const type = file.type.startsWith('image/') ? 'image' : 'file';
+
+            renderMessage({
+                id: 'local-' + Date.now(),
+                sender_id: currentUser.id,
+                created_at: new Date().toISOString(),
+                body: '',
+                content_type: type,
+                attachment: { url: localUrl, original_name: file.name, mime_type: file.type }
+            });
+
             const uploadRes = await uploadMedia(file);
-            if (uploadRes) {
-                const type = file.type.startsWith('image/') ? 'image' : 'file';
-                await apiSendMessage({ body: '', type: type, attachment_id: uploadRes.id }, currentActiveChatId, activeChatType);
-                const msgs = await fetchMessages(currentActiveChatId, activeChatType);
-                if (msgs.length) renderMessage(msgs[msgs.length - 1]);
+
+            if (uploadRes && uploadRes.id) {
+                await apiSendMessage({ 
+                    body: '', 
+                    type: type, 
+                    attachment_id: uploadRes.id 
+                }, currentActiveChatId, activeChatType);
             }
+
             this.value = '';
         }
     });
 
     if (micBtn) micBtn.addEventListener('click', async () => {
         if (!currentActiveChatId) return;
-        if (isRecording) { mediaRecorder.stop(); return; }
-        if (!navigator.mediaDevices) return;
+
+        if (isRecording) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            return;
+        }
+
+        if (!navigator.mediaDevices) {
+            alert('Ваш браузер не поддерживает запись звука.');
+            return;
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
+
             mediaRecorder.start();
             isRecording = true;
-            micBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
-            micBtn.style.color = 'red';
+
+            micBtn.innerHTML = '<i class="fa-solid fa-stop" style="color:red"></i>';
+            messageInput.placeholder = 'Запись голосового...';
+            messageInput.disabled = true;
+
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
             mediaRecorder.onstop = async () => {
-                const blob = new Blob(audioChunks, { type: 'audio/mp3' });
-                const file = new File([blob], "voice.mp3", { type: "audio/mp3" });
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const file = new File([blob], "voice.webm", { type: "audio/webm" });
+                
+                const localUrl = URL.createObjectURL(blob);
+                renderMessage({
+                    id: 'local-' + Date.now(),
+                    sender_id: currentUser.id,
+                    created_at: new Date().toISOString(),
+                    body: '',
+                    content_type: 'audio',
+                    attachment: { url: localUrl, mime_type: 'audio/webm' }
+                });
+
+                micBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
                 const uploadRes = await uploadMedia(file);
-                if (uploadRes) {
-                    await apiSendMessage({ body: '', type: 'audio', attachment_id: uploadRes.id }, currentActiveChatId, activeChatType);
-                    const msgs = await fetchMessages(currentActiveChatId, activeChatType);
-                    if (msgs.length) renderMessage(msgs[msgs.length - 1]);
+                
+                if (uploadRes && uploadRes.id) {
+                    await apiSendMessage({ 
+                        body: '', 
+                        type: 'audio', 
+                        attachment_id: uploadRes.id 
+                    }, currentActiveChatId, activeChatType);
                 }
+
                 isRecording = false;
                 micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
                 micBtn.style.color = '';
+                messageInput.placeholder = 'Напишите сообщение...';
+                messageInput.disabled = false;
+
                 stream.getTracks().forEach(t => t.stop());
             };
-        } catch (e) { }
+        } catch (e) {
+            alert('Ошибка доступа к микрофону.');
+        }
     });
 
-    // Modals
     document.querySelectorAll('.trigger-modal').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!btn.textContent.includes('группу')) {
@@ -539,9 +655,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { alert('Ошибка сети'); }
     });
 
-    // --- ЛОГИКА МЕНЮ ЧАТА (ПОИСК, ОЧИСТКА, УДАЛЕНИЕ) ---
-
-    // 1. Открытие меню троеточия
     if (chatMenuBtn) {
         chatMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -549,12 +662,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. ПОИСК СООБЩЕНИЙ
     if (menuSearchBtn) {
         menuSearchBtn.addEventListener('click', () => {
-            chatDropdown.classList.add('hidden'); // Закрыть меню
+            chatDropdown.classList.add('hidden');
             if (searchBar) {
-                searchBar.classList.remove('hidden'); // Открыть панель поиска
+                searchBar.classList.remove('hidden');
                 if (searchInput) searchInput.focus();
             }
         });
@@ -564,7 +676,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeSearchBtn.addEventListener('click', () => {
             searchBar.classList.add('hidden');
             if (searchInput) searchInput.value = '';
-            // Возвращаем видимость всем сообщениям
             document.querySelectorAll('.message-bubble').forEach(msg => msg.classList.remove('hidden'));
         });
     }
@@ -572,39 +683,44 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
-            const messages = document.querySelectorAll('.message-bubble');
-            messages.forEach(msg => {
+            document.querySelectorAll('.message-bubble').forEach(msg => {
                 const textEl = msg.querySelector('.msg-text');
                 if (textEl) {
-                    const text = textEl.textContent.toLowerCase();
-                    if (text.includes(term)) msg.classList.remove('hidden');
+                    if (textEl.textContent.toLowerCase().includes(term)) msg.classList.remove('hidden');
                     else msg.classList.add('hidden');
                 }
             });
         });
     }
 
-    // 3. ОЧИСТКА ИСТОРИИ (Удаление переписки)
     if (menuClearBtn) {
         menuClearBtn.addEventListener('click', async () => {
             if (!confirm('Вы уверены? Это удалит все сообщения в этом чате.')) return;
             chatDropdown.classList.add('hidden');
 
+            let url;
             if (activeChatType === 'private') {
-                const url = `${API_URL}/messages/conversation/${currentActiveChatId}`;
-                try {
-                    const res = await fetch(url, { method: 'DELETE', headers: authHeaders() });
-                    if (res.ok) {
-                        messagesContainer.innerHTML = '<div style="text-align:center; color:#888; margin-top:20px;">История очищена</div>';
-                    } else { alert('Ошибка очистки'); }
-                } catch (e) { alert('Ошибка сети'); }
+                url = `${API_URL}/messages/conversation/${currentActiveChatId}`;
             } else {
-                alert('Очистка групп доступна только удалением группы.');
+                url = `${API_URL}/group-chats/${currentActiveChatId}/messages`; 
             }
+
+            try {
+                const res = await fetch(url, { method: 'DELETE', headers: authHeaders() });
+                
+                if (res.ok) {
+                    messagesContainer.innerHTML = '<div style="text-align:center; color:#888; margin-top:20px;">История очищена</div>';
+                } else {
+                    if(activeChatType === 'group') {
+                        alert('Очистка группового чата недоступна или вы не администратор.');
+                    } else {
+                        alert('Не удалось очистить чат');
+                    }
+                }
+            } catch (e) { alert('Ошибка сети'); }
         });
     }
 
-    // 4. УДАЛЕНИЕ ЧАТА (Меню)
     if (menuDeleteBtn) {
         menuDeleteBtn.addEventListener('click', async () => {
             if (confirm('Удалить чат?')) {
@@ -615,8 +731,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-    // --- КОНТЕКСТНОЕ МЕНЮ (ПКМ) ---
     messagesContainer.addEventListener('contextmenu', (e) => {
         const bubble = e.target.closest('.message-bubble');
         if (bubble) {
@@ -669,6 +783,5 @@ document.addEventListener('DOMContentLoaded', () => {
     const picker = document.querySelector('emoji-picker');
     if (picker) picker.addEventListener('emoji-click', event => { messageInput.value += event.detail.unicode; });
 
-    // ЗАПУСК
     initData();
 });
