@@ -1158,3 +1158,14 @@ emoji-picker {
     color: var(--accent-blue);
     margin-left: 5px;
 }
+/* Анимация подсветки закрепленного сообщения */
+.message-bubble.highlight-pin {
+    background-color: #3b82f6 !important; /* Синий цвет */
+    color: white !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    transition: all 0.3s ease-in-out;
+}
+.message-bubble.highlight-pin .msg-text {
+    color: white !important;
+}

@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         replyContent: null,
         messageToForward: null,
         targetElement: null,
-        pinnedElement: null,
+        pinnedMessageId: null, // Хранит ID закрепленного сообщения
         cache: { users: [], groups: [] }
     };
 
@@ -171,21 +171,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return `/storage/${clean}`;
         },
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ (ВЫРЕЗАЕТ ТЕГ НАЧИСТО) ===
         parseMessageContent: (msg) => {
             let text = msg.body || '';
             let type = 'text';
             let url = null;
 
-            // 1. Сначала берем URL из базы данных (если есть)
             if (msg.audio_url) { type = 'audio'; url = msg.audio_url; }
             else if (msg.image_url) { type = 'image'; url = msg.image_url; }
             else if (msg.localBlobUrl) { type = msg.content_type; url = msg.localBlobUrl; }
 
-            // 2. Регулярное выражение для поиска тегов [IMAGE|...]
             const tagRegex = /\[(IMAGE|FILE|AUDIO)\|(.*?)\]/gi;
 
-            // Если URL еще нет (например, пришло по сокету текстом), пытаемся достать из тега
             if (!url) {
                 const match = tagRegex.exec(text);
                 if (match) {
@@ -194,8 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 3. ГЛАВНОЕ ИСПРАВЛЕНИЕ:
-            // Жестко удаляем ВСЕ технические теги из текста, чтобы они не отображались под фото
             text = text.replace(tagRegex, '').trim();
 
             if (text === '.') text = '';
@@ -204,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return { type, url, text };
         }
     };
+
     // 5. API
     const Api = {
         async req(endpoint, method = 'GET', body = null, isFile = false) {
@@ -266,12 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
             else await Api.req(`${base}/${type}`, 'POST');
         },
 
-        // 1. ОЧИСТИТЬ (Остается в списке, но пустой)
         async clearCurrentChat() {
             UI.panels.dropdown.classList.add('hidden');
             if (!confirm('Очистить историю?')) return;
 
-            // Запоминаем время очистки (чтобы скрыть старые сообщения, даже если они придут с сервера)
             Utils.setClearTime(State.chat.id);
 
             const bubbles = document.querySelectorAll('.message-bubble');
@@ -279,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             UI.containers.messages.innerHTML = '<div style="text-align:center;padding:20px;color:#888">Очистка...</div>';
 
-            // Удаляем с сервера
             if (ids.length > 0) {
                 ids.forEach(id => Logic.action(id, 'delete'));
             }
@@ -287,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.containers.messages.innerHTML = '<div style="text-align:center;color:#888;margin-top:20px">История очищена</div>';
         },
 
-        // 2. УДАЛИТЬ (Уходит из списка)
         async deleteCurrentChat() {
             UI.panels.dropdown.classList.add('hidden');
 
@@ -305,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (!confirm('Удалить чат?')) return;
 
-                Utils.setClearTime(State.chat.id); // Тоже ставим фильтр на всякий случай
+                Utils.setClearTime(State.chat.id);
 
                 const bubbles = document.querySelectorAll('.message-bubble');
                 const ids = Array.from(bubbles).map(el => el.dataset.id).filter(id => id && !id.startsWith('loc'));
@@ -327,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 7. RENDER
     const Render = {
         chatItem(item, type, container, isForwardMode = false) {
             let uid = null, uObj = null;
@@ -357,10 +349,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         message(msg) {
-            // === ФИЛЬТР: Убираем системные уведомления о закрепе из ленты ===
-            if (msg.support_ticket_id || msg.type === 'system' || msg.action === 'pin' || (msg.body && msg.body.toLowerCase().includes('закрепил'))) return;
+            const text = (msg.body || '').toLowerCase();
+            const isPinNotification = msg.support_ticket_id || msg.type === 'system' || msg.type === 'notify' || msg.action === 'pin' || text.includes('закрепил') || text.includes('pinned');
 
-            // === ФИЛЬТР: Проверка на очистку чата ===
+            if (isPinNotification) {
+                return;
+            }
+
             let chatIdCheck = State.chat.id;
             if (!chatIdCheck && msg.sender_id) chatIdCheck = String(msg.sender_id) === String(State.user.id) ? msg.recipient_id : msg.sender_id;
             if (chatIdCheck) {
@@ -375,34 +370,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const div = document.createElement('div');
             div.className = `message-bubble ${isMine ? 'sent' : 'received'}`;
             div.dataset.id = msg.id;
+
             let html = '';
             if (State.chat.type === 'group' && !isMine && msg.sender) html += `<div style="font-size:10px;color:#555;margin-bottom:2px">${Utils.getDisplayUser(msg.sender).name}</div>`;
+            
             if (msg.reply_to) {
                 const rC = Utils.parseMessageContent(msg.reply_to);
                 let rT = rC.text || 'Вложение';
-                if (rC.type === 'audio') rT = '🎤 Голосовое'; if (rC.type === 'image') rT = '📷 Фото';
+                if(rC.type==='audio') rT='🎤 Голосовое'; if(rC.type==='image') rT='📷 Фото';
                 html += `<div class="msg-quote"><span class="quote-name">Цитата</span><span class="quote-text">${rT}</span></div>`;
             }
 
             if (content.type === 'image') {
                 html += `<img src="${content.url}" class="msg-image" onclick="window.open('${content.url}','_blank')">`;
-                if (content.text) html += `<div class="msg-text">${content.text}</div>`;
+                if(content.text) html += `<div class="msg-text">${content.text}</div>`;
             } else if (content.type === 'audio') {
                 html += `<audio controls preload="metadata" src="${content.url}" class="msg-audio"></audio>`;
             } else if (content.type === 'file') {
                 html += `<a href="${content.url}" target="_blank" style="text-decoration:none;color:inherit"><div class="msg-file"><div class="msg-file-icon"><i class="fa-solid fa-file-lines"></i></div><div class="msg-file-details"><div class="msg-file-name">Файл</div><div class="msg-file-size">Скачать</div></div></div></a>`;
-                if (content.text) html += `<div class="msg-text">${content.text}</div>`;
-            } else {
-                html += `<div class="msg-text">${content.text}</div>`;
-            }
+                if(content.text) html += `<div class="msg-text">${content.text}</div>`;
+            } else { html += `<div class="msg-text">${content.text}</div>`; }
 
-            html += `<div class="msg-meta">${Utils.formatTime(msg.created_at)} ${isMine ? '<i class="fa-solid fa-check-double" style="margin-left:5px"></i>' : ''}</div>`;
+            html += `<div class="msg-meta">${Utils.formatTime(msg.created_at)} ${isMine?'<i class="fa-solid fa-check-double" style="margin-left:5px"></i>':''}</div>`;
             div.innerHTML = html;
             UI.containers.messages.appendChild(div);
-
-            // Если при загрузке истории есть флаг is_pinned - обновляем шапку
-            if (msg.is_pinned) Actions.togglePin(true, content.text, div);
-
+            
+            // === РЕНДЕР ЗАКРЕПА ПРИ ЗАГРУЗКЕ ===
+            if(msg.is_pinned) {
+                let pinTxt = content.text;
+                // Если текста нет, подставляем тип медиа
+                if (!pinTxt) {
+                    if (content.type === 'audio') pinTxt = '🎤 Голосовое сообщение';
+                    else if (content.type === 'image') pinTxt = '📷 Фотография';
+                    else if (content.type === 'file') pinTxt = '📄 Файл';
+                    else pinTxt = 'Вложение';
+                }
+                Actions.togglePin(true, pinTxt, msg.id);
+            }
+            
             UI.containers.messages.scrollTop = UI.containers.messages.scrollHeight;
         }
     };
@@ -544,61 +549,66 @@ document.addEventListener('DOMContentLoaded', () => {
             State.isReplying = false; UI.panels.reply.classList.add('hidden');
         },
 
-        togglePin(show, txt = '', el = null) {
+        togglePin(show, txt = '', msgId = null) {
             if (show) {
                 UI.panels.pinned.classList.remove('hidden');
                 UI.panels.pinnedText.textContent = txt;
-                State.pinnedElement = el;
+                State.pinnedMessageId = msgId; 
             } else {
                 UI.panels.pinned.classList.add('hidden');
-                State.pinnedElement = null;
+                State.pinnedMessageId = null;
             }
         }
     };
 
     const Socket = {
         init() {
-            if (State.echoReady || !window.Pusher || !State.user) return;
+            if(State.echoReady || !window.Pusher || !State.user) return;
             State.pusher = new window.Pusher(CONFIG.PUSHER_KEY, {
                 wsHost: CONFIG.WS_HOST, wsPort: CONFIG.WS_PORT, forceTLS: false, encrypted: false,
-                enabledTransports: ['ws', 'wss'], authEndpoint: '/broadcasting/auth',
+                enabledTransports: ['ws','wss'], authEndpoint: '/broadcasting/auth',
                 auth: { headers: { Authorization: `Bearer ${Utils.getToken()}` } }
             });
-
-            // КАНАЛ СООБЩЕНИЙ
             const channel = State.pusher.subscribe(`private-messages.${State.user.id}`);
-
-            // 1. Пришло новое сообщение
+            
             channel.bind('MessageSent', (e) => {
                 const msg = e.message || e;
-                if (!msg || msg.support_ticket_id) return;
-                if (e.sender) msg.sender = e.sender;
-                if (State.chat.type === 'private' && String(msg.sender_id) === String(State.chat.id)) {
+                if(!msg) return;
+
+                const text = (msg.body || '').toLowerCase();
+                if (msg.type === 'system' || msg.action === 'pin' || text.includes('закрепил')) return;
+
+                const currentId = String(State.chat.id);
+                const isRelevant = (State.chat.type === 'private' && (String(msg.sender_id) === currentId || String(msg.recipient_id) === currentId)) ||
+                                   (State.chat.type === 'group' && String(msg.chat_group_id) === currentId);
+
+                if (isRelevant) {
+                    if(e.sender) msg.sender = e.sender;
                     Render.message(msg);
                 }
             });
 
-            // 2. Сообщение ЗАКРЕПИЛИ
-            channel.bind('MessagePinned', (e) => {
-                const msg = e.message || e;
-                if (State.chat.id) {
-                    // Проверяем, относится ли закреп к текущему чату
-                    const belongs = (State.chat.type === 'private' && (String(msg.sender_id) === String(State.chat.id) || String(msg.recipient_id) === String(State.chat.id))) ||
-                        (State.chat.type === 'group' && String(msg.chat_group_id) === String(State.chat.id));
-
-                    if (belongs) {
-                        const content = Utils.parseMessageContent(msg);
-                        Actions.togglePin(true, content.text);
-                    }
-                }
-            });
-
-            // 3. Сообщение ОТКРЕПИЛИ
-            channel.bind('MessageUnpinned', () => {
-                Actions.togglePin(false);
-            });
-
             State.echoReady = true;
+        }
+    };
+
+    // --- КЛИК ПО ЗАКРЕПУ (ПЛАВНАЯ ПРОКРУТКА + ПОДСВЕТКА) ---
+    UI.panels.pinnedText.style.cursor = 'pointer';
+    UI.panels.pinnedText.onclick = () => {
+        if (!State.pinnedMessageId) return;
+        
+        // Ищем сообщение по ID
+        const targetBubble = document.querySelector(`.message-bubble[data-id="${State.pinnedMessageId}"]`);
+        
+        if (targetBubble) {
+            // Плавная прокрутка
+            targetBubble.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Подсветка (CSS класс highlight-pin)
+            targetBubble.classList.add('highlight-pin');
+            
+            // Убираем подсветку через 2 секунды
+            setTimeout(() => targetBubble.classList.remove('highlight-pin'), 2000);
         }
     };
 
@@ -685,17 +695,33 @@ document.addEventListener('DOMContentLoaded', () => {
         State.isReplying = true; State.replyContent = State.targetElement.querySelector('.msg-text')?.innerText || 'Вложение';
         UI.panels.reply.classList.remove('hidden'); UI.panels.replyText.textContent = State.replyContent; UI.input.message.focus();
     };
+
+    // === ПАРСИНГ КОНТЕНТА ПРИ ЗАКРЕПЛЕНИИ (для правильного текста сверху) ===
+    UI.ctx.pin.onclick = async () => {
+        const bubble = State.targetElement;
+        const msgId = bubble.dataset.id;
+        
+        let txt = bubble.querySelector('.msg-text')?.innerText || '';
+        
+        // Если текста нет, определяем тип медиа
+        if (!txt) {
+            if (bubble.querySelector('audio')) txt = '🎤 Голосовое сообщение';
+            else if (bubble.querySelector('img')) txt = '📷 Фотография';
+            else if (bubble.querySelector('.msg-file')) txt = '📄 Файл';
+            else txt = 'Вложение';
+        }
+
+        Actions.togglePin(true, txt, msgId);
+        if (msgId) await Logic.action(msgId, 'pin');
+    };
+
     UI.ctx.delete.onclick = async () => {
         if (confirm('Удалить?')) {
             const id = State.targetElement.dataset.id; State.targetElement.remove();
             if (id) await Logic.action(id, 'delete');
         }
     };
-    UI.ctx.pin.onclick = async () => {
-        const txt = State.targetElement.querySelector('.msg-text')?.innerText || 'Вложение';
-        Actions.togglePin(true, txt, State.targetElement);
-        if (State.targetElement.dataset.id) await Logic.action(State.targetElement.dataset.id, 'pin');
-    };
+
     UI.ctx.forward.onclick = () => {
         Actions.openForwardModal();
     };
