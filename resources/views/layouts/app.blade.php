@@ -253,6 +253,7 @@
     <script src="https://js.pusher.com/7.2/pusher.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo/dist/echo.iife.js" defer></script>
     <script src="{{ asset('js/admin.js') }}" defer></script>
+    <script src="{{ asset('js/mess_widget.js') }}" defer></script>
     <script src="{{ asset('js/verification.js') }}" defer></script>
     <script src="{{ asset('js/verification-admin.js') }}" defer></script>
     <script src="{{ asset('js/feed.js') }}" defer></script>
