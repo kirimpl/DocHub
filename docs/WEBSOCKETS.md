@@ -1,42 +1,51 @@
-laravel-websockets — Local setup (quick)
+# Realtime setup (Laravel Reverb)
 
-Goal: run a local WebSocket server (no admin rights required) to support real-time features (messages, notifications) using the Pusher-compatible API.
+This project uses Laravel Reverb as the primary realtime backend.
 
-1) Install packages (one time):
+## 1) Required env values
 
-   composer require beyondcode/laravel-websockets pusher/pusher-php-server
+Set values in `.env`:
 
-2) Publish config and migration (optional for dashboard):
+```env
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=local
+REVERB_APP_KEY=local
+REVERB_APP_SECRET=local
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
+REVERB_SCHEME=http
+```
 
-   php artisan vendor:publish --provider="BeyondCode\\LaravelWebSockets\\WebSocketsServiceProvider" --tag="config"
-   php artisan vendor:publish --provider="BeyondCode\\LaravelWebSockets\\WebSocketsServiceProvider" --tag="migrations"
-   php artisan migrate
+Frontend values:
 
-3) .env settings (example):
+```env
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="${REVERB_HOST}"
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+```
 
-   BROADCAST_DRIVER=pusher
-   PUSHER_APP_ID=local
-   PUSHER_APP_KEY=local
-   PUSHER_APP_SECRET=local
-   PUSHER_APP_CLUSTER=mt1
-   PUSHER_HOST=127.0.0.1
-   PUSHER_PORT=6001
-   PUSHER_SCHEME=http
-   PUSHER_APP_USE_TLS=false
+## 2) Start Reverb
 
-4) Run websocket server locally (no admin rights needed):
+```bash
+php artisan reverb:start
+```
 
-   php artisan websockets:serve --host=127.0.0.1 --port=6001
+## 3) Auth for private channels
 
-   The command runs in foreground; you can run it in background using your OS job runner (nohup / screen / PowerShell Start-Job) or use a process manager (Supervisor/Systemd) for production.
+Private channels are authorized via:
 
-5) Frontend: the test client (`public/test-client.html`) includes Pusher + Laravel Echo from CDN and will attempt to connect to the local server if a token is present and you are authenticated.
+- `POST /broadcasting/auth`
 
-6) Notes:
- - For production you may keep the Pusher API but use the websockets server for dev/self-hosting.
- - Ensure your `routes/channels.php` includes appropriate authorization callbacks (the project already uses `messages.{id}` and `App.Models.User.{id}`).
- - No admin rights are required to run `php artisan websockets:serve` locally.
+Use a Sanctum bearer token in request headers.
 
-Troubleshooting:
- - If Echo can't authenticate, check that `Authorization: Bearer <token>` is provided to the broadcast auth endpoint (`/broadcasting/auth`).
- - If CORS issues arise when serving websockets on a different host, set PUSHER_HOST to the correct host and ensure HTTP broadcast auth endpoint accepts Authorization headers.
+## 4) Channels used in project
+
+- `private-messages.{userId}` (Echo naming: `private('messages.{id}')`)
+- `private-App.Models.User.{userId}` (Laravel notifications)
+
+## 5) Troubleshooting
+
+- If subscribe fails, verify bearer token and channel auth route.
+- If frontend cannot connect, check `REVERB_HOST/PORT/SCHEME` and matching Vite vars.
+- If events are not delivered, verify queue/broadcast config and logs.

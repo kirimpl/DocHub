@@ -1,23 +1,11 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: Social Network API
-  version: 1.0.0
+  title: DocHub API
+  version: 1.1.0
+  description: Core API contract for DocHub backend.
+servers:
+  - url: / 
 paths:
-  /api/register:
-    post:
-      summary: Register user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name: { type: string }
-                email: { type: string }
-                password: { type: string }
-      responses:
-        '201': { description: Created }
   /api/login:
     post:
       summary: Login
@@ -27,25 +15,384 @@ paths:
           application/json:
             schema:
               type: object
+              required: [email, password]
               properties:
-                email: { type: string }
+                email: { type: string, format: email }
                 password: { type: string }
       responses:
-        '200': { description: OK }
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+  /api/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201': { description: Created }
+
+  /api/me:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Current user profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/feed:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Feed list
+      parameters:
+        - in: query
+          name: scope
+          schema: { type: string, enum: [all, global, organization, local, mine] }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: Feed returned }
+
   /api/posts:
     get:
-      summary: List feed/posts
+      security: [{ bearerAuth: [] }]
+      summary: Posts list
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: Posts returned }
     post:
+      security: [{ bearerAuth: [] }]
       summary: Create post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [department_tags]
+              properties:
+                content: { type: string }
+                image: { type: string, nullable: true }
+                is_public: { type: boolean }
+                is_global: { type: boolean }
+                department_tags:
+                  type: array
+                  minItems: 1
+                  items: { type: string }
+      responses:
+        '201':
+          description: Post created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Post' }
+
   /api/posts/{id}:
     get:
+      security: [{ bearerAuth: [] }]
       summary: Get post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Post found }
+    patch:
+      security: [{ bearerAuth: [] }]
+      summary: Update post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Post updated }
     delete:
+      security: [{ bearerAuth: [] }]
       summary: Delete post
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Post deleted }
+
+  /api/my-posts:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Current user posts
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: List returned }
+
   /api/messages/send:
     post:
-      summary: Send message (body: recipient_id, body)
-  /api/search:
+      security: [{ bearerAuth: [] }]
+      summary: Send direct message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipient_id]
+              properties:
+                recipient_id: { type: integer }
+                body: { type: string }
+                audio_url: { type: string, nullable: true }
+                image_url: { type: string, nullable: true }
+                reply_to_message_id: { type: integer, nullable: true }
+      responses:
+        '201': { description: Message sent }
+
+  /api/messages/conversation/{userId}:
     get:
-      summary: Search users and posts (q)
-components: {}
+      security: [{ bearerAuth: [] }]
+      summary: Conversation messages
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 500 }
+      responses:
+        '200': { description: Conversation returned }
+
+  /api/notifications:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Notifications
+      parameters:
+        - in: query
+          name: with_read
+          schema: { type: boolean }
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: Notifications returned }
+
+  /api/verification/documents:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: My verification documents
+      responses:
+        '200': { description: List returned }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Upload verification document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [document]
+              properties:
+                document:
+                  type: string
+                  format: binary
+                notes:
+                  type: string
+      responses:
+        '201': { description: Uploaded }
+
+  /api/verification/documents/{id}/download:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Download verification document (owner or admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: File stream }
+        '403': { description: Access denied }
+        '404': { description: Document not found }
+
+  /api/lectures:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Lectures list
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: List returned }
+
+  /api/lectures/{id}/recordings:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Lecture recordings list (participant/creator/admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: List returned }
+        '403': { description: Access denied }
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Upload lecture recording (creator/admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [recording]
+              properties:
+                recording:
+                  type: string
+                  format: binary
+                duration_seconds:
+                  type: integer
+                started_at:
+                  type: string
+                  format: date-time
+                ended_at:
+                  type: string
+                  format: date-time
+      responses:
+        '201': { description: Uploaded }
+
+  /api/lectures/{id}/recordings/{recordingId}/download:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Download lecture recording (participant/creator/admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: recordingId
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: File stream }
+        '403': { description: Access denied }
+        '404': { description: Recording not found }
+
+  /api/events:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Events list
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: Events returned }
+
+  /api/voice-rooms:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Voice rooms list
+      parameters:
+        - in: query
+          name: per_page
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        '200': { description: Rooms returned }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        avatar: { type: string, nullable: true }
+        work_place: { type: string, nullable: true }
+        speciality: { type: string, nullable: true }
+    Post:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        content: { type: string }
+        image: { type: string, nullable: true }
+        is_public: { type: boolean }
+        is_global: { type: boolean }
+        organization_name: { type: string, nullable: true }
+        department_tags:
+          type: array
+          items: { type: string }
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - last_name
+        - email
+        - password
+        - speciality
+        - sex
+        - phone_number
+        - birth_date
+        - education
+        - work_experience
+        - work_place
+        - organization_role
+      properties:
+        name: { type: string }
+        last_name: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+        speciality: { type: string }
+        sex: { type: string }
+        phone_number: { type: string }
+        birth_date: { type: string, format: date }
+        education: { type: string }
+        city: { type: string, nullable: true }
+        work_experience: { type: integer }
+        work_place: { type: string }
+        secondary_work_place: { type: string, nullable: true }
+        secondary_speciality: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        position: { type: string, nullable: true }
+        organization_role: { type: string }
+        department_role: { type: string, nullable: true }

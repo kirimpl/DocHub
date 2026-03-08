@@ -60,6 +60,7 @@ Route::middleware('auth:sanctum', 'update.last.seen')->group(function () {
     Route::post('verification/support/threads/{ticketId}/resolve', [VerificationController::class, 'resolveSupportTicket'])->whereNumber('ticketId');
     Route::delete('verification/support/threads/{ticketId}', [VerificationController::class, 'deleteSupportTicket'])->whereNumber('ticketId');
     Route::get('verification/documents', [VerificationController::class, 'documents']);
+    Route::get('verification/documents/{id}/download', [VerificationController::class, 'downloadDocument'])->whereNumber('id');
     Route::post('verification/documents', [VerificationController::class, 'uploadDocument']);
     Route::get('verification/pending', [VerificationController::class, 'pending']);
     Route::get('verification/approved', [VerificationController::class, 'approved']);
@@ -260,12 +261,8 @@ Route::middleware('auth:sanctum', 'update.last.seen', 'verified.doctor', 'not.re
     Route::post('notes', [NoteController::class, 'store']);
     Route::patch('notes/{id}', [NoteController::class, 'update'])->whereNumber('id');
     Route::delete('notes/{id}', [NoteController::class, 'destroy'])->whereNumber('id');
-    //avatar
-
-
-  Route::middleware('auth:sanctum')->group(function () {
+    // profile media
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
     Route::post('/profile/cover', [ProfileController::class, 'updateCover']);
     Route::get('/profile', [ProfileController::class, 'profile']);
-});
 });

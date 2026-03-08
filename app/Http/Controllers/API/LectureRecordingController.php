@@ -10,9 +10,26 @@ use Illuminate\Support\Facades\Storage;
 
 class LectureRecordingController extends Controller
 {
+    private function canViewLecture(Request $request, Lecture $lecture): bool
+    {
+        $user = $request->user();
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->isGlobalAdmin() || (int) $lecture->creator_id === (int) $user->id) {
+            return true;
+        }
+
+        return $lecture->participants()->where('users.id', $user->id)->exists();
+    }
+
     public function index(Request $request, $lectureId)
     {
         $lecture = Lecture::findOrFail($lectureId);
+        if (!$this->canViewLecture($request, $lecture)) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
 
         $recordings = LectureRecording::where('lecture_id', $lecture->id)
             ->orderByDesc('created_at')
@@ -58,6 +75,9 @@ class LectureRecordingController extends Controller
     public function download(Request $request, $lectureId, $recordingId)
     {
         $lecture = Lecture::findOrFail($lectureId);
+        if (!$this->canViewLecture($request, $lecture)) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
 
         $recording = LectureRecording::where('lecture_id', $lecture->id)->findOrFail($recordingId);
         if (!Storage::exists($recording->file_path)) {

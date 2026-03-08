@@ -12,7 +12,7 @@ Route::get('/messenger', function () {
     return view('messenger');
 });
 Route::get('/messenger-new', function () {
-    return view('messenger_new');
+    return redirect('/messenger');
 });
 Route::get('/profile', function () {
     return view('profile');

@@ -18,10 +18,17 @@ class LectureController extends Controller
 {
     public function index(Request $request)
     {
-        return Lecture::query()
+        $query = Lecture::query()
             ->with('creator:id,name,avatar')
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('created_at', 'desc');
+
+        $perPage = (int) $request->query('per_page', 0);
+        if ($perPage > 0) {
+            $perPage = max(1, min($perPage, 100));
+            return response()->json($query->paginate($perPage));
+        }
+
+        return $query->get();
     }
 
     public function archives(Request $request)

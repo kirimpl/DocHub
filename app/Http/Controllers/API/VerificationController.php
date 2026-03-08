@@ -346,7 +346,28 @@ class VerificationController extends Controller
     public function documents(Request $request)
     {
         $user = $request->user();
-        return response()->json($user->verificationDocuments()->latest()->get());
+        $docs = $user->verificationDocuments()
+            ->latest()
+            ->get(['id', 'status', 'notes', 'reviewed_by', 'reviewed_at', 'created_at']);
+
+        return response()->json($docs);
+    }
+
+    public function downloadDocument(Request $request, $id)
+    {
+        $user = $request->user();
+        $doc = VerificationDocument::findOrFail($id);
+
+        $isOwner = (int) $doc->user_id === (int) $user->id;
+        if (!$isOwner && !$user->isGlobalAdmin()) {
+            return response()->json(['message' => 'Access denied.'], 403);
+        }
+
+        if (!Storage::disk('local')->exists($doc->file_path)) {
+            return response()->json(['message' => 'Document not found.'], 404);
+        }
+
+        return Storage::disk('local')->download($doc->file_path);
     }
 
     public function uploadDocument(Request $request)
@@ -357,7 +378,7 @@ class VerificationController extends Controller
         ]);
 
         $user = $request->user();
-        $path = $request->file('document')->store('verification_docs', 'public');
+        $path = $request->file('document')->store('verification_docs', 'local');
 
         $doc = VerificationDocument::create([
             'user_id' => $user->id,

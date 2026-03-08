@@ -1,79 +1,130 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+﻿# DocHub Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend-платформа для профессиональной медицинской сети: верификация врачей, лента, личные/групповые чаты, лекции, события, voice rooms, уведомления и AI-инструменты.
 
-## About Laravel
+## Для портфолио
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Готовый презентационный текст и демо-сценарий: `docs/PORTFOLIO.md`
+- Быстрые ссылки: `docs/API.md`, `openapi.yaml`, `tests/Feature`
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Что это за продукт
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+DocHub решает задачу внутренней коммуникации и обмена знаниями для медсообщества:
 
-## Learning Laravel
+- регистрация и профиль врача;
+- верификация с документами и встроенной поддержкой;
+- публикации, комментарии, лайки, репосты;
+- личные и групповые чаты (реакции, закрепы, пересылка);
+- лекции/события/голосовые комнаты;
+- realtime-уведомления;
+- модерация (жалобы, ограничения);
+- AI-эндпоинты для работы с текстом и материалами лекций.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Технологии
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP 8.2
+- Laravel 12
+- Sanctum (API auth)
+- Reverb (realtime)
+- MySQL 8 / SQLite (тесты)
+- Redis (очереди и realtime)
+- Vite / npm
 
-## Laravel Sponsors
+## Основные модули
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- `app/Http/Controllers/API` — бизнес-логика API
+- `routes/api.php` — все API-маршруты
+- `app/Models` — доменные модели
+- `app/Notifications` / `app/Events` — уведомления и broadcast
+- `docs/API.md` — подробные API-заметки
+- `openapi.yaml` — OpenAPI-спецификация
+- `tests/Feature` — интеграционные тесты
 
-### Premium Partners
+## Быстрый старт (локально)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-## Social Network Backend (project-specific)
-
-This workspace contains the backend for a social network (Instagram/VK-like). It exposes API endpoints for users, follows, posts, comments, likes, interests, messages, notifications and search. The project includes factories and a seeder to populate test data.
-
-Quick start:
+### 1) Установка
 
 ```bash
 composer install
+npm install
 cp .env.example .env
-# set DB_* in .env
 php artisan key:generate
+```
+
+### 2) База данных
+
+```bash
 php artisan migrate
-php artisan db:seed
+```
+
+### 3) Запуск приложения
+
+```bash
 php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Use Tinker or `/api/login` to obtain an API token (Sanctum) and send it as `Authorization: Bearer <TOKEN>`.
+### 4) Realtime и очередь (в отдельных терминалах)
 
-Real-time messages: configure Pusher or Laravel WebSockets and use Laravel Echo on the frontend. See `app/Events/MessageSent.php` and `app/Notifications/NewMessageNotification.php` for broadcast payloads.
+```bash
+php artisan reverb:start
+php artisan queue:work --tries=3 --timeout=120
+```
+
+## Запуск через Docker
+
+```bash
+docker compose up -d --build
+```
+
+После старта контейнеров:
+
+```bash
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+Сервисы в `docker-compose.yml`:
+
+- `web` — Nginx (`http://localhost:8000`)
+- `app` — PHP/Laravel
+- `db` — MySQL
+- `redis` — Redis
+- `reverb` — realtime-сервер
+- `queue` — воркер очередей
+
+## Тестирование и проверки
+
+```bash
+php artisan test
+php artisan route:list --path=api --except-vendor
+php -l routes/api.php
+```
+
+## Документация API
+
+- Человекочитаемая: `docs/API.md`
+- OpenAPI: `openapi.yaml`
+- Postman: `docs/postman_collection.json`
+
+## Realtime
+
+Проект использует Laravel Reverb.
+
+- Документация по настройке: `docs/WEBSOCKETS.md`
+- Приватные каналы: `routes/channels.php`
+- Ключевые события: `MessageSent`, `GroupChatMessageSent`, `LectureSignal`, `SupportTicketResolved`
+
+## Переменные окружения (минимум)
+
+Проверьте в `.env`:
+
+- `APP_URL`
+- `DB_*`
+- `QUEUE_CONNECTION`
+- `BROADCAST_CONNECTION=reverb`
+- `REVERB_*`
+- `GEMINI_API_KEY` (если используете AI)
+
+## Лицензия
+
+MIT

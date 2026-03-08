@@ -47,17 +47,30 @@ services:
     networks:
       - app-network
 
-  websockets:
+  reverb:
     build: .
-    image: myproject_websockets
-    command: php artisan websockets:serve --host=0.0.0.0 --port=6001
+    image: myproject_reverb
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
     volumes:
       - ./:/var/www/html
     depends_on:
       - app
       - redis
     ports:
-      - 6001:6001
+      - 8080:8080
+    networks:
+      - app-network
+
+  queue:
+    build: .
+    image: myproject_queue
+    command: php artisan queue:work --tries=3 --timeout=120
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+      - db
+      - redis
     networks:
       - app-network
 

@@ -73,11 +73,41 @@ class PostController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $perPage = (int) $request->query('per_page', 0);
         $cacheKey = "posts:user:{$user->id}";
 
         $blockedIds = UserBlock::where('blocker_id', $user->id)->pluck('blocked_id');
         $blockedByIds = UserBlock::where('blocked_id', $user->id)->pluck('blocker_id');
         $blocked = $blockedIds->merge($blockedByIds)->unique()->values()->all();
+
+        if ($perPage > 0) {
+            $perPage = max(1, min($perPage, 100));
+            $query = Post::with('user')
+                ->with(['likes' => function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                }])
+                ->withCount(['likes', 'comments'])
+                ->latest();
+
+            if (!$user->isVerified()) {
+                $query->where('is_global', true);
+            } else {
+                $query->where(function ($q) use ($user) {
+                    $q->where('is_global', true)
+                        ->orWhere('user_id', $user->id);
+
+                    if ($user->work_place) {
+                        $q->orWhere('organization_name', $user->work_place);
+                    }
+                });
+            }
+
+            if (!empty($blocked)) {
+                $query->whereNotIn('user_id', $blocked);
+            }
+
+            return response()->json($query->paginate($perPage));
+        }
 
         $posts = cache()->remember($cacheKey, 15, function () use ($user) {
             $query = Post::with('user')
@@ -140,6 +170,10 @@ class PostController extends Controller
     ]);
 
     $this->clearPostCaches($user->id);
+
+    $tags = $data['department_tags'] ?? [];
+    $scope = $isGlobal ? 'global' : 'local';
+    $this->notifyTaggedUsers($user, $post, $tags, $scope, $isGlobal);
 
     return response()->json($post, 201);
 }
@@ -261,12 +295,19 @@ class PostController extends Controller
     public function myPosts(Request $request)
     {
         $user = $request->user();
-        $posts = Post::where('user_id', $user->id)
+        $perPage = (int) $request->query('per_page', 0);
+
+        $query = Post::where('user_id', $user->id)
             ->with('user')
             ->withCount(['likes', 'comments'])
-            ->latest()
-            ->get();
-        return response()->json($posts);
+            ->latest();
+
+        if ($perPage > 0) {
+            $perPage = max(1, min($perPage, 100));
+            return response()->json($query->paginate($perPage));
+        }
+
+        return response()->json($query->get());
     }
 
     private function notifyTaggedUsers(User $author, Post $post, array $tags, string $scope, bool $isGlobal): void
